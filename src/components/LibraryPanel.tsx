@@ -1,0 +1,196 @@
+import { useMemo, useState } from "react";
+import { icons, Plus, Pencil, Trash2, Search, BookMarked, Library } from "lucide-react";
+import { LAYER_LABELS, NodeDefinition } from "../types";
+import { useApp } from "../store";
+import DefinitionWizard from "./DefinitionWizard";
+
+function DefCard({
+  def,
+  inUse,
+  fromLibrary,
+  onEdit,
+}: {
+  def: NodeDefinition;
+  inUse: boolean;
+  fromLibrary: boolean;
+  onEdit: () => void;
+}) {
+  const placing = useApp((s) => s.placingDefId === def.id);
+  const customIcons = useApp((s) => s.customIcons);
+  const Lucide = !def.icon.startsWith("custom:")
+    ? icons[def.icon as keyof typeof icons]
+    : null;
+
+  return (
+    <div
+      onClick={() => useApp.getState().setPlacing(placing ? null : def.id)}
+      className={`group flex cursor-pointer items-center gap-2.5 rounded border px-2.5 py-2 select-none ${
+        placing
+          ? "border-[#4c9aff] bg-[#2b3a55]"
+          : "border-[#2e3040] bg-[#22242e] hover:border-[#4a4e63]"
+      }`}
+      title="Click, then click the canvas to place"
+    >
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
+        {Lucide ? (
+          <Lucide size={18} color="#c9cbd8" />
+        ) : (
+          <img
+            src={customIcons[def.icon.slice(7)]}
+            className="h-5 w-5 object-contain"
+            alt=""
+          />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-sm text-[#e2e4ee]">{def.name}</span>
+          {fromLibrary && (
+            <Library size={11} className="shrink-0 text-[#565a72]" aria-label="From the default library" />
+          )}
+        </div>
+        <div className="text-[10px] text-[#565a72]">
+          {def.pips.length} pip{def.pips.length === 1 ? "" : "s"}
+        </div>
+      </div>
+      <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
+        {!fromLibrary && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              useApp.getState().promoteToDefaultLibrary(def.id);
+            }}
+            className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-[#4c9aff]"
+            title="Save to the default library (available in every project)"
+          >
+            <BookMarked size={13} />
+          </button>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+          title="Edit definition"
+        >
+          <Pencil size={13} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useApp.getState().removeDefinition(def.id);
+          }}
+          disabled={inUse || fromLibrary}
+          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-[#f87171] disabled:cursor-not-allowed disabled:opacity-30"
+          title={
+            fromLibrary
+              ? "From the default library — place or edit it to bring it into this project"
+              : inUse
+                ? "In use on a canvas — remove instances first"
+                : "Delete definition"
+          }
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function LibraryPanel() {
+  const definitions = useApp((s) => s.definitions);
+  const canvases = useApp((s) => s.canvases);
+  const pipTypes = useApp((s) => s.pipTypes);
+  const defaultLibraryIds = useApp((s) => s.defaultLibraryIds);
+  const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
+  const [search, setSearch] = useState("");
+  const [wizard, setWizard] = useState<{ open: boolean; editing: NodeDefinition | null }>({
+    open: false,
+    editing: null,
+  });
+
+  const usedDefIds = useMemo(() => {
+    const used = new Set<string>();
+    for (const c of Object.values(canvases))
+      for (const n of c.nodes) used.add(n.definitionId);
+    return used;
+  }, [canvases]);
+
+  const defs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return Object.values(definitions)
+      .filter((d) => d.layers?.includes(activeLayer))
+      .filter((d) => !q || d.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [definitions, search, activeLayer]);
+
+  return (
+    <aside className="flex w-60 shrink-0 flex-col border-r border-[#2e3040] bg-[#1e1f28]">
+      <div className="border-b border-[#2e3040] p-2.5">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
+            {LAYER_LABELS[activeLayer]} layer
+          </span>
+        </div>
+        <button
+          onClick={() => setWizard({ open: true, editing: null })}
+          className="flex w-full items-center justify-center gap-1.5 rounded bg-[#2b6cb0] px-3 py-1.5 text-sm text-white hover:bg-[#3182ce]"
+        >
+          <Plus size={15} /> New Node
+        </button>
+        <div className="relative mt-2">
+          <Search size={13} className="absolute left-2 top-2 text-[#565a72]" />
+          <input
+            className="w-full rounded border border-[#3a3d52] bg-[#191a21] py-1 pl-7 pr-2 text-sm text-[#e2e4ee] outline-none focus:border-[#4c9aff]"
+            placeholder="Search library…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 space-y-1.5 overflow-y-auto p-2.5">
+        {defs.map((d) => (
+          <DefCard
+            key={d.id}
+            def={d}
+            inUse={usedDefIds.has(d.id)}
+            fromLibrary={!!defaultLibraryIds[d.id]}
+            onEdit={() => setWizard({ open: true, editing: d })}
+          />
+        ))}
+        {defs.length === 0 && (
+          <div className="p-3 text-center text-xs text-[#565a72]">
+            No {LAYER_LABELS[activeLayer].toLowerCase()}-layer nodes
+            {search ? " match." : " yet — add one above."}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-[#2e3040] p-2.5">
+        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
+          Pip Types
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.values(pipTypes).map((t) => (
+            <span
+              key={t.id}
+              className="flex items-center gap-1.5 rounded-full border border-[#2e3040] bg-[#22242e] px-2 py-0.5 text-[11px] text-[#c9cbd8]"
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />
+              {t.name}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {wizard.open && (
+        <DefinitionWizard
+          editing={wizard.editing}
+          onClose={() => setWizard({ open: false, editing: null })}
+        />
+      )}
+    </aside>
+  );
+}
