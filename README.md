@@ -22,8 +22,10 @@ Manually: `npm install`, then `npm run tauri dev`.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the data model, module
   map, and persistence design.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned and unscheduled future work.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — ideas currently under
+  discussion, not yet built.
 - [`docs/decisions/`](docs/decisions/) — architecture decision records: why
-  things are shaped the way they are.
+  things are shaped the way they are, once decided.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — version history.
 - [`HEPHAESTUS-INTEGRATION.md`](HEPHAESTUS-INTEGRATION.md) — the design for
   exporting a Glyph Palette project to Project Hephaestus, an AI
