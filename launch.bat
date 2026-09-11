@@ -8,7 +8,7 @@ REM
 REM  If you move the repo, edit REPO below.
 REM ============================================================
 setlocal
-set "REPO=C:\Glyph Palette"
+set "REPO=D:\Glyph Palette"
 set "PORT=1420"
 
 if not exist "%REPO%\src-tauri\tauri.conf.json" goto :norepo
