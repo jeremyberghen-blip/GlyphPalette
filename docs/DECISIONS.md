@@ -58,8 +58,8 @@ decisions or roadmap items:
   first pip type (`DefinitionWizard.tsx`, `Object.keys(pipTypes)[0]`), which
   is HTTP. Easy to leave unchanged by accident — hit on Snip's `URL check`
   pip, which then couldn't wire to Safe Browsing API's REST/JSON `In`.
-  Options: no default (force a choice), default to the last-used type, or
-  highlight an unchanged default.
+  **User's call: user error, not a design problem** — the walkthrough said
+  REST/JSON and it was missed. Kept only as a trace; no change wanted.
 - **HTTP vs REST/JSON are fully incompatible types.** REST/JSON *is* HTTP, so
   an HTTP↔REST mismatch reads more like "wrong granularity" than "wrong
   protocol". Possible fix: pip-type compatibility/hierarchy (REST/JSON as a
