@@ -77,6 +77,22 @@ decisions or roadmap items:
   and once a real HTTP pip ("Redirect") sat beside it on the same side, the
   two were easy to confuse. Fix candidates: relabel the seed pip ("API"),
   and/or show the pip type in the pip's hover/label, not just its color.
+- **Boundaries: worked cleanly.** Draw → name → collapse → expand on the
+  Snip Container canvas round-tripped without issues.
+- **No save feedback.** Moved to the v1.1 list in [`ROADMAP.md`](ROADMAP.md).
+
+### Edge waypoints (bend points on relationships)
+
+Raised 2026-09-29. Double-click a relationship to add a waypoint along it,
+so a wire can be routed around nodes instead of always taking the default
+bezier between its two pips. Open questions: how a waypoint is moved
+(drag) and removed (double-click again? Delete while selected?); whether
+the wire stays a smooth curve through the points or becomes straight
+segments; what happens to waypoints when an endpoint node moves (keep
+absolute positions vs. shift proportionally); and how they behave through
+collapse/expand, where the relationship is rewired to an inherited pip.
+Implies a new optional field on `Relationship` (e.g. `waypoints: {x, y}[]`)
+and a `.glyph` format addition, but older files would load unchanged.
 
 ### Installable release build
 

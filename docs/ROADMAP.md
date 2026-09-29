@@ -26,6 +26,11 @@ launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
   wrong at that depth before relying on it.
 - pip-type layer affinity, so a transport-kind pip (HTTP, SQL) isn't offered
   as an option on a Component-layer definition and vice versa.
+- Visual save confirmation. Saving (button or Ctrl+S) currently gives no
+  feedback — the only way to tell it worked is to reopen the file. Add a
+  brief toast/status message on success (and a visible error on failure),
+  and consider an unsaved-changes marker next to the project name. Raised
+  2026-09-29 during the Snip test run.
 
 ## v1.2 — planned: Hephaestus Tier 1
 
