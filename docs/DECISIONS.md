@@ -71,6 +71,12 @@ decisions or roadmap items:
   interfaces) or whether they should ship with generic ones.
 - **Instance names come from definitions.** Two people on one canvas means
   two definitions. Motivates the "New node based on…" item above.
+- **Seed pip label contradicts its type.** API Service's inbound pip is
+  labeled "HTTP" but typed REST/JSON (`p-srv-http` in
+  `defaultLibrary.ts`). The walkthrough's own instructions echoed the label,
+  and once a real HTTP pip ("Redirect") sat beside it on the same side, the
+  two were easy to confuse. Fix candidates: relabel the seed pip ("API"),
+  and/or show the pip type in the pip's hover/label, not just its color.
 
 ### Installable release build
 
