@@ -127,22 +127,20 @@ Settled by the user (2026-09-29; still Open — not yet cleared to build):
   pips on their respective port nodes, even if that looks redundant;
   redundant pips are fine.
 
-Still open:
-- **Pips that are already bidirectional (or `none`) on the parent** — e.g.
-  the seed Database's `Events` pip. Candidate, consistent with "redundant
-  is fine": show such a pip on *both* port nodes. Awaiting confirmation.
-- **Inner wires when a parent pip changes.** If the parent's pip is
-  deleted or retyped, what happens to the inner wire on its port — deleted,
-  kept but flagged broken, or the edit is blocked?
-- **Conflict with v1.1's "pip-type layer affinity"** — explained to the
-  user, decision pending. Ports carry the parent's transport types (REST,
-  SQL, Queue) onto Component canvases, and `canConnect` requires an exact
-  type match, so whatever component wires to the Outbound node's SQL `DB`
-  pip must itself have a SQL pip. Hard affinity (transport types hidden
-  from Component-layer definitions) would make such ports unwireable.
-  Options: (a) drop affinity; (b) make it soft — affects the wizard's
-  default/ordering, never forbids; (c) keep it hard but let port pips
-  accept a mismatched type, i.e. the port "translates" Call → SQL.
+- **Bidirectional (and `none`) parent pips appear on both port nodes.**
+- **Deleting a parent pip never silently destroys inner work.** The pip
+  stays on the port node, marked as broken (drawn red or similar), and any
+  wire attached to it is kept in place and marked problematic too, so it
+  can be found and fixed by hand. *Assumed, not yet confirmed:* retyping a
+  parent pip into a type the inner wire no longer matches gets the same
+  broken-but-kept treatment.
+- **Pip-type layer affinity becomes soft** (option b of the three weighed:
+  drop it / soft / hard-with-translating-ports). The wizard defaults to and
+  lists first the types usual for the definition's layer, but any type can
+  still be picked — so edge components like a repository (SQL) or an API
+  client (REST) can wire to the transport-typed ports. The v1.1 roadmap
+  item is reworded to match.
+
 - Older `.glyph` files would get ports generated on load. The top-level
   canvas has nothing above it, so it has no ports itself — but every node
   on it (e.g. Snip) gets ports inside.

@@ -24,8 +24,12 @@ launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
 - Prove out the Code layer: decompose at least one File definition into
   Function/Class nodes on a real project, and see what the layer model gets
   wrong at that depth before relying on it.
-- pip-type layer affinity, so a transport-kind pip (HTTP, SQL) isn't offered
-  as an option on a Component-layer definition and vice versa.
+- Soft pip-type layer affinity: the definition wizard defaults to and lists
+  first the pip types usual for the definition's layer (transport types for
+  Containers, Call/Import for Components), but never hides the others —
+  edge components legitimately speak transport types, and the proposed
+  port nodes depend on it. See "Inbound / Outbound port nodes" in
+  [`DECISIONS.md`](DECISIONS.md).
 - Visual save confirmation. Saving (button or Ctrl+S) currently gives no
   feedback — the only way to tell it worked is to reopen the file. Add a
   brief toast/status message on success (and a visible error on failure),
