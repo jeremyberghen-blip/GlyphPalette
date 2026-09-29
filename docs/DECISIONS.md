@@ -33,6 +33,37 @@ no pips, so nothing can be wired on a fresh project until definitions are
 edited. Intended (forces deliberate interfaces) or should they ship with
 generic ones? Not slotted; on the Backlog.
 
+### Pockets: collapsed boundaries as same-layer folds
+
+Raised 2026-09-29 by the user while planning the collapse-layer fix. Two
+different things currently share one mechanism (a definition with a
+`canvasId`): **decomposition** — a node's interior, one layer down — and
+**grouping** — a collapsed boundary, which is only a fold at the *same*
+layer. Proposal: every layer has a "pocket" that collapsed nodes go into,
+while real nodes lead down to the next layer.
+
+Claude's feedback: agree with the distinction, but model it as a *kind of
+canvas*, not a new `Layer` value — layers are an ordered zoom scale, and a
+pocket isn't a step on it. Likely derived from the existing `expandable`
+flag on collapsed-boundary definitions rather than a new stored field.
+What the distinction buys:
+- Palette/layer display: a pocket shows its parent layer's palette and is
+  labeled as a collapsed group, not a deeper level.
+- Ports (v1.2): real interiors get ports *top-down* from the parent
+  definition (edit the parent to change them); a pocket's pips are derived
+  *bottom-up* from wires crossing the boundary (`pipMap`). The port rules
+  need a pocket variant.
+- Hephaestus export (v1.4): pockets are transparent — flattened away so
+  their contents belong to the pocket's parent. Real interiors are real
+  hierarchy (`dir`).
+- Palette: collapsed groups currently appear as placeable definitions
+  (Analytics showed up in Snip's Container palette); placing a second one
+  would share the canvas and silently alias its contents.
+
+Open: whether collapsed groups should be hidden from the palette; whether
+the v1.1 slice is just the layer fix + labeling, with ports/export parts
+riding along in v1.2/v1.4.
+
 ## Decided
 
 All cleared to build on 2026-09-29, when the user approved the post-test
@@ -60,12 +91,22 @@ the code. Claude's reasoning, agreed:
   get richer (v1.4): a free-text responsibility/notes field, key exported
   symbols as text.
 
-To settle during the build: keep `code` in the `Layer` type so old files
-(Snip.glyph has a Code canvas) still load, but stop offering it (likely),
-vs. remove it with a migration; what double-clicking a Component node does
-once there's no deeper layer (nothing, or a same-layer sub-component
-canvas). Today `nextLayer` clamps at `code`, so opening a Function opens
-another Code canvas.
+Build details settled 2026-09-29:
+- `code` stays in the `Layer` type so old files load; it's no longer
+  offered anywhere (wizard layer picker, new canvases). No further Code
+  layer support going forward.
+- Component is the deepest drawable layer, and **Component nodes can
+  contain Component-layer canvases** (e.g. a Module holding Files), so
+  nesting stays useful at the bottom and lines up with v1.3's `dir`/`file`
+  kinds. (`nextLayer` clamps at `component`.)
+- Existing Code canvases stay **fully editable** — kept, not supported.
+- Code seeds (Function, Class, Type / Interface) leave `SEED_LIBRARY`, and
+  are pruned from the persisted per-machine library if still unmodified.
+- Bundled fix: collapsing a boundary currently gives its inner canvas
+  `nextLayer(...)` — one layer too deep (Snip's Analytics interior is
+  marked Component while holding containers). A collapsed boundary's
+  interior keeps its parent's layer; affected files are repaired on load.
+  See "Pockets" under Open for the broader idea this raised.
 
 ### Duplicate and Permute (v1.1)
 
