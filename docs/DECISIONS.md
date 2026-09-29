@@ -130,17 +130,24 @@ removes the generic seed from that project's palette (see the friction log).
 Not the same as **Ctrl+C / Ctrl+V**, which copies *instances* that still
 share one definition (one name, one inner canvas).
 
-To settle during the build:
-- **Increment scheme.** Trailing number (`Service 2`)? For names ending in
-  punctuation, `generateSlug()` → `generateSlug2()` or `generateSlug() 2`?
-  Must respect unique names.
-- **Entry points.** Palette card button, right-click on a placed node,
-  a "Based on" dropdown in the wizard.
-- **Link back to the base.** Probably none — a clean break, like
-  copy-on-use (see [ADR 0004](decisions/0004-default-library-copy-on-use.md)).
-- **The base's inner canvas.** Copy, share, or start empty? Sharing would
-  silently alias the two; empty is safest; a deep copy is the most useful
-  but the most complex.
+Build details settled 2026-09-29:
+- **Naming:** a space then a number. `Link Service` → `Link Service 2`; a
+  name already ending in ` N` has that number incremented (`Worker 2` →
+  `Worker 3`). Shared with collapse's existing "Name 2" scheme.
+- **Duplicate:** hover button on each palette card; each click makes the
+  next copy immediately. Same icon, layers, pips; new id.
+- **Permute:** hover button on each palette card; opens the wizard with
+  every field identical to the subject **except the name, which is blank**
+  and focused, ready to type.
+- **Ctrl+D on selected nodes:** each selected node gets a duplicated
+  definition, and the new instances are placed **at the cursor**, keeping
+  their relative layout; wires between selected nodes come along, as with
+  Ctrl+V.
+- **Copies start with an empty interior** (Duplicate, Permute, and Ctrl+D).
+  Duplicating contents is a future feature (Backlog).
+- No link back to the base; pockets can't be duplicated; undoable.
+- **No right-click menu yet** — deliberately held until real use shows
+  where one is wanted.
 
 ### Library as a file: export, import, standard library (v1.1)
 

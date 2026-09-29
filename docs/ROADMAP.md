@@ -109,6 +109,11 @@ whistles. Not yet designed — see [`DECISIONS.md`](DECISIONS.md) § Open.
 
 Real ideas, not currently slated to a version:
 
+- **Duplicate with contents:** Duplicate / Permute / Ctrl+D copying the
+  base's inner canvas (deep copy, nested definitions included) instead of
+  starting empty.
+- **Right-click menus** — deliberately deferred until use reveals where
+  they're wanted.
 - **Installable release build** (`npm run tauri build` → Windows installers).
   Already configured and cheap; deliberately not before v2.0.
 - Whether the Context-layer seeds (`System`, `Person`) should ship with
