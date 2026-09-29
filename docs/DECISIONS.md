@@ -1,246 +1,248 @@
-# Open decisions
+# Decisions log
 
-This file holds ideas and decisions currently under discussion — not yet
-committed to a roadmap version, not yet built. Something moves out of here
-and into a numbered [ADR](decisions/) once it's actually decided and built;
-this file is only the holding pen before that point. If something is
-discussed and then dropped or superseded rather than built, it gets a brief
-trace here rather than being deleted silently, unless it was too slight to
-matter in the first place.
+Running notes on ideas and decisions, written as we go so a later session
+can recover *why*, not just *what*. Three zones:
+
+- **Open** — under discussion, not yet cleared to build.
+- **Decided** — the user has said to build it (dated when that happened),
+  slotted on [`ROADMAP.md`](ROADMAP.md), not yet built. Design questions
+  still listed under an entry are settled during the build.
+- **Record** — concluded discussions kept for reference.
+
+Once a Decided item is built, it leaves this file: model- or
+mechanism-level changes become a numbered [ADR](decisions/); smaller ones
+are covered by [`CHANGELOG.md`](CHANGELOG.md). Anything dropped or
+superseded gets a brief trace rather than silent deletion, unless it was
+too slight to matter.
 
 ## Open
 
 ### In-app AI chat window
 
 Raised 2026-09-02. A chat window inside Glyph Palette for discussing the
-current project directly with an AI — not yet scoped to a specific roadmap
-version. Specifics (what it can see/do, how it fits the canvas UI) haven't
-been worked out yet; deferred until the user is ready to design it in detail.
+current project directly with an AI. Tentatively slotted as v2.1
+(2026-09-29), explicitly liable to be pushed back — the user wants
+everything functional before bells and whistles. Specifics (what it can
+see/do, how it fits the canvas UI) haven't been worked out; to be designed
+when its turn comes.
 
-### Duplicating definitions: "Duplicate" and "Permute"
+### Should the Context-layer seeds ship with pips?
 
-Raised 2026-09-28, expanded 2026-09-29, both during the Snip test run. Two
-distinct operations, both wanted:
+Raised 2026-09-28 during the Snip test run. `System` and `Person` ship with
+no pips, so nothing can be wired on a fresh project until definitions are
+edited. Intended (forces deliberate interfaces) or should they ship with
+generic ones? Not slotted; on the Backlog.
 
-1. **Duplicate (with an incremented name).** One click makes a new,
-   independent definition identical to the source except for its name,
-   which is incremented automatically — for when several near-identical
-   nodes are needed quickly (Snip's Code layer needed three Function
-   definitions that differed only in name and a pip or two).
-2. **Permute** (the user's name for "new node based on…", 2026-09-29 —
-   it makes a permutation of the base node). The wizard opens pre-filled with the base
-   definition's name, icon, layers, and pips; the user edits before saving,
-   producing a new independent definition.
+## Decided
 
-Motivation for both: a node's display name comes from its definition, so
-every distinct thing on a canvas needs its own definition, and today each
-is built from scratch in **New Node** or by renaming a seed.
+All cleared to build on 2026-09-29, when the user approved the post-test
+build order. Versions refer to [`ROADMAP.md`](ROADMAP.md).
 
-Not the same as the existing **Ctrl+C / Ctrl+V**, which copies *instances*
-that still share one definition (and so one name and one inner canvas).
+### Retire the Code layer — Hephaestus owns it (v1.1)
 
-Open questions:
-- **Increment scheme.** Trailing number (`Service 2`, `Service 3`)? Where
-  does it go for names ending in punctuation, e.g. `generateSlug()` →
-  `generateSlug2()` or `generateSlug() 2`? Must respect unique names.
-- **Entry points.** Palette card button, right-click on a placed node
-  (duplicate the definition *and* swap/place an instance?), a "Based on"
-  dropdown in the wizard.
-- **Link back to the base.** Probably none — a clean break, like
-  copy-on-use (see [ADR 0004](decisions/0004-default-library-copy-on-use.md)).
-- **The base's inner canvas.** Copy it, share it, or start empty? Sharing
-  would silently alias the two; empty is safest; a deep copy is the most
-  useful but the most complex (nested definitions all the way down).
+The user decided on 2026-09-29 that the Code layer will not be drawn in GP;
+Hephaestus owns function-level structure entirely. Becomes an ADR amending
+[ADR 0003](decisions/0003-c4-layer-system.md) once built.
 
-### Definition library as a saveable, exportable file
-
-Raised 2026-09-28. The library should be a file the user can save, export,
-and presumably import/share. **Current state:** the default library already
-*is* a separate file — `%APPDATA%\glyph-palette\library.json`
-(`localStorage` in the browser preview), see `src/lib/library.ts` and
-[ADR 0004](decisions/0004-default-library-copy-on-use.md) — but it's
-per-machine and implicit: there's no UI to export it, import one, save it
-elsewhere, or switch between libraries. So the gap is the user-facing file
-workflow, not the storage split. Open questions: one active library or
-several stacked (e.g. a personal library + a team one); how import handles
-id/name collisions with the existing library; and whether pip types travel
-with it (they should — definitions reference them by id).
-
-### Snip test run — friction log
-
-Started 2026-09-28. A walkthrough recreating a URL shortener ("Snip": two
-people, a system, an external Safe Browsing API; then containers, components,
-and code) to stress GP end to end. Findings so far, not yet triaged into
-decisions or roadmap items:
-
-- **New pips silently default to HTTP.** The wizard's "add pip" picks the
-  first pip type (`DefinitionWizard.tsx`, `Object.keys(pipTypes)[0]`), which
-  is HTTP. Easy to leave unchanged by accident — hit on Snip's `URL check`
-  pip, which then couldn't wire to Safe Browsing API's REST/JSON `In`.
-  **User's call: user error, not a design problem** — the walkthrough said
-  REST/JSON and it was missed. Kept only as a trace; no change wanted.
-- **HTTP vs REST/JSON are fully incompatible types.** REST/JSON *is* HTTP, so
-  an HTTP↔REST mismatch reads more like "wrong granularity" than "wrong
-  protocol". Possible fix: pip-type compatibility/hierarchy (REST/JSON as a
-  subtype of HTTP, connectable to it). Related to the v1.1 pip-type layer
-  affinity item in [`ROADMAP.md`](ROADMAP.md).
-- **Context-layer seeds have no pips.** `System` and `Person` ship with
-  none, so nothing can be wired on a fresh project until definitions are
-  edited. Worth deciding whether that's intended (force deliberate
-  interfaces) or whether they should ship with generic ones.
-- **Instance names come from definitions.** Two people on one canvas means
-  two definitions. Motivates the duplicating-definitions item above.
-- **Seed pip label contradicts its type.** API Service's inbound pip is
-  labeled "HTTP" but typed REST/JSON (`p-srv-http` in
-  `defaultLibrary.ts`). The walkthrough's own instructions echoed the label,
-  and once a real HTTP pip ("Redirect") sat beside it on the same side, the
-  two were easy to confuse. Fix candidates: relabel the seed pip ("API"),
-  and/or show the pip type in the pip's hover/label, not just its color.
-- **Boundaries: worked cleanly.** Draw → name → collapse → expand on the
-  Snip Container canvas round-tripped without issues.
-- **No save feedback.** Moved to the v1.1 list in [`ROADMAP.md`](ROADMAP.md).
-- **Inner canvases can't show their surroundings.** Inside Snip API
-  (Component layer), neither the people nor Links DB are in the palette —
-  layer filtering hides them — so Link Repository has nothing to wire its
-  database access to, and nothing shows who calls the controller. Nothing
-  ties Snip API's outer pips to its interior either. Proposed answer:
-  "Inbound / Outbound port nodes" below.
-- **Renaming a seed removes the generic from the project's palette.**
-  Confirmed from screenshots: after renaming Database → Links DB, Worker →
-  Click Counter, Controller/Service/Repository/Client → the Snip
-  components, the generic entries are gone from this project's palette
-  (the project copy shadows the library entry by id). So a second generic
-  Database can't be placed in Snip without recreating it. Duplicate/Permute
-  would remove the reason to rename seeds at all.
-- **Creating near-identical definitions one by one is tedious** — confirmed
-  on the Code layer (three functions). Duplicate/Permute above.
-- **Truncated names confirmed** ("Safe Browsing …" on the Component
-  canvas). Tooltip item is on the v1.1 list.
-- **Nesting below Code gives another Code canvas.** Double-clicking a
-  Function opens a new canvas that is still Code layer — `nextLayer`
-  clamps at `code` rather than refusing. Works as coded; whether it
-  *should* is folded into "Code layer: GP or Hephaestus?" below.
-
-### Inbound / Outbound port nodes
-
-Raised 2026-09-29 by the user during the Snip test run; strongly favored.
-Every inner canvas gets an **Inbound** node and an **Outbound** node that
-stand for "the edge of the thing we're inside". Their pips mirror the
-parent definition's pips with direction flipped: each inbound pip on the
-parent (e.g. Snip API's `API`, REST/JSON in) appears as an *outbound* pip on
-the Inbound node, ready to wire to whichever inner component handles it;
-each outbound parent pip appears as an *inbound* pip on the Outbound node.
-Where those connections lead beyond the parent is deliberately not shown.
-
-Why it fits GP well:
-- **It's the only coherent answer given shared canvases.** A definition's
-  inner canvas is shared by every instance of it, so "where does this edge
-  go outside?" has no single answer — two instances can be wired
-  differently. The ports only describe the definition's own interface,
-  which *is* shared.
-- **It mirrors collapse.** Boundary collapse already derives outer pips
-  from inner wires and records the mapping in `pipMap`; ports are the same
-  mapping seen from the inside, and could plausibly back both.
-- **It enables lint.** An unwired port pip means "this interface isn't
-  implemented inside" — a natural check for the Backlog's in-GP lint item,
-  and exactly the interface information Hephaestus needs.
-- It removes most reasons to allow container-layer nodes (Database,
-  External System) on component canvases just for context.
-
-Settled by the user (2026-09-29; still Open — not yet cleared to build):
-- **Ports belong to the macro node's definition.** Inside any node with an
-  interior (a Container, a Component, or a Context-layer System like
-  Snip), the Inbound and Outbound nodes are generated automatically from
-  that definition's pips and conform to them. They're read-only from the
-  inside: to change a port, go up a level and edit the parent definition;
-  the ports inherit the change.
-- **Exactly two port nodes per inner canvas** — one Inbound, one Outbound —
-  each the sum of all connections in that direction, agnostic of where
-  they lead.
-- **Never merge directions.** An inbound and an outbound pip stay separate
-  pips on their respective port nodes, even if that looks redundant;
-  redundant pips are fine.
-
-- **Bidirectional (and `none`) parent pips appear on both port nodes.**
-- **Deleting a parent pip never silently destroys inner work.** The pip
-  stays on the port node, marked as broken (drawn red or similar), and any
-  wire attached to it is kept in place and marked problematic too, so it
-  can be found and fixed by hand. *Assumed, not yet confirmed:* retyping a
-  parent pip into a type the inner wire no longer matches gets the same
-  broken-but-kept treatment.
-- **Pip-type layer affinity becomes soft** (option b of the three weighed:
-  drop it / soft / hard-with-translating-ports). The wizard defaults to and
-  lists first the types usual for the definition's layer, but any type can
-  still be picked — so edge components like a repository (SQL) or an API
-  client (REST) can wire to the transport-typed ports. The v1.1 roadmap
-  item is reworded to match.
-
-- Older `.glyph` files would get ports generated on load. The top-level
-  canvas has nothing above it, so it has no ports itself — but every node
-  on it (e.g. Snip) gets ports inside.
-
-### Code layer: GP or Hephaestus?
-
-**Decided 2026-09-29 (user): the Code layer will not be drawn in GP;
-Hephaestus owns function-level structure entirely.** Implementation
-pending — becomes an ADR (amending [ADR 0003](decisions/0003-c4-layer-system.md))
-once built. Discussion kept below for the reasoning.
-
-Raised 2026-09-29 by the user after drawing Snip's Code layer (three
-functions and a type inside Link Service): at function level, drawing
-starts to feel as costly as just writing the code. Proposal: stop GP's
-detailed modeling at the Component layer and leave function-level
-structure to Hephaestus, which will draw on a corpus of the user's work and
-tools specialized for code generation.
-
-Claude's recommendation (2026-09-29): yes, with a contract at the edge.
+Background: after drawing Snip's Code layer (three functions and a type
+inside Link Service), drawing at function level felt as costly as writing
+the code. Claude's reasoning, agreed:
 - GP earns its keep where decisions are architectural and expensive to
   reverse — what exists, what talks to what, over which interface. At
   function level, code is already the best notation; a box per function
   says less than its signature, and goes stale the day the code changes.
 - That split plays to both sides: people are better at keeping a system's
   shape coherent; LLMs are good at filling in a well-specified box.
-- "Room to breathe" should be *bounded*: free inside a component,
-  constrained by its interface. The proposed port nodes above are exactly
-  that boundary, and v1.3's interface names on `call`/`import` edges would
-  carry the signatures Hephaestus needs.
-- So the Component layer (File-kind nodes especially) likely needs to get
-  a little richer — e.g. a free-text responsibility/notes field, key
-  exported symbols as text — to compensate for the boxes no longer drawn.
+- The LLM's freedom is *bounded*: free inside a component, constrained by
+  its interface — the port nodes (v1.2) and the interface names on
+  `call`/`import` edges (v1.4).
+- To compensate for the boxes no longer drawn, Component-layer definitions
+  get richer (v1.4): a free-text responsibility/notes field, key exported
+  symbols as text.
 
-Remaining implementation questions: keep `code` in the `Layer` type so
-old files (Snip.glyph has a Code canvas) still load, but stop offering it
-(likely), or remove it with a migration; what double-clicking a Component
-node does once there's no deeper layer (nothing, or a same-layer
-sub-component canvas); what replaces the v1.1 "prove out the
-Code layer" item in [`ROADMAP.md`](ROADMAP.md) (currently marked as under
-question); whether to block entering a definition's interior at the
-deepest layer.
+To settle during the build: keep `code` in the `Layer` type so old files
+(Snip.glyph has a Code canvas) still load, but stop offering it (likely),
+vs. remove it with a migration; what double-clicking a Component node does
+once there's no deeper layer (nothing, or a same-layer sub-component
+canvas). Today `nextLayer` clamps at `code`, so opening a Function opens
+another Code canvas.
 
-### Edge waypoints (bend points on relationships)
+### Duplicate and Permute (v1.1)
 
-Raised 2026-09-29. Double-click a relationship to add a waypoint along it,
-so a wire can be routed around nodes instead of always taking the default
-bezier between its two pips. Open questions: how a waypoint is moved
-(drag) and removed (double-click again? Delete while selected?); whether
-the wire stays a smooth curve through the points or becomes straight
-segments; what happens to waypoints when an endpoint node moves (keep
-absolute positions vs. shift proportionally); and how they behave through
-collapse/expand, where the relationship is rewired to an inherited pip.
-Implies a new optional field on `Relationship` (e.g. `waypoints: {x, y}[]`)
-and a `.glyph` format addition, but older files would load unchanged.
+Raised 2026-09-28, expanded 2026-09-29. Two distinct operations:
 
-### Installable release build
+1. **Duplicate (with an incremented name).** One click makes a new,
+   independent definition identical to the source except for its name,
+   which is incremented automatically.
+2. **Permute** — the user's name for "new node based on…" (it makes a
+   permutation of the base node). The wizard opens pre-filled with the
+   base definition's name, icon, layers, and pips; the user edits before
+   saving, producing a new independent definition.
 
-Raised 2026-09-29. GP currently only runs in dev mode (`launch.bat` →
-`npm run tauri dev`): a Vite dev server on `localhost:1420` serves the UI
-to a debug Rust binary, so closing the console kills the app. A release
-build (`npm run tauri build`) bundles the UI into the executable and emits
-Windows installers (NSIS `setup.exe` and MSI) under
-`src-tauri/target/release/bundle/` — `tauri.conf.json` is already configured
-for it (`identifier`, `bundle.targets: "all"`, icons). Open questions: code
-signing (unsigned installers trigger a SmartScreen "unknown publisher"
-warning — fine for personal use, a real cost for distribution); whether to
-add Tauri's updater plugin; and keeping dev mode for development alongside
-an installed copy (both read the same per-machine library, since it lives in
-the app-identifier data dir).
+Motivation: a node's display name comes from its definition, so every
+distinct thing on a canvas needs its own definition, and today each is
+built from scratch in **New Node** or by renaming a seed — which also
+removes the generic seed from that project's palette (see the friction log).
+Not the same as **Ctrl+C / Ctrl+V**, which copies *instances* that still
+share one definition (one name, one inner canvas).
+
+To settle during the build:
+- **Increment scheme.** Trailing number (`Service 2`)? For names ending in
+  punctuation, `generateSlug()` → `generateSlug2()` or `generateSlug() 2`?
+  Must respect unique names.
+- **Entry points.** Palette card button, right-click on a placed node,
+  a "Based on" dropdown in the wizard.
+- **Link back to the base.** Probably none — a clean break, like
+  copy-on-use (see [ADR 0004](decisions/0004-default-library-copy-on-use.md)).
+- **The base's inner canvas.** Copy, share, or start empty? Sharing would
+  silently alias the two; empty is safest; a deep copy is the most useful
+  but the most complex.
+
+### Library as a file: export, import, standard library (v1.1)
+
+Raised 2026-09-28; scope set 2026-09-29. The default library already *is*
+a separate per-machine file — `%APPDATA%\glyph-palette\library.json`
+(`localStorage` in the browser preview), see `src/lib/library.ts` and
+[ADR 0004](decisions/0004-default-library-copy-on-use.md) — but it's
+implicit: no UI to export it, import one, or save it elsewhere. Scope:
+- Export and import the library as a file.
+- A **standard library file** containing all the seeds (minus the retired
+  Code-layer ones), in the same format as an export — so the seeds can be
+  restored or shared like any other library.
+
+To settle during the build: one active library or several stacked (e.g.
+personal + team); how import handles id/name collisions; pip types travel
+with the library (they must — definitions reference them by id); whether
+`SEED_LIBRARY` moves from TypeScript into that standard file.
+
+### Edge waypoints (v1.1)
+
+Raised 2026-09-29. Double-click a relationship to add a waypoint (bend
+point), so a wire can be routed around nodes instead of always taking the
+default bezier between its two pips. Implies an optional field on
+`Relationship` (e.g. `waypoints: {x, y}[]`); older files load unchanged.
+
+To settle during the build: moving (drag) and removing (double-click
+again? Delete while selected?) a waypoint; smooth curve through the points
+vs. straight segments; what happens when an endpoint node moves (absolute
+positions vs. shift proportionally); behavior through collapse/expand,
+where the relationship is rewired to an inherited pip.
+
+### Soft pip-type layer affinity (v1.1)
+
+Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
+hard-with-translating-ports). The definition wizard defaults to and lists
+first the pip types usual for the definition's layer (transport types for
+Containers, Call/Import for Components), but any type can still be picked.
+Hard affinity would have broken port nodes: ports carry the parent's
+transport types onto Component canvases, and `canConnect` requires an
+exact type match, so edge components (a repository speaking SQL, an API
+client speaking REST) must be allowed transport-typed pips.
+
+### Inbound / Outbound port nodes (v1.2)
+
+Raised 2026-09-29 by the user during the Snip test run. Every inner canvas
+gets an **Inbound** node and an **Outbound** node that stand for "the edge
+of the thing we're inside". Their pips mirror the parent definition's pips
+with direction flipped: each inbound pip on the parent (e.g. Snip API's
+`API`, REST/JSON in) appears as an *outbound* pip on the Inbound node,
+ready to wire to whichever inner component handles it; each outbound parent
+pip appears as an *inbound* pip on the Outbound node. Where those
+connections lead beyond the parent is deliberately not shown.
+
+Why it fits GP:
+- **It's the only coherent answer given shared canvases.** A definition's
+  inner canvas is shared by every instance of it, so "where does this edge
+  go outside?" has no single answer. The ports only describe the
+  definition's own interface, which *is* shared.
+- **It mirrors collapse.** Boundary collapse already derives outer pips
+  from inner wires and records the mapping in `pipMap`; ports are the same
+  mapping seen from the inside, and could plausibly back both.
+- **It enables lint.** An unwired port pip means "this interface isn't
+  implemented inside" — exactly the interface information Hephaestus needs.
+- It removes most reasons to allow container-layer nodes on component
+  canvases just for context.
+
+Rules set by the user (2026-09-29):
+- **Ports belong to the parent node's definition.** Inside any node with an
+  interior (Container, Component, or a Context-layer System like Snip), the
+  Inbound and Outbound nodes are generated automatically from that
+  definition's pips. Read-only from the inside: to change a port, go up a
+  level and edit the parent definition; the ports inherit the change. The
+  top-level canvas has nothing above it, so has no ports itself — but every
+  node on it gets ports inside.
+- **Exactly two port nodes per inner canvas**, one Inbound and one
+  Outbound, each the sum of all connections in that direction.
+- **Never merge directions.** Inbound and outbound pips stay separate, even
+  if redundant; redundant pips are fine.
+- **Bidirectional (and `none`) parent pips appear on both port nodes.**
+- **Deleting a parent pip never silently destroys inner work.** The pip
+  stays on the port node, marked broken (red or similar), and any wire
+  attached to it stays in place, marked problematic, so it can be found and
+  fixed by hand.
+- Older `.glyph` files get ports generated on load.
+
+*Assumed, not yet confirmed by the user:* retyping a parent pip into a type
+the inner wire no longer matches gets the same broken-but-kept treatment.
+
+### HTTP ↔ REST/JSON compatibility (v1.2)
+
+Raised 2026-09-28 during the Snip test run; slotted 2026-09-29. REST/JSON
+*is* HTTP, so today's hard incompatibility between them reads as "wrong
+granularity", not "wrong protocol". Direction: pip-type compatibility or
+hierarchy, so a subtype (REST/JSON) can connect to its parent protocol
+(HTTP). To settle during the build: a general parent-type field on
+`PipType` vs. an explicit compatibility list; whether the wire takes the
+more specific or the more general type; how it interacts with port nodes.
+
+### Installable release build — deferred until after v2.0
+
+Raised 2026-09-29; the user decided the same day not to pursue it before
+v2.0 — knowing it's possible and cheap is enough for now. On the Backlog.
+
+Notes for when it comes up: GP currently only runs in dev mode
+(`launch.bat` → `npm run tauri dev`), where a Vite dev server on
+`localhost:1420` serves the UI to a debug Rust binary, so closing the
+console kills the app. `npm run tauri build` bundles the UI into the
+executable and emits Windows installers (NSIS `setup.exe` and MSI) under
+`src-tauri/target/release/bundle/`; `tauri.conf.json` is already
+configured for it. Open at that point: code signing (unsigned installers
+trigger a SmartScreen "unknown publisher" warning), Tauri's updater
+plugin, and dev and installed copies sharing one per-machine library.
+
+## Record
+
+### Snip test run — friction log (concluded 2026-09-29)
+
+A walkthrough recreating a URL shortener ("Snip": two people, a system, an
+external Safe Browsing API; then containers, components, and code) to
+stress GP end to end, 2026-09-28 → 2026-09-29. Every finding, and where it
+went:
+
+- **New pips silently default to HTTP** (`Object.keys(pipTypes)[0]` in
+  `DefinitionWizard.tsx`). User's call: user error, not a design problem.
+  No change.
+- **HTTP vs REST/JSON fully incompatible** → Decided, v1.2.
+- **Context-layer seeds have no pips** → Open.
+- **Instance names come from definitions** (two people = two
+  definitions) → Duplicate and Permute, v1.1.
+- **Seed pip label contradicts its type** (API Service's inbound pip
+  labeled "HTTP", typed REST/JSON) → relabel on the v1.1 list; pip type on
+  hover folded into the tooltip item.
+- **Boundaries worked cleanly** — draw → name → collapse → expand
+  round-tripped without issues.
+- **No save feedback** → v1.1.
+- **Inner canvases can't show their surroundings** (no people or Links DB
+  on the Component canvas, nothing tying Snip API's outer pips to its
+  interior) → port nodes, v1.2.
+- **Renaming a seed removes the generic from the project's palette** (the
+  project copy shadows the library entry by id) → Duplicate and Permute
+  remove the reason to rename seeds, v1.1.
+- **Creating near-identical definitions one by one is tedious** → Duplicate
+  and Permute, v1.1.
+- **Truncated names** ("Safe Browsing …") → tooltip, v1.1.
+- **Nesting below Code gives another Code canvas** → moot once the Code
+  layer is retired, v1.1.
+- Also raised during the run, not friction: drag-to-place from the palette
+  (v1.1), edge waypoints (v1.1), library export/import (v1.1), installable
+  build (deferred), Code layer handed to Hephaestus (v1.1).

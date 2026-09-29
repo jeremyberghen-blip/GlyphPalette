@@ -6,6 +6,12 @@ plans so they don't only live in conversation. Move items between versions,
 into Backlog, or out entirely as things change; that's the point of writing
 it down instead of remembering it.
 
+Versions are themed releases, not one-feature-per-version: each bundles
+related work, and the SemVer bump reflects the most significant change in
+it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
+re-planned 2026-09-29 after the Snip test run; the reasoning and design
+detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
+
 ## v1.0.0 — current
 
 The full node/boundary/relationship model, a C4 layer system (Context →
@@ -15,37 +21,45 @@ persistence (`.glyph` save/load, undo, copy/paste, PNG export), and a dev
 launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
 [`decisions/`](decisions/) for how it got here.
 
-## v1.1 — planned: GP polish
+## v1.1 — planned: foundation, polish, library
 
-- Show the active layer in the breadcrumb trail and nav tree (currently only
-  the library panel header shows it).
+Do first:
+- **Test harness.** GP has no tests yet. Add Vitest, a smoke test (the app's
+  store initializes, a project serializes and reloads), and unit tests for
+  the existing pure logic (`canConnect`, `persist.ts` migrations). Every
+  later item's logic gets its tests in the same pass.
+
+Then, in any order:
+- **Retire the Code layer from the UI.** Hephaestus owns function-level
+  structure. Component becomes the deepest drawable layer; Code seeds leave
+  the default library; files with Code canvases still load.
+- **Duplicate and Permute** for definitions (duplicate with an incremented
+  name; new definition pre-filled from an existing one).
+- **Library as a file:** export and import the definition library, and ship
+  a standard library file containing all the seeds.
+- **Edge waypoints:** double-click a wire to add a bend point.
+- **Soft pip-type layer affinity:** the definition wizard defaults to and
+  lists first the pip types usual for the definition's layer, but never
+  hides the others.
+- **Visual save confirmation:** success/failure feedback on save; consider
+  an unsaved-changes marker.
+- **Full-name tooltip on nodes** (long names are truncated); a natural place
+  to also show pip label + type.
+- **Drag-to-place from the palette**, alongside click-then-click placement.
+- **Relabel the seed API Service pip** labeled "HTTP" but typed REST/JSON.
+- Show the active layer in the breadcrumb trail and nav tree.
 - Chase down the harmless Konva `drawImage` console warning (see
-  `ARCHITECTURE.md` § Known rough edges) so dev console output is clean.
-- Retire the Code layer from the UI (decided 2026-09-29 — Hephaestus owns
-  function-level structure; see "Code layer: GP or Hephaestus?" in
-  [`DECISIONS.md`](DECISIONS.md)). Component becomes the deepest drawable
-  layer; Code seeds leave the default library; files with Code canvases
-  still load.
-- Soft pip-type layer affinity: the definition wizard defaults to and lists
-  first the pip types usual for the definition's layer (transport types for
-  Containers, Call/Import for Components), but never hides the others —
-  edge components legitimately speak transport types, and the proposed
-  port nodes depend on it. See "Inbound / Outbound port nodes" in
-  [`DECISIONS.md`](DECISIONS.md).
-- Visual save confirmation. Saving (button or Ctrl+S) currently gives no
-  feedback — the only way to tell it worked is to reopen the file. Add a
-  brief toast/status message on success (and a visible error on failure),
-  and consider an unsaved-changes marker next to the project name. Raised
-  2026-09-29 during the Snip test run.
-- Full-name tooltip on nodes. Long definition names are truncated on the
-  node with no way to read the rest. Show the full name on hover (a natural
-  place to also show pip label + type, see the Snip friction log in
-  [`DECISIONS.md`](DECISIONS.md)). Raised 2026-09-29.
-- Drag-to-place from the palette: drag a definition card onto the canvas
-  and drop it where it should go, alongside the existing click-card-then-
-  click-canvas placement. Raised 2026-09-29.
+  `ARCHITECTURE.md` § Known rough edges).
 
-## v1.2 — planned: Hephaestus Tier 1
+## v1.2 — planned: port nodes and connection rules
+
+- **Inbound / Outbound port nodes** on every inner canvas, generated from
+  the parent definition's pips; broken-pip and broken-wire marking when the
+  parent changes. Old files get ports on load.
+- **HTTP ↔ REST/JSON compatibility:** pip-type compatibility so a subtype
+  (REST/JSON) can connect to its parent protocol (HTTP).
+
+## v1.3 — planned: Hephaestus Tier 1
 
 From `HEPHAESTUS-INTEGRATION.md`'s tiered plan, the changes required before
 GP can export anything Hephaestus can consume:
@@ -57,11 +71,13 @@ GP can export anything Hephaestus can consume:
   file-kind definitions; per-node `path` override for non-1:1 node↔file
   mappings.
 
-## v1.3 — planned: Hephaestus Tier 2
+## v1.4 — planned: Hephaestus Tier 2
 
 - Edge `kind` (`transport | import | call`) on `PipType`, inherited by a
   relationship from its pip type.
 - Interface names (symbol labels) carried on `import`/`call` edges.
+- **Richer Component-layer definitions** to replace the undrawn Code layer:
+  a free-text responsibility/notes field and key exported symbols as text.
 - The `architecture.json` export itself: flat node list + flat edge list,
   `parent` pointers reconstructing the tree, per `HEPHAESTUS-INTEGRATION.md`.
 
@@ -76,22 +92,34 @@ GP can export anything Hephaestus can consume:
   write-everything behavior once a real cross-project workflow exists to
   stress it.
 
+## v2.1 — tentative: in-app AI chat
+
+A chat window for discussing the open project with an AI. Tentative and
+liable to be pushed back: everything functional comes before bells and
+whistles. Not yet designed — see [`DECISIONS.md`](DECISIONS.md) § Open.
+
 ## Backlog — unscheduled
 
 Real ideas, not currently slated to a version:
 
+- **Installable release build** (`npm run tauri build` → Windows installers).
+  Already configured and cheap; deliberately not before v2.0.
+- Whether the Context-layer seeds (`System`, `Person`) should ship with
+  generic pips — see [`DECISIONS.md`](DECISIONS.md) § Open.
 - Persistent user library promotion UI beyond the single "save to default
   library" button (browsing/editing the library outside a project context).
 - In-GP lint: buildable node with no path, import cycle, a buildable subtree
   reachable by two instance paths (see `HEPHAESTUS-INTEGRATION.md`'s edge
-  cases).
+  cases), and unwired port pips once v1.2 lands.
 - Cross-language seams: a `kind: "wire"` edge for e.g. a Python service ↔ TS
   frontend boundary, where the contract is a wire format rather than a
   hand-drawn interface.
-- `call` edges within a file — decide whether they become a generated stub's
-  internal structure verbatim, or just hints, once the Code layer is proven.
 - Cosmetic: the npm package (`glyph-scaffold`) and Cargo crate
   (`glyph_scaffold_lib`) still carry the Tauri template's scaffold name
   rather than `glyph-palette`. Renaming the Cargo side touches the binary
   name and crate references in `src-tauri/src/`; low priority, do it in a
   quiet moment rather than alongside a feature change.
+
+Dropped: *`call` edges within a file — verbatim stub structure or hints?*
+Moot since 2026-09-29: GP no longer draws inside files; Hephaestus owns
+that level.

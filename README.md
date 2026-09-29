@@ -22,8 +22,9 @@ Manually: `npm install`, then `npm run tauri dev`.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the data model, module
   map, and persistence design.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned and unscheduled future work.
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — ideas currently under
-  discussion, not yet built.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — ideas under discussion
+  (Open), approved but not yet built (Decided), and concluded notes
+  (Record).
 - [`docs/decisions/`](docs/decisions/) — architecture decision records: why
   things are shaped the way they are, once decided.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — version history.
