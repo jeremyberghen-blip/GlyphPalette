@@ -33,37 +33,6 @@ no pips, so nothing can be wired on a fresh project until definitions are
 edited. Intended (forces deliberate interfaces) or should they ship with
 generic ones? Not slotted; on the Backlog.
 
-### Pockets: collapsed boundaries as same-layer folds
-
-Raised 2026-09-29 by the user while planning the collapse-layer fix. Two
-different things currently share one mechanism (a definition with a
-`canvasId`): **decomposition** — a node's interior, one layer down — and
-**grouping** — a collapsed boundary, which is only a fold at the *same*
-layer. Proposal: every layer has a "pocket" that collapsed nodes go into,
-while real nodes lead down to the next layer.
-
-Claude's feedback: agree with the distinction, but model it as a *kind of
-canvas*, not a new `Layer` value — layers are an ordered zoom scale, and a
-pocket isn't a step on it. Likely derived from the existing `expandable`
-flag on collapsed-boundary definitions rather than a new stored field.
-What the distinction buys:
-- Palette/layer display: a pocket shows its parent layer's palette and is
-  labeled as a collapsed group, not a deeper level.
-- Ports (v1.2): real interiors get ports *top-down* from the parent
-  definition (edit the parent to change them); a pocket's pips are derived
-  *bottom-up* from wires crossing the boundary (`pipMap`). The port rules
-  need a pocket variant.
-- Hephaestus export (v1.4): pockets are transparent — flattened away so
-  their contents belong to the pocket's parent. Real interiors are real
-  hierarchy (`dir`).
-- Palette: collapsed groups currently appear as placeable definitions
-  (Analytics showed up in Snip's Container palette); placing a second one
-  would share the canvas and silently alias its contents.
-
-Open: whether collapsed groups should be hidden from the palette; whether
-the v1.1 slice is just the layer fix + labeling, with ports/export parts
-riding along in v1.2/v1.4.
-
 ## Decided
 
 All cleared to build on 2026-09-29, when the user approved the post-test
@@ -107,6 +76,40 @@ Build details settled 2026-09-29:
   marked Component while holding containers). A collapsed boundary's
   interior keeps its parent's layer; affected files are repaired on load.
   See "Pockets" under Open for the broader idea this raised.
+
+### Pockets: collapsed boundaries as same-layer folds (v1.1, v1.2, v1.4)
+
+Raised and decided 2026-09-29 (user) while planning the collapse-layer fix. Two
+different things currently share one mechanism (a definition with a
+`canvasId`): **decomposition** — a node's interior, one layer down — and
+**grouping** — a collapsed boundary, which is only a fold at the *same*
+layer. Proposal: every layer has a "pocket" that collapsed nodes go into,
+while real nodes lead down to the next layer.
+
+Claude's feedback: agree with the distinction, but model it as a *kind of
+canvas*, not a new `Layer` value — layers are an ordered zoom scale, and a
+pocket isn't a step on it. Likely derived from the existing `expandable`
+flag on collapsed-boundary definitions rather than a new stored field.
+What the distinction buys:
+- Palette/layer display: a pocket shows its parent layer's palette and is
+  labeled as a collapsed group, not a deeper level.
+- Ports (v1.2): real interiors get ports *top-down* from the parent
+  definition (edit the parent to change them); a pocket's pips are derived
+  *bottom-up* from wires crossing the boundary (`pipMap`). The port rules
+  need a pocket variant.
+- Hephaestus export (v1.4): pockets are transparent — flattened away so
+  their contents belong to the pocket's parent. Real interiors are real
+  hierarchy (`dir`).
+- Palette: collapsed groups currently appear as placeable definitions
+  (Analytics showed up in Snip's Container palette); placing a second one
+  would share the canvas and silently alias its contents.
+
+Decided 2026-09-29: modeled as a canvas kind at the parent's layer (not a
+new `Layer`). **v1.1 slice:** pockets keep their parent's layer (bug fix +
+on-load repair), are labeled as collapsed groups in the palette header and
+navigation, and collapsed groups are **hidden from the palette**. Pocket
+port rules land with port nodes (v1.2); pocket flattening lands with the
+`architecture.json` export (v1.4).
 
 ### Duplicate and Permute (v1.1)
 

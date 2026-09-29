@@ -33,6 +33,10 @@ Then, in any order:
 - **Retire the Code layer from the UI.** Hephaestus owns function-level
   structure. Component becomes the deepest drawable layer; Code seeds leave
   the default library; files with Code canvases still load.
+- **Pockets:** a collapsed boundary's interior is a same-layer fold, not a
+  deeper level — fixes collapse assigning it the next layer down (with
+  on-load repair), labels pockets as collapsed groups, and hides collapsed
+  groups from the palette.
 - **Duplicate and Permute** for definitions (duplicate with an incremented
   name; new definition pre-filled from an existing one).
 - **Library as a file:** export and import the definition library, and ship
@@ -56,6 +60,8 @@ Then, in any order:
 - **Inbound / Outbound port nodes** on every inner canvas, generated from
   the parent definition's pips; broken-pip and broken-wire marking when the
   parent changes. Old files get ports on load.
+- Pocket variant of the port rules: a pocket's ports derive bottom-up
+  from the wires that crossed the boundary, not from a parent definition.
 - **HTTP ↔ REST/JSON compatibility:** pip-type compatibility so a subtype
   (REST/JSON) can connect to its parent protocol (HTTP).
 
@@ -80,6 +86,7 @@ GP can export anything Hephaestus can consume:
   a free-text responsibility/notes field and key exported symbols as text.
 - The `architecture.json` export itself: flat node list + flat edge list,
   `parent` pointers reconstructing the tree, per `HEPHAESTUS-INTEGRATION.md`.
+  Pockets are flattened away: their contents belong to the pocket's parent.
 
 ## v2.0 — future: first real slice
 
