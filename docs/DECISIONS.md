@@ -17,21 +17,39 @@ current project directly with an AI — not yet scoped to a specific roadmap
 version. Specifics (what it can see/do, how it fits the canvas UI) haven't
 been worked out yet; deferred until the user is ready to design it in detail.
 
-### "New node based on…" (definition templating)
+### Duplicating definitions: "duplicate + increment" and "new node based on…"
 
-Raised 2026-09-28, during the Snip test run. An option to create a new
-definition *based on* an existing one: the wizard opens pre-filled with the
-base definition's name, icon, layers, and pips, and saving produces a new,
-independent definition rather than editing the original. Motivation: because
-a node's display name comes from its definition, every distinct thing on a
-canvas (two people, two services) needs its own definition, and today each
-one is built from scratch in **New Node** even when it's 90% a copy of a seed
-entry. Open questions: entry point (palette card button, right-click on a
-placed node, or a "Based on" dropdown in the wizard); whether the copy keeps
-any link back to its base (probably not — copy-on-use elsewhere is a clean
-break, see [ADR 0004](decisions/0004-default-library-copy-on-use.md)); and
-whether the base's inner canvas is copied, shared, or left empty (probably
-empty — sharing would silently alias the two).
+Raised 2026-09-28, expanded 2026-09-29, both during the Snip test run. Two
+distinct operations, both wanted:
+
+1. **Duplicate (with an incremented name).** One click makes a new,
+   independent definition identical to the source except for its name,
+   which is incremented automatically — for when several near-identical
+   nodes are needed quickly (Snip's Code layer needed three Function
+   definitions that differed only in name and a pip or two).
+2. **New node based on…** The wizard opens pre-filled with the base
+   definition's name, icon, layers, and pips; the user edits before saving,
+   producing a new independent definition.
+
+Motivation for both: a node's display name comes from its definition, so
+every distinct thing on a canvas needs its own definition, and today each
+is built from scratch in **New Node** or by renaming a seed.
+
+Not the same as the existing **Ctrl+C / Ctrl+V**, which copies *instances*
+that still share one definition (and so one name and one inner canvas).
+
+Open questions:
+- **Increment scheme.** Trailing number (`Service 2`, `Service 3`)? Where
+  does it go for names ending in punctuation, e.g. `generateSlug()` →
+  `generateSlug2()` or `generateSlug() 2`? Must respect unique names.
+- **Entry points.** Palette card button, right-click on a placed node
+  (duplicate the definition *and* swap/place an instance?), a "Based on"
+  dropdown in the wizard.
+- **Link back to the base.** Probably none — a clean break, like
+  copy-on-use (see [ADR 0004](decisions/0004-default-library-copy-on-use.md)).
+- **The base's inner canvas.** Copy it, share it, or start empty? Sharing
+  would silently alias the two; empty is safest; a deep copy is the most
+  useful but the most complex (nested definitions all the way down).
 
 ### Definition library as a saveable, exportable file
 
@@ -70,7 +88,7 @@ decisions or roadmap items:
   edited. Worth deciding whether that's intended (force deliberate
   interfaces) or whether they should ship with generic ones.
 - **Instance names come from definitions.** Two people on one canvas means
-  two definitions. Motivates the "New node based on…" item above.
+  two definitions. Motivates the duplicating-definitions item above.
 - **Seed pip label contradicts its type.** API Service's inbound pip is
   labeled "HTTP" but typed REST/JSON (`p-srv-http` in
   `defaultLibrary.ts`). The walkthrough's own instructions echoed the label,

@@ -39,6 +39,9 @@ launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
   node with no way to read the rest. Show the full name on hover (a natural
   place to also show pip label + type, see the Snip friction log in
   [`DECISIONS.md`](DECISIONS.md)). Raised 2026-09-29.
+- Drag-to-place from the palette: drag a definition card onto the canvas
+  and drop it where it should go, alongside the existing click-card-then-
+  click-canvas placement. Raised 2026-09-29.
 
 ## v1.2 — planned: Hephaestus Tier 1
 
