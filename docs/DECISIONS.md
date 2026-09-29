@@ -17,7 +17,7 @@ current project directly with an AI — not yet scoped to a specific roadmap
 version. Specifics (what it can see/do, how it fits the canvas UI) haven't
 been worked out yet; deferred until the user is ready to design it in detail.
 
-### Duplicating definitions: "duplicate + increment" and "new node based on…"
+### Duplicating definitions: "Duplicate" and "Permute"
 
 Raised 2026-09-28, expanded 2026-09-29, both during the Snip test run. Two
 distinct operations, both wanted:
@@ -27,7 +27,8 @@ distinct operations, both wanted:
    which is incremented automatically — for when several near-identical
    nodes are needed quickly (Snip's Code layer needed three Function
    definitions that differed only in name and a pip or two).
-2. **New node based on…** The wizard opens pre-filled with the base
+2. **Permute** (the user's name for "new node based on…", 2026-09-29 —
+   it makes a permutation of the base node). The wizard opens pre-filled with the base
    definition's name, icon, layers, and pips; the user edits before saving,
    producing a new independent definition.
 
@@ -104,6 +105,21 @@ decisions or roadmap items:
   database access to, and nothing shows who calls the controller. Nothing
   ties Snip API's outer pips to its interior either. Proposed answer:
   "Inbound / Outbound port nodes" below.
+- **Renaming a seed removes the generic from the project's palette.**
+  Confirmed from screenshots: after renaming Database → Links DB, Worker →
+  Click Counter, Controller/Service/Repository/Client → the Snip
+  components, the generic entries are gone from this project's palette
+  (the project copy shadows the library entry by id). So a second generic
+  Database can't be placed in Snip without recreating it. Duplicate/Permute
+  would remove the reason to rename seeds at all.
+- **Creating near-identical definitions one by one is tedious** — confirmed
+  on the Code layer (three functions). Duplicate/Permute above.
+- **Truncated names confirmed** ("Safe Browsing …" on the Component
+  canvas). Tooltip item is on the v1.1 list.
+- **Nesting below Code gives another Code canvas.** Double-clicking a
+  Function opens a new canvas that is still Code layer — `nextLayer`
+  clamps at `code` rather than refusing. Works as coded; whether it
+  *should* is folded into "Code layer: GP or Hephaestus?" below.
 
 ### Inbound / Outbound port nodes
 
@@ -162,6 +178,36 @@ Settled by the user (2026-09-29; still Open — not yet cleared to build):
 - Older `.glyph` files would get ports generated on load. The top-level
   canvas has nothing above it, so it has no ports itself — but every node
   on it (e.g. Snip) gets ports inside.
+
+### Code layer: GP or Hephaestus?
+
+Raised 2026-09-29 by the user after drawing Snip's Code layer (three
+functions and a type inside Link Service): at function level, drawing
+starts to feel as costly as just writing the code. Proposal: stop GP's
+detailed modeling at the Component layer and leave function-level
+structure to Hephaestus, which will draw on a corpus of the user's work and
+tools specialized for code generation.
+
+Claude's recommendation (2026-09-29): yes, with a contract at the edge.
+- GP earns its keep where decisions are architectural and expensive to
+  reverse — what exists, what talks to what, over which interface. At
+  function level, code is already the best notation; a box per function
+  says less than its signature, and goes stale the day the code changes.
+- That split plays to both sides: people are better at keeping a system's
+  shape coherent; LLMs are good at filling in a well-specified box.
+- "Room to breathe" should be *bounded*: free inside a component,
+  constrained by its interface. The proposed port nodes above are exactly
+  that boundary, and v1.3's interface names on `call`/`import` edges would
+  carry the signatures Hephaestus needs.
+- So the Component layer (File-kind nodes especially) likely needs to get
+  a little richer — e.g. a free-text responsibility/notes field, key
+  exported symbols as text — to compensate for the boxes no longer drawn.
+
+Open questions: keep the `code` layer in the model but stop investing in it
+(cheap, reversible), or remove it; what replaces the v1.1 "prove out the
+Code layer" item in [`ROADMAP.md`](ROADMAP.md) (currently marked as under
+question); whether to block entering a definition's interior at the
+deepest layer.
 
 ### Edge waypoints (bend points on relationships)
 

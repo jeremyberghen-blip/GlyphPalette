@@ -21,7 +21,8 @@ launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
   the library panel header shows it).
 - Chase down the harmless Konva `drawImage` console warning (see
   `ARCHITECTURE.md` § Known rough edges) so dev console output is clean.
-- Prove out the Code layer: decompose at least one File definition into
+- *(Under question — see "Code layer: GP or Hephaestus?" in
+  [`DECISIONS.md`](DECISIONS.md).)* Prove out the Code layer: decompose at least one File definition into
   Function/Class nodes on a real project, and see what the layer model gets
   wrong at that depth before relying on it.
 - Soft pip-type layer affinity: the definition wizard defaults to and lists
