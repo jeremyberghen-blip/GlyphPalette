@@ -113,23 +113,39 @@ Why it fits GP well:
 - It removes most reasons to allow container-layer nodes (Database,
   External System) on component canvases just for context.
 
-Open questions:
-- **Placement:** auto-created on entering a definition (probably — a port
-  node you can forget to place defeats the point) and undeletable, vs.
-  placed from the palette.
-- **Sync:** ports should follow the parent definition's pips live. What
-  happens to an inner wire whose port pip is deleted or retyped — delete
-  the wire, keep it flagged as broken, or block the edit?
-- **Bidirectional pips:** which node do they appear on — both, or a rule?
-- **One node per direction vs. one per pip.** Two nodes is simpler; a node
-  per pip (Simulink-style) lays out better on busy canvases.
-- **Conflicts with v1.1's "pip-type layer affinity".** Ports carry the
-  parent's *transport* types (REST, SQL, Queue) onto Component canvases, so
-  the component that talks to the database needs a SQL pip. Hiding
-  transport types from Component-layer definitions would make ports
-  unwireable. That roadmap item needs revisiting if ports go ahead.
-- The top (Context) canvas has no parent, so it gets no ports; older
-  `.glyph` files would get ports generated on load.
+Settled by the user (2026-09-29; still Open — not yet cleared to build):
+- **Ports belong to the macro node's definition.** Inside any node with an
+  interior (a Container, a Component, or a Context-layer System like
+  Snip), the Inbound and Outbound nodes are generated automatically from
+  that definition's pips and conform to them. They're read-only from the
+  inside: to change a port, go up a level and edit the parent definition;
+  the ports inherit the change.
+- **Exactly two port nodes per inner canvas** — one Inbound, one Outbound —
+  each the sum of all connections in that direction, agnostic of where
+  they lead.
+- **Never merge directions.** An inbound and an outbound pip stay separate
+  pips on their respective port nodes, even if that looks redundant;
+  redundant pips are fine.
+
+Still open:
+- **Pips that are already bidirectional (or `none`) on the parent** — e.g.
+  the seed Database's `Events` pip. Candidate, consistent with "redundant
+  is fine": show such a pip on *both* port nodes. Awaiting confirmation.
+- **Inner wires when a parent pip changes.** If the parent's pip is
+  deleted or retyped, what happens to the inner wire on its port — deleted,
+  kept but flagged broken, or the edit is blocked?
+- **Conflict with v1.1's "pip-type layer affinity"** — explained to the
+  user, decision pending. Ports carry the parent's transport types (REST,
+  SQL, Queue) onto Component canvases, and `canConnect` requires an exact
+  type match, so whatever component wires to the Outbound node's SQL `DB`
+  pip must itself have a SQL pip. Hard affinity (transport types hidden
+  from Component-layer definitions) would make such ports unwireable.
+  Options: (a) drop affinity; (b) make it soft — affects the wizard's
+  default/ordering, never forbids; (c) keep it hard but let port pips
+  accept a mismatched type, i.e. the port "translates" Call → SQL.
+- Older `.glyph` files would get ports generated on load. The top-level
+  canvas has nothing above it, so it has no ports itself — but every node
+  on it (e.g. Snip) gets ports inside.
 
 ### Edge waypoints (bend points on relationships)
 

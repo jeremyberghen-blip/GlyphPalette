@@ -31,6 +31,10 @@ launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
   brief toast/status message on success (and a visible error on failure),
   and consider an unsaved-changes marker next to the project name. Raised
   2026-09-29 during the Snip test run.
+- Full-name tooltip on nodes. Long definition names are truncated on the
+  node with no way to read the rest. Show the full name on hover (a natural
+  place to also show pip label + type, see the Snip friction log in
+  [`DECISIONS.md`](DECISIONS.md)). Raised 2026-09-29.
 
 ## v1.2 — planned: Hephaestus Tier 1
 
