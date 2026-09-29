@@ -80,6 +80,56 @@ decisions or roadmap items:
 - **Boundaries: worked cleanly.** Draw → name → collapse → expand on the
   Snip Container canvas round-tripped without issues.
 - **No save feedback.** Moved to the v1.1 list in [`ROADMAP.md`](ROADMAP.md).
+- **Inner canvases can't show their surroundings.** Inside Snip API
+  (Component layer), neither the people nor Links DB are in the palette —
+  layer filtering hides them — so Link Repository has nothing to wire its
+  database access to, and nothing shows who calls the controller. Nothing
+  ties Snip API's outer pips to its interior either. Proposed answer:
+  "Inbound / Outbound port nodes" below.
+
+### Inbound / Outbound port nodes
+
+Raised 2026-09-29 by the user during the Snip test run; strongly favored.
+Every inner canvas gets an **Inbound** node and an **Outbound** node that
+stand for "the edge of the thing we're inside". Their pips mirror the
+parent definition's pips with direction flipped: each inbound pip on the
+parent (e.g. Snip API's `API`, REST/JSON in) appears as an *outbound* pip on
+the Inbound node, ready to wire to whichever inner component handles it;
+each outbound parent pip appears as an *inbound* pip on the Outbound node.
+Where those connections lead beyond the parent is deliberately not shown.
+
+Why it fits GP well:
+- **It's the only coherent answer given shared canvases.** A definition's
+  inner canvas is shared by every instance of it, so "where does this edge
+  go outside?" has no single answer — two instances can be wired
+  differently. The ports only describe the definition's own interface,
+  which *is* shared.
+- **It mirrors collapse.** Boundary collapse already derives outer pips
+  from inner wires and records the mapping in `pipMap`; ports are the same
+  mapping seen from the inside, and could plausibly back both.
+- **It enables lint.** An unwired port pip means "this interface isn't
+  implemented inside" — a natural check for the Backlog's in-GP lint item,
+  and exactly the interface information Hephaestus needs.
+- It removes most reasons to allow container-layer nodes (Database,
+  External System) on component canvases just for context.
+
+Open questions:
+- **Placement:** auto-created on entering a definition (probably — a port
+  node you can forget to place defeats the point) and undeletable, vs.
+  placed from the palette.
+- **Sync:** ports should follow the parent definition's pips live. What
+  happens to an inner wire whose port pip is deleted or retyped — delete
+  the wire, keep it flagged as broken, or block the edit?
+- **Bidirectional pips:** which node do they appear on — both, or a rule?
+- **One node per direction vs. one per pip.** Two nodes is simpler; a node
+  per pip (Simulink-style) lays out better on busy canvases.
+- **Conflicts with v1.1's "pip-type layer affinity".** Ports carry the
+  parent's *transport* types (REST, SQL, Queue) onto Component canvases, so
+  the component that talks to the database needs a SQL pip. Hiding
+  transport types from Component-layer definitions would make ports
+  unwireable. That roadmap item needs revisiting if ports go ahead.
+- The top (Context) canvas has no parent, so it gets no ports; older
+  `.glyph` files would get ports generated on load.
 
 ### Edge waypoints (bend points on relationships)
 
