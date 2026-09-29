@@ -181,6 +181,11 @@ Settled by the user (2026-09-29; still Open — not yet cleared to build):
 
 ### Code layer: GP or Hephaestus?
 
+**Decided 2026-09-29 (user): the Code layer will not be drawn in GP;
+Hephaestus owns function-level structure entirely.** Implementation
+pending — becomes an ADR (amending [ADR 0003](decisions/0003-c4-layer-system.md))
+once built. Discussion kept below for the reasoning.
+
 Raised 2026-09-29 by the user after drawing Snip's Code layer (three
 functions and a type inside Link Service): at function level, drawing
 starts to feel as costly as just writing the code. Proposal: stop GP's
@@ -203,8 +208,11 @@ Claude's recommendation (2026-09-29): yes, with a contract at the edge.
   a little richer — e.g. a free-text responsibility/notes field, key
   exported symbols as text — to compensate for the boxes no longer drawn.
 
-Open questions: keep the `code` layer in the model but stop investing in it
-(cheap, reversible), or remove it; what replaces the v1.1 "prove out the
+Remaining implementation questions: keep `code` in the `Layer` type so
+old files (Snip.glyph has a Code canvas) still load, but stop offering it
+(likely), or remove it with a migration; what double-clicking a Component
+node does once there's no deeper layer (nothing, or a same-layer
+sub-component canvas); what replaces the v1.1 "prove out the
 Code layer" item in [`ROADMAP.md`](ROADMAP.md) (currently marked as under
 question); whether to block entering a definition's interior at the
 deepest layer.
