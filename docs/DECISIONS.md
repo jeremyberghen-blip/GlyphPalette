@@ -180,10 +180,10 @@ Rules set by the user (2026-09-29):
   stays on the port node, marked broken (red or similar), and any wire
   attached to it stays in place, marked problematic, so it can be found and
   fixed by hand.
+- **Retyping a parent pip is treated the same way** (confirmed 2026-09-29):
+  if the inner wire no longer matches the new type, the port pip remains,
+  marked broken, and its wire stays in place, marked problematic.
 - Older `.glyph` files get ports generated on load.
-
-*Assumed, not yet confirmed by the user:* retyping a parent pip into a type
-the inner wire no longer matches gets the same broken-but-kept treatment.
 
 ### HTTP ↔ REST/JSON compatibility (v1.2)
 
