@@ -71,3 +71,18 @@ decisions or roadmap items:
   interfaces) or whether they should ship with generic ones.
 - **Instance names come from definitions.** Two people on one canvas means
   two definitions. Motivates the "New node based on…" item above.
+
+### Installable release build
+
+Raised 2026-09-29. GP currently only runs in dev mode (`launch.bat` →
+`npm run tauri dev`): a Vite dev server on `localhost:1420` serves the UI
+to a debug Rust binary, so closing the console kills the app. A release
+build (`npm run tauri build`) bundles the UI into the executable and emits
+Windows installers (NSIS `setup.exe` and MSI) under
+`src-tauri/target/release/bundle/` — `tauri.conf.json` is already configured
+for it (`identifier`, `bundle.targets: "all"`, icons). Open questions: code
+signing (unsigned installers trigger a SmartScreen "unknown publisher"
+warning — fine for personal use, a real cost for distribution); whether to
+add Tauri's updater plugin; and keeping dev mode for development alongside
+an installed copy (both read the same per-machine library, since it lives in
+the app-identifier data dir).
