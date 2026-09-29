@@ -33,6 +33,39 @@ no pips, so nothing can be wired on a fresh project until definitions are
 edited. Intended (forces deliberate interfaces) or should they ship with
 generic ones? Not slotted; on the Backlog.
 
+### Two-tier library model: standard + current
+
+Raised 2026-09-29 by the user, replacing the per-machine default library
+with copy-on-use ([ADR 0004](decisions/0004-default-library-copy-on-use.md)):
+- **Standard library:** ships with GP, same format as any `.glyphlib`,
+  **read-only**, always loaded.
+- **Current library:** read-write, exactly one at a time. Every new or
+  changed node goes into it — it's living and changes as the project does.
+- Loading a library **replaces** the current library, so you always have
+  standard + whatever you just loaded.
+
+Open problem (under discussion): what happens to nodes on a canvas whose
+definition isn't in the newly loaded library?
+
+Claude's proposal: **libraries first, project snapshot as a safety net.** A
+placed node resolves its definition from the current library, then the
+standard library, and only if neither has it, from a copy the `.glyph`
+file keeps of every definition it uses. So a project always opens and
+renders on its own (sharing, Hephaestus export), and swapping libraries
+never breaks a canvas. Orphans — used on a canvas but in neither library —
+appear in a third palette section, "In this project, not in library", with
+an "Add to current library" action. If the current library has the same id
+with different content, the library wins (it's the living one), and pips
+it no longer has are handled like port nodes: kept, marked broken.
+
+Consequences to settle: standard nodes can't be edited in place (only
+Duplicate/Permute into the current library); existing files that renamed
+seeds in place (Snip's `def-database` → Links DB) need re-id'ing on load;
+the "save to default library" button goes away (everything already goes to
+the library); the current library's file is remembered per machine and
+auto-saved; pockets stay project-only, never in a library. Supersedes
+ADR 0004 once built.
+
 ## Decided
 
 All cleared to build on 2026-09-29, when the user approved the post-test
@@ -149,22 +182,16 @@ Build details settled 2026-09-29:
 - **No right-click menu yet** — deliberately held until real use shows
   where one is wanted.
 
-### Library as a file: export, import, standard library (v1.1)
+### Library as a file (v1.1) — redesigned, see "Two-tier library model" under Open
 
-Raised 2026-09-28; scope set 2026-09-29. The default library already *is*
-a separate per-machine file — `%APPDATA%\glyph-palette\library.json`
-(`localStorage` in the browser preview), see `src/lib/library.ts` and
-[ADR 0004](decisions/0004-default-library-copy-on-use.md) — but it's
-implicit: no UI to export it, import one, or save it elsewhere. Scope:
-- Export and import the library as a file.
-- A **standard library file** containing all the seeds (minus the retired
-  Code-layer ones), in the same format as an export — so the seeds can be
-  restored or shared like any other library.
-
-To settle during the build: one active library or several stacked (e.g.
-personal + team); how import handles id/name collisions; pip types travel
-with the library (they must — definitions reference them by id); whether
-`SEED_LIBRARY` moves from TypeScript into that standard file.
+Scope set 2026-09-29, then reshaped by the user the same day into a
+two-tier model (below). Settled so far: file extension `.glyphlib` (plain
+JSON with an `"app": "glyph-palette-library"` header, pip types included);
+import conflicts — same id replaces, same name with a different id gets a
+number (`Database 2`), existing pip types keep their colors; no "restore"
+button (the standard library is always present). Docs fix: the library
+actually lives at `%APPDATA%\com.heroo.glyph-palette\glyph-palette\library.json`
+(Tauri's AppData is per-identifier), not `%APPDATA%\glyph-palette\`.
 
 ### Edge waypoints (v1.1)
 
