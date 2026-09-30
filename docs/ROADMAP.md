@@ -55,8 +55,6 @@ Then, in any order:
 - **Drag-to-place from the palette**, alongside click-then-click placement.
 - **Relabel the seed API Service pip** labeled "HTTP" but typed REST/JSON.
 - Show the active layer in the breadcrumb trail and nav tree.
-- Chase down the harmless Konva `drawImage` console warning (see
-  `ARCHITECTURE.md` § Known rough edges).
 
 ## v1.2 — planned: port nodes and connection rules
 
@@ -117,6 +115,9 @@ Real ideas, not currently slated to a version:
   starting empty.
 - **Delete in-use definitions** — stubbed; see [`DECISIONS.md`](DECISIONS.md).
 - **Import with contents** (bring a definition's interior along).
+- Chase down the harmless Konva `drawImage` console warning (see
+  `ARCHITECTURE.md` § Known rough edges). Dropped from v1.1 on 2026-09-29 —
+  cosmetic, not worth the time yet.
 - **Right-click menus** — deliberately deferred until use reveals where
   they're wanted.
 - **Installable release build** (`npm run tauri build` → Windows installers).
