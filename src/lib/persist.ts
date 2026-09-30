@@ -1,19 +1,11 @@
 // Project save/load and PNG export. Uses native dialogs + fs inside Tauri;
 // falls back to browser download / file-input when running in a plain browser
-// (dev preview).
+// (dev preview). The file format itself lives in projectFile.ts.
 
-import { CanvasData, Layer, NodeDefinition, PipType, nextLayer } from "../types";
 import { useApp } from "../store";
+import { buildProjectFile, mergeWithLibrary, parseProjectFile } from "./projectFile";
 
-export interface ProjectFile {
-  app: "glyph-palette";
-  version: 1;
-  pipTypes: Record<string, PipType>;
-  /** Only project-owned definitions; default-library ones are merged in on load. */
-  definitions: Record<string, NodeDefinition>;
-  customIcons: Record<string, string>;
-  canvases: Record<string, CanvasData>;
-}
+export type { ProjectFile } from "./projectFile";
 
 export const isTauri = () =>
   typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
@@ -21,85 +13,15 @@ export const isTauri = () =>
 
 export function serializeProject(): string {
   const s = useApp.getState();
-  const definitions = Object.fromEntries(
-    Object.entries(s.definitions).filter(([id]) => !s.defaultLibraryIds[id])
-  );
-  const file: ProjectFile = {
-    app: "glyph-palette",
-    version: 1,
-    pipTypes: s.pipTypes,
-    definitions,
-    customIcons: s.customIcons,
-    canvases: s.canvases,
-  };
-  return JSON.stringify(file, null, 2);
-}
-
-/** Assigns a `layer` to any canvas missing one, by walking down from the root. */
-function backfillLayers(
-  canvases: Record<string, CanvasData>,
-  definitions: Record<string, NodeDefinition>
-): void {
-  const root = canvases["canvas-root"];
-  if (root && !root.layer) root.layer = "context";
-  const queue: string[] = ["canvas-root"];
-  const seen = new Set<string>();
-  while (queue.length) {
-    const cid = queue.shift()!;
-    if (seen.has(cid)) continue;
-    seen.add(cid);
-    const canvas = canvases[cid];
-    if (!canvas) continue;
-    for (const n of canvas.nodes) {
-      const childId = definitions[n.definitionId]?.canvasId;
-      if (childId && canvases[childId]) {
-        if (!canvases[childId].layer) canvases[childId].layer = nextLayer(canvas.layer);
-        queue.push(childId);
-      }
-    }
-  }
-  // Anything unreachable from the root: default to "container".
-  for (const c of Object.values(canvases)) if (!c.layer) c.layer = "container";
+  return JSON.stringify(buildProjectFile(s, s.defaultLibraryIds), null, 2);
 }
 
 export function loadProjectData(json: string): void {
-  const data = JSON.parse(json) as ProjectFile;
-  if (data.app !== "glyph-palette" || !data.canvases?.["canvas-root"]) {
-    throw new Error("Not a valid Glyph Palette project file.");
-  }
-  // Migration: `containers` was renamed to `boundaries`.
-  for (const c of Object.values(data.canvases) as (CanvasData & { containers?: unknown[] })[]) {
-    if (Array.isArray(c.containers) && !Array.isArray(c.boundaries)) {
-      c.boundaries = c.containers as CanvasData["boundaries"];
-    }
-    delete c.containers;
-    c.boundaries ??= [];
-  }
-
-  const lib = useApp.getState().defaultLibrary;
-  const fileDefs = data.definitions ?? {};
-
-  // Merge default-library templates under the project's own definitions.
-  const definitions: Record<string, NodeDefinition> = {};
-  for (const [id, d] of Object.entries(lib.definitions)) definitions[id] = structuredClone(d);
-  for (const [id, d] of Object.entries(fileDefs)) definitions[id] = d;
-  for (const d of Object.values(definitions)) {
-    if (!d.layers || !d.layers.length) d.layers = ["container"] as Layer[];
-  }
-  const defaultLibraryIds = Object.fromEntries(
-    Object.keys(lib.definitions)
-      .filter((id) => !(id in fileDefs))
-      .map((id) => [id, true as const])
-  );
-
-  backfillLayers(data.canvases, definitions);
-
+  const file = parseProjectFile(json);
+  const { content, libraryIds } = mergeWithLibrary(file, useApp.getState().defaultLibrary);
   useApp.setState({
-    pipTypes: { ...lib.pipTypes, ...(data.pipTypes ?? {}) },
-    definitions,
-    defaultLibraryIds,
-    customIcons: data.customIcons ?? {},
-    canvases: data.canvases,
+    ...content,
+    defaultLibraryIds: libraryIds,
     activeCanvasId: "canvas-root",
     trail: ["canvas-root"],
     viewports: {},
