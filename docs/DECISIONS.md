@@ -126,6 +126,14 @@ Settled 2026-09-30 after the palette change:
 - **Hidden on the top-level canvas**, which has nothing above it.
 - **Deleting a port node removes its wires**, like any node (undoable). The
   broken-but-kept rule is for parent changes, not deliberate deletion.
+- **Pockets:** a pocket's port cards carry the collapsed node's inherited
+  pips (same mechanism). Because the collapse recorded which inner node/pip
+  each crossing wire attached to, placing a port in a pocket draws those
+  connections automatically, **locked** (a record of the collapse; expand
+  to rewire). Port pips in a pocket can't be wired by hand.
+- **Guards:** a port node is never swept into a boundary collapse (it stays
+  on its canvas), and expanding a pocket never copies its port nodes onto
+  the parent canvas.
 
 ### Two-part connection types: transport + API style (v1.2)
 
