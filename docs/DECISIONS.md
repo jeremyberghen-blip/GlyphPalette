@@ -98,16 +98,23 @@ Why it fits GP:
 - It removes most reasons to allow container-layer nodes on component
   canvases just for context.
 
-Rules set by the user (2026-09-29):
+Rules set by the user (2026-09-29; placement revised 2026-09-30):
 - **Ports belong to the parent node's definition.** Inside any node with an
   interior (Container, Component, or a Context-layer System like Snip), the
-  Inbound and Outbound nodes are generated automatically from that
-  definition's pips. Read-only from the inside: to change a port, go up a
-  level and edit the parent definition; the ports inherit the change. The
-  top-level canvas has nothing above it, so has no ports itself — but every
-  node on it gets ports inside.
-- **Exactly two port nodes per inner canvas**, one Inbound and one
-  Outbound, each the sum of all connections in that direction.
+  Inbound and Outbound nodes take their pips from that definition.
+  Read-only from the inside: to change a port, go up a level and edit the
+  parent definition; the ports inherit the change.
+- **Placed from the palette, not generated** (2026-09-30, replacing
+  "generated automatically"). Not every interior needs ports, so they're
+  optional: the palette always offers Inbound and Outbound on an inner
+  canvas, just in case, and the user places them when wanted. They delete
+  like any node.
+- **Contextual, not shared.** The palette's port entries always point at
+  the node the user is currently inside: inside Snip API they carry Snip
+  API's pips; inside Links DB, Links DB's. They are not one shared "Port"
+  definition per layer.
+- **One Inbound and one Outbound**, each the sum of all connections in that
+  direction (see open questions below on enforcing "at most one").
 - **Never merge directions.** Inbound and outbound pips stay separate, even
   if redundant; redundant pips are fine.
 - **Bidirectional (and `none`) parent pips appear on both port nodes.**
@@ -118,7 +125,15 @@ Rules set by the user (2026-09-29):
 - **Retyping a parent pip is treated the same way** (confirmed 2026-09-29):
   if the inner wire no longer matches the new type, the port pip remains,
   marked broken, and its wire stays in place, marked problematic.
-- Older `.glyph` files get ports generated on load.
+- ~~Older `.glyph` files get ports generated on load.~~ Dropped 2026-09-30:
+  with ports optional, nothing is generated.
+
+Open questions raised by the palette change (2026-09-30):
+- At most one Inbound and one Outbound per canvas (palette entry disabled
+  once placed), or allow extra copies for layout?
+- The top-level canvas has nothing above it: hide the port entries there?
+- Deleting a port node: remove its wires like any node (undoable), or keep
+  them as broken?
 
 ### HTTP ↔ REST/JSON compatibility (v1.2)
 
