@@ -33,60 +33,14 @@ no pips, so nothing can be wired on a fresh project until definitions are
 edited. Intended (forces deliberate interfaces) or should they ship with
 generic ones? Not slotted; on the Backlog.
 
-### Library married to the project (reconsidering the two-tier model)
+### Deleting definitions that are in use (stub)
 
-Raised 2026-09-29 by the user, pausing feature work: maybe each project
-should own its library, with an option to **import library contents from
-another project**, instead of a separately loaded "current library".
-Under discussion; if adopted it supersedes the two-tier model below
-(standard library stays: read-only, always present, no pencil — only
-Duplicate/Permute).
-
-Claude's notes: this is the simpler model. The orphan problem disappears
-(a project's canvases can only use its own library or the standard one),
-as do backup copies, the orphan palette section, "add to library"
-buttons, per-machine library state, and "which library is loaded". A
-separate `.glyphlib` format becomes optional — any `.glyph` can serve as a
-library to import from, and the standard library can itself be a bundled
-`.glyph` with no canvas content. The cost: no single personal library
-that follows you between projects; reuse is an explicit import. Checked
-2026-09-29: the user's per-machine `library.json` holds only the 25 seeds,
-so retiring it loses nothing.
-
-### Two-tier library model: standard + current
-
-Raised 2026-09-29 by the user, replacing the per-machine default library
-with copy-on-use ([ADR 0004](decisions/0004-default-library-copy-on-use.md)):
-- **Standard library:** ships with GP, same format as any `.glyphlib`,
-  **read-only**, always loaded.
-- **Current library:** read-write, exactly one at a time. Every new or
-  changed node goes into it — it's living and changes as the project does.
-- Loading a library **replaces** the current library, so you always have
-  standard + whatever you just loaded.
-
-Orphan problem — decided 2026-09-29 (user chose option C, **libraries
-first, project snapshot as a safety net**), over (A) project references
-only / missing nodes shown as placeholders, and (B) loading a library
-silently absorbs the project's missing nodes. A
-placed node resolves its definition from the current library, then the
-standard library, and only if neither has it, from a copy the `.glyph`
-file keeps of every definition it uses. So a project always opens and
-renders on its own (sharing, Hephaestus export), and swapping libraries
-never breaks a canvas. Orphans — used on a canvas but in neither library —
-appear in a third palette section, "In this project, not in library", and
-**every such node gets its own button to add it to the current library**. If the current library has the same id
-with different content, the library wins (it's the living one), and pips
-it no longer has are handled like port nodes: kept, marked broken.
-
-Also decided: **standard nodes show no pencil — only Duplicate and
-Permute** (into the current library). Still open: whether a `.glyph`
-remembers which `.glyphlib` it was last used with and offers to switch.
-Other consequences: existing files that renamed
-seeds in place (Snip's `def-database` → Links DB) need re-id'ing on load;
-the "save to default library" button goes away (everything already goes to
-the library); the current library's file is remembered per machine and
-auto-saved; pockets stay project-only, never in a library. Supersedes
-ADR 0004 once built.
+Raised 2026-09-29. The user wants a way to delete nodes (definitions)
+from the library even when they're in use. Stubbed — design later, because
+links make it hairy: instances on any canvas, wires attached to their
+pips, the definition's own interior (and definitions nested inside it),
+port nodes (v1.2) derived from its pips, pockets containing it. Today the
+palette's trash button only deletes definitions that are unused.
 
 ## Decided
 
@@ -204,29 +158,58 @@ Build details settled 2026-09-29:
 - **No right-click menu yet** — deliberately held until real use shows
   where one is wanted.
 
-### Library as a file (v1.1) — redesigned, see "Two-tier library model" under Open
+### Library married to the project (v1.1)
 
-Scope set 2026-09-29, then reshaped by the user the same day into a
-two-tier model (below). Settled so far: file extension `.glyphlib` (plain
-JSON with an `"app": "glyph-palette-library"` header, pip types included);
-import conflicts — same id replaces, same name with a different id gets a
-number (`Database 2`), existing pip types keep their colors; no "restore"
-button (the standard library is always present). Docs fix: the library
-actually lives at `%APPDATA%\com.heroo.glyph-palette\glyph-palette\library.json`
-(Tauri's AppData is per-identifier), not `%APPDATA%\glyph-palette\`.
+Decided 2026-09-29 (user). Each project owns its library; there's no
+separate per-machine or "current" library.
+- **Standard library:** ships with GP, read-only, always present; its
+  nodes show no pencil — only Duplicate and Permute (into the project).
+- **Project library:** the `.glyph`'s own definitions; every new or edited
+  node goes there.
+- **Import from another project:** pick any `.glyph`, choose definitions
+  (grouped by layer), bring them in. Pip types they use come along;
+  existing pip types keep their colors. Interiors come across **empty**
+  (import-with-contents joins "duplicate with contents" on the Backlog).
+  Pockets are never imported.
+- **Conflicts:** an imported definition whose id *or* name collides gets a
+  new id and a suffix on its name marking it as the import, so both
+  coexist.
+- **No `.glyphlib` format.** A library is just a project you import from;
+  a `.glyph` holding definitions and an empty canvas is a curated library.
+  The standard library may ship as such a file.
+- The per-machine `library.json`, copy-on-use adoption, and the "save to
+  default library" button are retired (checked: the user's library held
+  only the 25 seeds). Supersedes
+  [ADR 0004](decisions/0004-default-library-copy-on-use.md) once built.
+- Existing files that renamed seeds in place (Snip's `def-database` →
+  Links DB) get re-id'd on load so the standard node reappears alongside.
+
+Superseded the same day, never built: a **two-tier "standard + current
+library" model** (one swappable read-write `.glyphlib` loaded per machine,
+with project backup copies for orphaned nodes, an orphan palette section,
+and per-node "add to library" buttons). Dropped in favor of the simpler
+married model, which makes orphans impossible.
 
 ### Edge waypoints (v1.1)
 
 Raised 2026-09-29. Double-click a relationship to add a waypoint (bend
-point), so a wire can be routed around nodes instead of always taking the
-default bezier between its two pips. Implies an optional field on
-`Relationship` (e.g. `waypoints: {x, y}[]`); older files load unchanged.
+point), so a wire can be routed around nodes. Optional
+`waypoints: {x, y}[]` on `Relationship`; older files load unchanged.
 
-To settle during the build: moving (drag) and removing (double-click
-again? Delete while selected?) a waypoint; smooth curve through the points
-vs. straight segments; what happens when an endpoint node moves (absolute
-positions vs. shift proportionally); behavior through collapse/expand,
-where the relationship is rewired to an inherited pip.
+Settled 2026-09-29:
+- **Style:** straight segments with rounded corners (subway-map look).
+- **Add:** double-click a wire; the point is inserted in path order.
+- **Move:** select the wire to show handles; drag a handle.
+- **Remove:** select a handle and press Delete.
+- **Node moves:** waypoints stay put, unless both ends of the wire move
+  together (selection drag, boundary drag, paste/Ctrl+D) — then they
+  translate with them.
+- **Collapse/expand:** crossing wires keep waypoints outside the box and
+  drop those inside; wires wholly inside keep theirs in the pocket.
+- **Rotation/length handle (under discussion):** selecting a waypoint shows
+  a second handle that can be dragged in a circle around it, rotating a
+  straight section through the waypoint; distance from the waypoint sets
+  the section's length. Geometry details being clarified.
 
 ### Soft pip-type layer affinity (v1.1)
 

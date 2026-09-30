@@ -39,8 +39,9 @@ Then, in any order:
   groups from the palette.
 - **Duplicate and Permute** for definitions (duplicate with an incremented
   name; new definition pre-filled from an existing one).
-- **Library as a file:** export and import the definition library, and ship
-  a standard library file containing all the seeds.
+- **Library married to the project:** each project owns its library; a
+  read-only standard library is always present; import definitions from
+  another `.glyph`. Retires the per-machine default library.
 - **Edge waypoints:** double-click a wire to add a bend point.
 - **Soft pip-type layer affinity:** the definition wizard defaults to and
   lists first the pip types usual for the definition's layer, but never
@@ -112,6 +113,8 @@ Real ideas, not currently slated to a version:
 - **Duplicate with contents:** Duplicate / Permute / Ctrl+D copying the
   base's inner canvas (deep copy, nested definitions included) instead of
   starting empty.
+- **Delete in-use definitions** — stubbed; see [`DECISIONS.md`](DECISIONS.md).
+- **Import with contents** (bring a definition's interior along).
 - **Right-click menus** — deliberately deferred until use reveals where
   they're wanted.
 - **Installable release build** (`npm run tauri build` → Windows installers).
