@@ -235,6 +235,14 @@ transport types onto Component canvases, and `canConnect` requires an
 exact type match, so edge components (a repository speaking SQL, an API
 client speaking REST) must be allowed transport-typed pips.
 
+Build details settled 2026-09-29: each `PipType` gets a `layers` hint.
+The wizard's type dropdown groups "Usual for <layer>" first, "Other types"
+second; a new pip defaults to the first usual type. Custom types get layer
+toggles in the new-type form, defaulting to the current layer. Seed
+assignments: HTTP, REST/JSON, gRPC, TCP/IP, SQL, Event, Queue → Context +
+Container; File I/O → Container + Component; Import, Call → Component.
+Stored explicitly for now; v1.4's edge `kind` may later derive it.
+
 ### Inbound / Outbound port nodes (v1.2)
 
 Raised 2026-09-29 by the user during the Snip test run. Every inner canvas
