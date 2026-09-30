@@ -46,8 +46,10 @@ Then, in any order:
 - **Soft pip-type layer affinity:** the definition wizard defaults to and
   lists first the pip types usual for the definition's layer, but never
   hides the others.
-- **Visual save confirmation:** success/failure feedback on save; consider
-  an unsaved-changes marker.
+- **Save feedback and autosave:** center popup on save, persistent error
+  popups, project name + unsaved marker, dirty-only warnings on New / Open
+  / window close, autosave on a configurable interval, and a Settings
+  dialog. Fixes New not clearing the remembered save path.
 - **Full-name tooltip on nodes** (long names are truncated); a natural place
   to also show pip label + type.
 - **Drag-to-place from the palette**, alongside click-then-click placement.

@@ -224,6 +224,30 @@ Settled 2026-09-29:
 - **Import naming** (library feature): a colliding import is suffixed with
   its source project, e.g. `Links DB (Snip)`, then numbered if still taken.
 
+### Save feedback, unsaved marker, autosave, settings (v1.1)
+
+Decided 2026-09-29 (user), expanding the roadmap's "visual save
+confirmation":
+- **Feedback popup:** a small window dead center that fades after ~1.5s
+  on manual save (and open, PNG export, import). Errors are red and stay
+  until dismissed — previously save failures were silently swallowed.
+- **Project name** in the top bar and window title (`Untitled` when new),
+  with a `•` unsaved marker driven by real content changes only (not
+  pan/zoom/selection).
+- **Warnings only when dirty:** New and Open ask only with unsaved
+  changes; **closing the window** with unsaved changes asks Save / Don't
+  save / Cancel (needs a Tauri window capability).
+- **Autosave:** writes to the project's actual file, only when dirty.
+  Untitled projects wait until the first manual save, then autosave to
+  that file. Autosave feedback is a small popup in a corner — present but
+  less distracting. Interval choices: Never, 1, 2, 5, 10, 15 minutes;
+  default 5.
+- **Settings dialog** (gear in the top bar), stored per machine in the app
+  data dir; autosave interval is its first setting.
+- **Bug fix bundled:** New didn't clear the remembered file path, so the
+  next Ctrl+S silently overwrote the previously opened file. New now
+  clears it.
+
 ### Soft pip-type layer affinity (v1.1)
 
 Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
