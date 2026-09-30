@@ -38,7 +38,8 @@ function DefCard({
           ? "border-[#4c9aff] bg-[#2b3a55]"
           : "border-[#2e3040] bg-[#22242e] hover:border-[#4a4e63]"
       }`}
-      title="Click, then click the canvas to place"
+      title={`${def.name}
+Click, then click the canvas to place`}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
         {Lucide ? (

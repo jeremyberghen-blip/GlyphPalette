@@ -6,6 +6,7 @@ import { useApp } from "../store";
 import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
+import { useNodeHover } from "./NodeNameTooltip";
 
 const ICON_SIZE = 40;
 
@@ -122,6 +123,8 @@ export default function NodeShape({ node }: Props) {
       onDragMove={handleDragMove}
       onDragEnd={() => (dragOrigin.current = null)}
       onClick={handleClick}
+      onMouseEnter={() => useNodeHover.setState({ nodeId: node.id })}
+      onMouseLeave={() => useNodeHover.setState({ nodeId: null })}
       onDblClick={(e) => {
         if (e.evt.button !== 0) return;
         e.cancelBubble = true;
