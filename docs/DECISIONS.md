@@ -50,6 +50,33 @@ canvas; the fix was listing "Del delete" in the top-bar shortcut hint. The
 user declined an on-canvas trash button, consistent with holding off on
 right-click menus until use shows a need.
 
+### Two-part connection types: transport + API style
+
+Raised 2026-09-30 by the user while discussing HTTP ↔ REST/JSON. Instead of
+one flat list of pip types, every connection carries **both a transport and
+an API style**, drawn as a line in the transport's color with a core in the
+style's color (e.g. a green HTTP line with a blue REST/JSON core).
+
+Context: HTTP is a transport; REST/JSON is an API style + payload riding on
+it, as are GraphQL, SOAP/XML, web pages, and gRPC. The flat list mixes the
+two layers, which is why "can HTTP connect to REST/JSON?" has no clean
+answer. Considered first: one-way subtype compatibility (REST/JSON is-a
+HTTP), or leaving matching strict.
+
+Claude's notes: this models real protocol layering and dissolves the
+question rather than patching it. It also carries exactly what Hephaestus
+needs (transport → which client/server plumbing; style → what to
+generate), and could subsume v1.4's planned edge `kind`
+(network vs. in-process transport). An "any" style would stand for
+pass-through infrastructure (firewall, load balancer, proxy). Costs: a data
+model change (pip types split into transports + styles, with a mapping for
+the existing ten), a two-part picker in the wizard, two-color pips and
+wires (wires likely need to be thicker for a visible core), and a
+compatibility rule for "any". Scope: bigger than the item it replaces.
+
+Open: the compatibility rule for "any"; whether two layers are enough; the
+starting lists of transports and styles; which version it lands in.
+
 ## Decided
 
 Cleared to build, not yet built. Versions refer to [`ROADMAP.md`](ROADMAP.md).
@@ -128,14 +155,19 @@ Rules set by the user (2026-09-29; placement revised 2026-09-30):
 - ~~Older `.glyph` files get ports generated on load.~~ Dropped 2026-09-30:
   with ports optional, nothing is generated.
 
-Open questions raised by the palette change (2026-09-30):
-- At most one Inbound and one Outbound per canvas (palette entry disabled
-  once placed), or allow extra copies for layout?
-- The top-level canvas has nothing above it: hide the port entries there?
-- Deleting a port node: remove its wires like any node (undoable), or keep
-  them as broken?
+Settled 2026-09-30 after the palette change:
+- **At most one Inbound and one Outbound per canvas**; the palette card is
+  disabled once that port is placed.
+- **Hidden on the top-level canvas**, which has nothing above it.
+- **Deleting a port node removes its wires**, like any node (undoable). The
+  broken-but-kept rule is for parent changes, not deliberate deletion.
 
-### HTTP ↔ REST/JSON compatibility (v1.2)
+### HTTP ↔ REST/JSON compatibility (v1.2) — under reconsideration
+
+See "Two-part connection types" under Open, raised 2026-09-30, which
+would replace this item.
+
+#### Original entry: HTTP ↔ REST/JSON compatibility (v1.2)
 
 Raised 2026-09-28 during the Snip test run; slotted 2026-09-29. REST/JSON
 *is* HTTP, so today's hard incompatibility between them reads as "wrong
