@@ -43,6 +43,11 @@ export interface PipType {
   id: string;
   name: string; // e.g. "TCP/IP", "HTTP"
   color: string;
+  /**
+   * Layers this type is usual on — a hint for the definition wizard, never a
+   * restriction. Absent means no preference (usual everywhere).
+   */
+  layers?: Layer[];
 }
 
 export interface PipDef {

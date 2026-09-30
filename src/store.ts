@@ -204,7 +204,8 @@ interface AppState {
   /** Navigate to an explicit canvas path (from the nav tree), optionally selecting a node. */
   navigateTo: (trail: string[], selectNodeId?: string) => void;
 
-  addPipType: (name: string, color: string) => string;
+  /** Adds a custom pip type, usual on `layers` (see lib/pipTypes). Returns its id. */
+  addPipType: (name: string, color: string, layers?: Layer[]) => string;
   addCustomIcon: (dataUrl: string) => string;
   /**
    * Adds or replaces a project definition. Caller must have validated name
@@ -745,9 +746,10 @@ export const useApp = create<AppState>((set, get) => ({
         selection: [rel.id],
       };
     }),
-  addPipType: (name, color) => {
+  addPipType: (name, color, layers) => {
     const id = `t-${uid()}`;
-    set((s) => ({ pipTypes: { ...s.pipTypes, [id]: { id, name, color } } }));
+    const type: PipType = { id, name, color, ...(layers?.length ? { layers } : {}) };
+    set((s) => ({ pipTypes: { ...s.pipTypes, [id]: type } }));
     return id;
   },
 

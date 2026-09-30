@@ -11,6 +11,7 @@ import {
   PipDirection,
 } from "../types";
 import { useApp, uid, nameTaken } from "../store";
+import { defaultPipType, groupPipTypes } from "../lib/pipTypes";
 
 const DIRECTIONS: { value: PipDirection; label: string }[] = [
   { value: "inbound", label: "Inbound" },
@@ -25,11 +26,22 @@ const inputCls =
   "rounded border border-[#3a3d52] bg-[#191a21] px-2 py-1 text-sm text-[#e2e4ee] outline-none focus:border-[#4c9aff]";
 
 /** Inline creator shown when a pip row's type select is set to "new type". */
-function NewTypeForm({ onCreate }: { onCreate: (typeId: string) => void }) {
+function NewTypeForm({
+  initialLayer,
+  onCreate,
+}: {
+  initialLayer: Layer;
+  onCreate: (typeId: string) => void;
+}) {
   const [name, setName] = useState("");
   const [color, setColor] = useState("#4c9aff");
+  const [layers, setLayers] = useState<Layer[]>(
+    DRAWABLE_LAYERS.includes(initialLayer) ? [initialLayer] : []
+  );
+  const toggle = (l: Layer) =>
+    setLayers((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]));
   return (
-    <div className="mt-1 flex items-center gap-2 rounded border border-[#3a3d52] bg-[#1e1f28] p-2">
+    <div className="mt-1 flex flex-wrap items-center gap-2 rounded border border-[#3a3d52] bg-[#1e1f28] p-2">
       <input
         className={inputCls + " w-32"}
         placeholder="Type name"
@@ -46,10 +58,26 @@ function NewTypeForm({ onCreate }: { onCreate: (typeId: string) => void }) {
       <button
         className="rounded bg-[#2b3a55] px-2 py-1 text-xs text-white hover:bg-[#33486b] disabled:opacity-40"
         disabled={!name.trim()}
-        onClick={() => onCreate(useApp.getState().addPipType(name.trim(), color))}
+        onClick={() => onCreate(useApp.getState().addPipType(name.trim(), color, layers))}
       >
         Add type
       </button>
+      <div className="flex w-full items-center gap-1 text-[10px] text-[#7a7d92]">
+        Usual on
+        {DRAWABLE_LAYERS.map((l) => (
+          <button
+            key={l}
+            onClick={() => toggle(l)}
+            className={`rounded border px-1.5 py-0.5 ${
+              layers.includes(l)
+                ? "border-[#4c9aff] bg-[#2b3a55] text-white"
+                : "border-[#3a3d52] text-[#8a8ea6]"
+            }`}
+          >
+            {LAYER_LABELS[l]}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -99,6 +127,8 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
       : ["Server", "Database", "Globe", "Shield", "Box", "Cloud", "Cpu", "HardDrive", "Network", "Router", "Lock", "Key", "Mail", "MessageSquare", "Folder", "FileText", "Users", "Terminal", "Container", "Layers", "Workflow", "Zap", "Radio", "Wifi", "Smartphone", "Monitor", "Printer", "Camera", "Timer", "Cog"];
     return hits.slice(0, 60);
   }, [iconSearch]);
+
+  const typeGroups = useMemo(() => groupPipTypes(pipTypes, layers), [pipTypes, layers]);
 
   const updatePip = (id: string, patch: Partial<PipDef>) =>
     setPips((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -272,7 +302,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                     {
                       id: `pip-${uid()}`,
                       label: "",
-                      typeId: Object.keys(pipTypes)[0] ?? "",
+                      typeId: defaultPipType(pipTypes, layers),
                       direction: "inbound",
                       side: "left",
                     },
@@ -306,11 +336,22 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                         else updatePip(p.id, { typeId: e.target.value });
                       }}
                     >
-                      {Object.values(pipTypes).map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
+                      <optgroup label={`Usual for ${layers.map((l) => LAYER_LABELS[l]).join(" / ")}`}>
+                        {typeGroups.usual.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      {typeGroups.other.length > 0 && (
+                        <optgroup label="Other types">
+                          {typeGroups.other.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                       <option value="__new">+ New type…</option>
                     </select>
                     <span
@@ -352,6 +393,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                   </div>
                   {newTypeForPip === p.id && (
                     <NewTypeForm
+                      initialLayer={activeLayer}
                       onCreate={(typeId) => {
                         updatePip(p.id, { typeId });
                         setNewTypeForPip(null);
