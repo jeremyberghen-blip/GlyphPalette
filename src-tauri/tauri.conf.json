@@ -15,7 +15,8 @@
         "title": "Glyph Palette",
         "width": 1400,
         "height": 900,
-        "center": true
+        "center": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

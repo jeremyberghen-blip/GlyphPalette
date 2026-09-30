@@ -18,6 +18,10 @@ Fixes from hand-testing 1.1.0.
   that sat inside the box. They're now folded away with the box and
   restored on expand, following the nodes if the collapsed node was moved,
   including boxes collapsed inside boxes.
+- Dragging palette cards onto the canvas showed a "not allowed" cursor in
+  the desktop app on Windows: Tauri's native file-drop handling was
+  intercepting in-page drags. It's turned off (`dragDropEnabled: false`);
+  GP doesn't take files dropped from Explorer.
 
 ### Changed
 - The top-bar shortcut hint mentions Del (delete from canvas).
