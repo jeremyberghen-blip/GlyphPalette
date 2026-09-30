@@ -158,9 +158,43 @@ Settled:
   queue/any; Event → Message queue/Event; File I/O → Filesystem/any;
   Call → In-process/Call; Import → In-process/Import.
 
-To settle during v1.2 planning: the starting transport and style lists and
-colors; how the wizard's two pickers and the soft layer affinity work
-together; pip and wire rendering (thicker wires so the core shows).
+**Starting lists** (Claude's call, delegated by the user 2026-09-30). Red is
+reserved for broken links, so neither list uses it. "Any" draws no core.
+
+| Transport (line) | Color |   | Style (core) | Color |
+|---|---|---|---|---|
+| HTTP | green `#4ade80` | | any | — (no core) |
+| HTTP/2 | indigo `#818cf8` | | REST/JSON | blue `#3b82f6` |
+| WebSocket | teal `#2dd4bf` | | GraphQL | magenta `#e879f9` |
+| TCP | sky `#4c9aff` | | SOAP/XML | tan `#d4a373` |
+| Message queue | orange `#fb923c` | | Web pages (HTML) | white `#f1f5f9` |
+| Filesystem | pink `#f472b6` | | gRPC | violet `#a78bfa` |
+| In-process | slate `#64748b` | | SQL | amber `#f59e0b` |
+| | | | Key-value | lime `#a3e635` |
+| | | | Event | yellow `#facc15` |
+| | | | Call | light slate `#cbd5e1` |
+| | | | Import | cyan `#67e8f9` |
+
+The standard library's pips are upgraded to specific styles where the node
+implies one (API Service's API → HTTP/REST-JSON, its DB → TCP/SQL, Cache →
+TCP/Key-value, Database events → Message queue/Event); generic
+infrastructure (Firewall, Internet, Load-balancer-like nodes) stays "any".
+
+**Rendering** (user, 2026-09-30):
+- **Pip:** a larger circle in the transport color with a smaller circle in
+  the style color at its center ("any": no inner circle).
+- **Wire:** the transport color as the outer line, about twice as thick as
+  the style-colored core.
+
+**Broken links** (user, 2026-09-30): a broken pip is drawn red, its tooltip
+says the link is broken (and why), and every wire attached to it is red end
+to end. Once no wire uses it any more, the pip either disappears (its
+parent pip was deleted) or shows its new transport/style (its parent pip
+was retyped).
+
+To settle: the node dialog's two pickers and how the soft layer affinity
+works across them; where a pip's direction mark goes now that its center
+holds the style color.
 
 Superseded the same day, never built: **HTTP ↔ REST/JSON compatibility** —
 one-way subtype matching (REST/JSON is-a HTTP), or leaving matching strict.
