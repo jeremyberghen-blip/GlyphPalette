@@ -42,14 +42,6 @@ pips, the definition's own interior (and definitions nested inside it),
 port nodes (v1.2) derived from its pips, pockets containing it. Today the
 palette's trash button only deletes definitions that are unused.
 
-### Visible delete button on nodes — declined
-
-Raised 2026-09-30 during 1.1.0 hand-testing (deleting a node wasn't
-discoverable). Delete/Backspace already removes selected nodes from the
-canvas; the fix was listing "Del delete" in the top-bar shortcut hint. The
-user declined an on-canvas trash button, consistent with holding off on
-right-click menus until use shows a need.
-
 ## Decided
 
 Cleared to build, not yet built. Versions refer to [`ROADMAP.md`](ROADMAP.md).
@@ -190,6 +182,14 @@ trigger a SmartScreen "unknown publisher" warning), Tauri's updater
 plugin, and dev and installed copies sharing one per-machine library.
 
 ## Record
+
+### Visible delete button on nodes — declined
+
+Raised 2026-09-30 during 1.1.0 hand-testing (deleting a node wasn't
+discoverable). Delete/Backspace already removes selected nodes from the
+canvas; the fix was listing "Del delete" in the top-bar shortcut hint. The
+user declined an on-canvas trash button, consistent with holding off on
+right-click menus until use shows a need.
 
 ### Snip test run — friction log (concluded 2026-09-29)
 
