@@ -26,8 +26,8 @@
       "name": "glyph-work-preview",
       "runtimeExecutable": "node",
       "runtimeArgs": [
-        "D:\\Glyph Palette-work\node_modules\u000bite\bin\u000bite.js",
-        "D:\\Glyph Palette-work",
+        "D:/Glyph Palette-work/node_modules/vite/bin/vite.js",
+        "D:/Glyph Palette-work",
         "--port",
         "1431"
       ],
