@@ -4,7 +4,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
-## [Unreleased]
+## [1.1.1] — 2026-09-30
 
 Fixes from hand-testing 1.1.0.
 

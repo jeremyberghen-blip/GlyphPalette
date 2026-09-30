@@ -12,7 +12,7 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.1.0 — current (2026-09-29)
+## v1.1 — current: 1.1.1 (2026-09-30)
 
 Foundation, polish, and library, built from the Snip test run: a Vitest
 suite with a real-project regression fixture; the Code layer retired
@@ -22,7 +22,9 @@ import from another project; Duplicate / Permute / Ctrl+D; wire bend points
 with a rotation handle; soft pip-type affinity; save feedback, unsaved
 marker, autosave, settings, and a close warning; name tooltips;
 drag-to-place; layer colors in breadcrumbs and navigator. Full list in
-[`CHANGELOG.md`](CHANGELOG.md) § 1.1.0.
+[`CHANGELOG.md`](CHANGELOG.md) § 1.1.0. 1.1.1 fixed what hand-testing
+turned up: wire corners on doubled-back bend points, the close button,
+bend points inside collapsed boxes, and drag-to-place in the desktop app.
 
 v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
