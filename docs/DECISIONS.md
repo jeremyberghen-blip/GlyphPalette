@@ -213,8 +213,14 @@ Settled 2026-09-29:
   curve gently away toward the neighboring connection on each side.
   Default length: small (~5px). No automatic flipping — the wire goes
   through the section in the handle's direction even if that tangles it;
-  the user corrects by hand. (Default orientation and handle grab
-  distance being confirmed.)
+  the user corrects by hand.
+- **Default orientation:** the section aligns with the wire's direction of
+  travel; the handle is drawn forward and a little off that axis so it's
+  easy to see and grab (a fixed visual offset — rotating the handle
+  rotates the section by the same amount).
+- **Minimum ring:** the handle can't come closer than a small ring around
+  the waypoint; the ring registers as length 0, and distance beyond it
+  scales the length up. The handle starts just outside the ring (~5px).
 - **Import naming** (library feature): a colliding import is suffixed with
   its source project, e.g. `Links DB (Snip)`, then numbered if still taken.
 
