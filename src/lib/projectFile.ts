@@ -3,6 +3,7 @@
 // migration can be tested against hand-made old files.
 
 import { CanvasData, Layer, NodeDefinition, PipType, nextLayer } from "../types";
+import { repairPocketLayers } from "./layers";
 
 export interface ProjectFile {
   app: "glyph-palette";
@@ -109,6 +110,7 @@ export function mergeWithLibrary(
       .map((id) => [id, true as const])
   );
   backfillLayers(file.canvases, definitions);
+  repairPocketLayers(file.canvases, definitions);
   return {
     content: {
       pipTypes: { ...lib.pipTypes, ...file.pipTypes },

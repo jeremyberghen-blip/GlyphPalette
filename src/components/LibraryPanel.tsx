@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { icons, Plus, Pencil, Trash2, Search, BookMarked, Library } from "lucide-react";
-import { LAYER_LABELS, NodeDefinition } from "../types";
+import { LAYER_LABELS, NodeDefinition, isRetiredLayer } from "../types";
 import { useApp } from "../store";
+import { canvasOwner } from "../lib/layers";
 import DefinitionWizard from "./DefinitionWizard";
 
 function DefCard({
@@ -104,6 +105,10 @@ export default function LibraryPanel() {
   const pipTypes = useApp((s) => s.pipTypes);
   const defaultLibraryIds = useApp((s) => s.defaultLibraryIds);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
+  const pocketName = useApp((s) => {
+    const owner = canvasOwner(s.definitions, s.activeCanvasId);
+    return owner?.expandable ? owner.name : null;
+  });
   const [search, setSearch] = useState("");
   const [wizard, setWizard] = useState<{ open: boolean; editing: NodeDefinition | null }>({
     open: false,
@@ -121,6 +126,7 @@ export default function LibraryPanel() {
     const q = search.trim().toLowerCase();
     return Object.values(definitions)
       .filter((d) => d.layers?.includes(activeLayer))
+      .filter((d) => !d.expandable) // collapsed groups are folds, not reusable parts
       .filter((d) => !q || d.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [definitions, search, activeLayer]);
@@ -131,6 +137,8 @@ export default function LibraryPanel() {
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
             {LAYER_LABELS[activeLayer]} layer
+            {isRetiredLayer(activeLayer) && " (retired)"}
+            {pocketName && ` · ${pocketName} (collapsed)`}
           </span>
         </div>
         <button

@@ -92,4 +92,26 @@ describe("boundaries", () => {
     expect(root().relationships).toHaveLength(2);
     expect(root().boundaries).toHaveLength(1);
   });
+
+  it("gives a collapsed boundary a pocket at the same layer", () => {
+    place("def-cache", 0, 0);
+    s().addBoundary("Group", "Box", { x: -10, y: -10, width: 200, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const def = s().definitions[root().nodes.find((n) => n.id === s().selection[0])!.definitionId];
+    expect(s().canvases[def.canvasId!].layer).toBe(root().layer);
+  });
+});
+
+describe("layers", () => {
+  it("opens a node one layer down, and nests Component inside Component", () => {
+    const sys = root().nodes[0];
+    s().enterDefinition(sys.definitionId);
+    expect(s().canvases[s().activeCanvasId].layer).toBe("container");
+    place("def-server");
+    s().enterDefinition("def-server");
+    expect(s().canvases[s().activeCanvasId].layer).toBe("component");
+    place("def-service");
+    s().enterDefinition("def-service");
+    expect(s().canvases[s().activeCanvasId].layer).toBe("component");
+  });
 });

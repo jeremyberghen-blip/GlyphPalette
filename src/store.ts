@@ -12,9 +12,9 @@ import {
   Viewport,
   NODE_WIDTH,
   NODE_HEIGHT,
-  nextLayer,
 } from "./types";
 import { canConnect } from "./lib/graph";
+import { childLayer } from "./lib/layers";
 import { SEED_LIBRARY, LibraryFile } from "./lib/defaultLibrary";
 import { saveDefaultLibrary } from "./lib/library";
 
@@ -423,7 +423,7 @@ export const useApp = create<AppState>((set) => ({
 
       const innerCanvas: CanvasData = {
         id: `canvas-${uid()}`,
-        layer: nextLayer(canvas.layer),
+        layer: canvas.layer, // a pocket: same layer, just folded away
         nodes: canvas.nodes.filter((n) => inside.has(n.id)),
         relationships: innerRels,
         boundaries: [],
@@ -578,7 +578,7 @@ export const useApp = create<AppState>((set) => ({
           ...canvases,
           [canvasId]: {
             id: canvasId,
-            layer: nextLayer(parent?.layer ?? "container"),
+            layer: childLayer(parent?.layer ?? "container", def),
             nodes: [],
             relationships: [],
             boundaries: [],

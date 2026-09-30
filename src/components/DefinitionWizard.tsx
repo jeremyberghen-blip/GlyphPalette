@@ -1,7 +1,15 @@
 import { useMemo, useRef, useState } from "react";
 import { icons } from "lucide-react";
 import { X, Plus, Trash2, Upload } from "lucide-react";
-import { LAYERS, LAYER_LABELS, Layer, NodeDefinition, PipDef, PipDirection } from "../types";
+import {
+  DRAWABLE_LAYERS,
+  LAYERS,
+  LAYER_LABELS,
+  Layer,
+  NodeDefinition,
+  PipDef,
+  PipDirection,
+} from "../types";
 import { useApp, uid, nameTaken } from "../store";
 
 const DIRECTIONS: { value: PipDirection; label: string }[] = [
@@ -151,7 +159,8 @@ export default function DefinitionWizard({ editing, onClose }: Props) {
               Layers — where this node can be placed
             </label>
             <div className="flex gap-1.5">
-              {LAYERS.map((l) => (
+              {/* The retired Code layer is only offered to remove it from old definitions */}
+              {LAYERS.filter((l) => DRAWABLE_LAYERS.includes(l) || editing?.layers.includes(l)).map((l) => (
                 <button
                   key={l}
                   onClick={() => toggleLayer(l)}

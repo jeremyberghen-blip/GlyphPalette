@@ -13,6 +13,13 @@ export type Layer = "context" | "container" | "component" | "code";
 
 export const LAYERS: readonly Layer[] = ["context", "container", "component", "code"];
 
+/**
+ * Layers new work can be drawn on. "code" is retired (Hephaestus owns
+ * function-level structure) but stays in `Layer` so older files still load
+ * and their Code canvases stay editable.
+ */
+export const DRAWABLE_LAYERS: readonly Layer[] = ["context", "container", "component"];
+
 export const LAYER_LABELS: Record<Layer, string> = {
   context: "Context",
   container: "Container",
@@ -20,10 +27,16 @@ export const LAYER_LABELS: Record<Layer, string> = {
   code: "Code",
 };
 
-/** The layer one step deeper, clamped at "code". */
+export const isRetiredLayer = (l: Layer): boolean => l === "code";
+
+/**
+ * The layer one step deeper. Clamps at "component" — Component nodes nest
+ * Component canvases. A legacy Code canvas's children stay Code.
+ */
 export function nextLayer(l: Layer): Layer {
-  const i = LAYERS.indexOf(l);
-  return LAYERS[Math.min(i + 1, LAYERS.length - 1)];
+  if (l === "code") return "code";
+  const i = DRAWABLE_LAYERS.indexOf(l);
+  return DRAWABLE_LAYERS[Math.min(i + 1, DRAWABLE_LAYERS.length - 1)];
 }
 
 export interface PipType {
@@ -52,7 +65,10 @@ export interface NodeDefinition {
   pips: PipDef[];
   /** Canvas depicting this component's internals, if any. Shared by reference. */
   canvasId: string | null;
-  /** True when this definition came from collapsing a container. */
+  /**
+   * True when this definition came from collapsing a boundary. Its canvas is
+   * a *pocket*: a same-layer fold, not a deeper level (see lib/layers.ts).
+   */
   expandable?: boolean;
   /** For collapsed boundaries: which inner node/pip each inherited pip maps to. */
   pipMap?: Record<string, RelEnd>;

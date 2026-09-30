@@ -53,8 +53,9 @@ describe("parseProjectFile", () => {
 });
 
 describe("Snip.glyph (real project fixture)", () => {
-  it("loads, and saves back to the same definitions and canvases", () => {
+  it("loads, and saves back unchanged apart from the pocket-layer repair", () => {
     const original = JSON.parse(snipJson);
+    original.canvases["canvas-mun8ytko-3g"].layer = "container"; // Analytics pocket
     const { content, libraryIds } = mergeWithLibrary(parseProjectFile(snipJson), SEED_LIBRARY);
     const rebuilt = buildProjectFile(content, libraryIds);
     expect(rebuilt.definitions).toEqual(original.definitions);

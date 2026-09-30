@@ -222,29 +222,6 @@ const defSeeds: DefSeed[] = [
     layers: ["component"],
     pips: [],
   },
-
-  // ---- Code ----
-  {
-    id: "def-function",
-    name: "Function",
-    icon: "Braces",
-    layers: ["code"],
-    pips: [],
-  },
-  {
-    id: "def-class",
-    name: "Class",
-    icon: "Box",
-    layers: ["code"],
-    pips: [],
-  },
-  {
-    id: "def-type",
-    name: "Type / Interface",
-    icon: "Type",
-    layers: ["code"],
-    pips: [],
-  },
 ];
 
 export const SEED_LIBRARY: LibraryFile = {
