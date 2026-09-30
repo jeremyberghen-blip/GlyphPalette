@@ -17,6 +17,8 @@ few minutes; later launches are fast.
 
 Manually: `npm install`, then `npm run tauri dev`.
 
+Tests: `npm test` (Vitest); `npm run build` type-checks and bundles.
+
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the data model, module

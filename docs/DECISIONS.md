@@ -44,261 +44,27 @@ palette's trash button only deletes definitions that are unused.
 
 ## Decided
 
-All cleared to build on 2026-09-29, when the user approved the post-test
-build order. Versions refer to [`ROADMAP.md`](ROADMAP.md).
+Cleared to build, not yet built. Versions refer to [`ROADMAP.md`](ROADMAP.md).
 
-### Retire the Code layer — Hephaestus owns it (v1.1)
+### Built in v1.1.0 (2026-09-29)
 
-The user decided on 2026-09-29 that the Code layer will not be drawn in GP;
-Hephaestus owns function-level structure entirely. Becomes an ADR amending
-[ADR 0003](decisions/0003-c4-layer-system.md) once built.
+These left this file when v1.1.0 shipped; their reasoning now lives in:
+- Code layer retired, and pockets (collapsed boundaries as same-layer
+  folds) → [ADR 0007](decisions/0007-retire-code-layer-and-pockets.md).
+- Library married to the project, standard library, import → [ADR 0008](decisions/0008-project-owned-library.md).
+- Duplicate / Permute / Ctrl+D, wire waypoints and their rotation handle,
+  soft pip-type affinity, save feedback / autosave / settings / close
+  warning, name tooltips, drag-to-place, layer display, and the seed pip
+  relabel → [`CHANGELOG.md`](CHANGELOG.md) § 1.1.0.
 
-Background: after drawing Snip's Code layer (three functions and a type
-inside Link Service), drawing at function level felt as costly as writing
-the code. Claude's reasoning, agreed:
-- GP earns its keep where decisions are architectural and expensive to
-  reverse — what exists, what talks to what, over which interface. At
-  function level, code is already the best notation; a box per function
-  says less than its signature, and goes stale the day the code changes.
-- That split plays to both sides: people are better at keeping a system's
-  shape coherent; LLMs are good at filling in a well-specified box.
-- The LLM's freedom is *bounded*: free inside a component, constrained by
-  its interface — the port nodes (v1.2) and the interface names on
-  `call`/`import` edges (v1.4).
-- To compensate for the boxes no longer drawn, Component-layer definitions
-  get richer (v1.4): a free-text responsibility/notes field, key exported
-  symbols as text.
+### Pockets — remaining pieces (v1.2, v1.4)
 
-Build details settled 2026-09-29:
-- `code` stays in the `Layer` type so old files load; it's no longer
-  offered anywhere (wizard layer picker, new canvases). No further Code
-  layer support going forward.
-- Component is the deepest drawable layer, and **Component nodes can
-  contain Component-layer canvases** (e.g. a Module holding Files), so
-  nesting stays useful at the bottom and lines up with v1.3's `dir`/`file`
-  kinds. (`nextLayer` clamps at `component`.)
-- Existing Code canvases stay **fully editable** — kept, not supported.
-- Code seeds (Function, Class, Type / Interface) leave `SEED_LIBRARY`, and
-  are pruned from the persisted per-machine library if still unmodified.
-- Bundled fix: collapsing a boundary currently gives its inner canvas
-  `nextLayer(...)` — one layer too deep (Snip's Analytics interior is
-  marked Component while holding containers). A collapsed boundary's
-  interior keeps its parent's layer; affected files are repaired on load.
-  See "Pockets" under Open for the broader idea this raised.
-
-### Pockets: collapsed boundaries as same-layer folds (v1.1, v1.2, v1.4)
-
-Raised and decided 2026-09-29 (user) while planning the collapse-layer fix. Two
-different things currently share one mechanism (a definition with a
-`canvasId`): **decomposition** — a node's interior, one layer down — and
-**grouping** — a collapsed boundary, which is only a fold at the *same*
-layer. Proposal: every layer has a "pocket" that collapsed nodes go into,
-while real nodes lead down to the next layer.
-
-Claude's feedback: agree with the distinction, but model it as a *kind of
-canvas*, not a new `Layer` value — layers are an ordered zoom scale, and a
-pocket isn't a step on it. Likely derived from the existing `expandable`
-flag on collapsed-boundary definitions rather than a new stored field.
-What the distinction buys:
-- Palette/layer display: a pocket shows its parent layer's palette and is
-  labeled as a collapsed group, not a deeper level.
-- Ports (v1.2): real interiors get ports *top-down* from the parent
-  definition (edit the parent to change them); a pocket's pips are derived
-  *bottom-up* from wires crossing the boundary (`pipMap`). The port rules
-  need a pocket variant.
-- Hephaestus export (v1.4): pockets are transparent — flattened away so
-  their contents belong to the pocket's parent. Real interiors are real
-  hierarchy (`dir`).
-- Palette: collapsed groups currently appear as placeable definitions
-  (Analytics showed up in Snip's Container palette); placing a second one
-  would share the canvas and silently alias its contents.
-
-Decided 2026-09-29: modeled as a canvas kind at the parent's layer (not a
-new `Layer`). **v1.1 slice:** pockets keep their parent's layer (bug fix +
-on-load repair), are labeled as collapsed groups in the palette header and
-navigation, and collapsed groups are **hidden from the palette**. Pocket
-port rules land with port nodes (v1.2); pocket flattening lands with the
-`architecture.json` export (v1.4).
-
-### Duplicate and Permute (v1.1)
-
-Raised 2026-09-28, expanded 2026-09-29. Two distinct operations:
-
-1. **Duplicate (with an incremented name).** One click makes a new,
-   independent definition identical to the source except for its name,
-   which is incremented automatically.
-2. **Permute** — the user's name for "new node based on…" (it makes a
-   permutation of the base node). The wizard opens pre-filled with the
-   base definition's name, icon, layers, and pips; the user edits before
-   saving, producing a new independent definition.
-
-Motivation: a node's display name comes from its definition, so every
-distinct thing on a canvas needs its own definition, and today each is
-built from scratch in **New Node** or by renaming a seed — which also
-removes the generic seed from that project's palette (see the friction log).
-Not the same as **Ctrl+C / Ctrl+V**, which copies *instances* that still
-share one definition (one name, one inner canvas).
-
-Build details settled 2026-09-29:
-- **Naming:** a space then a number. `Link Service` → `Link Service 2`; a
-  name already ending in ` N` has that number incremented (`Worker 2` →
-  `Worker 3`). Shared with collapse's existing "Name 2" scheme.
-- **Duplicate:** hover button on each palette card; each click makes the
-  next copy immediately. Same icon, layers, pips; new id.
-- **Permute:** hover button on each palette card; opens the wizard with
-  every field identical to the subject **except the name, which is blank**
-  and focused, ready to type.
-- **Ctrl+D on selected nodes:** each selected node gets a duplicated
-  definition, and the new instances are placed **at the cursor**, keeping
-  their relative layout; wires between selected nodes come along, as with
-  Ctrl+V.
-- **Copies start with an empty interior** (Duplicate, Permute, and Ctrl+D).
-  Duplicating contents is a future feature (Backlog).
-- No link back to the base; pockets can't be duplicated; undoable.
-- **No right-click menu yet** — deliberately held until real use shows
-  where one is wanted.
-
-### Library married to the project (v1.1)
-
-Decided 2026-09-29 (user). Each project owns its library; there's no
-separate per-machine or "current" library.
-- **Standard library:** ships with GP, read-only, always present; its
-  nodes show no pencil — only Duplicate and Permute (into the project).
-- **Project library:** the `.glyph`'s own definitions; every new or edited
-  node goes there.
-- **Import from another project:** pick any `.glyph`, choose definitions
-  (grouped by layer), bring them in. Pip types they use come along;
-  existing pip types keep their colors. Interiors come across **empty**
-  (import-with-contents joins "duplicate with contents" on the Backlog).
-  Pockets are never imported.
-- **Conflicts:** an imported definition whose id *or* name collides gets a
-  new id and a suffix on its name marking it as the import, so both
-  coexist.
-- **No `.glyphlib` format.** A library is just a project you import from;
-  a `.glyph` holding definitions and an empty canvas is a curated library.
-  The standard library may ship as such a file.
-- The per-machine `library.json`, copy-on-use adoption, and the "save to
-  default library" button are retired (checked: the user's library held
-  only the 25 seeds). Supersedes
-  [ADR 0004](decisions/0004-default-library-copy-on-use.md) once built.
-- Existing files that renamed seeds in place (Snip's `def-database` →
-  Links DB) get re-id'd on load so the standard node reappears alongside.
-
-Superseded the same day, never built: a **two-tier "standard + current
-library" model** (one swappable read-write `.glyphlib` loaded per machine,
-with project backup copies for orphaned nodes, an orphan palette section,
-and per-node "add to library" buttons). Dropped in favor of the simpler
-married model, which makes orphans impossible.
-
-### Edge waypoints (v1.1)
-
-Raised 2026-09-29. Double-click a relationship to add a waypoint (bend
-point), so a wire can be routed around nodes. Optional
-`waypoints: {x, y}[]` on `Relationship`; older files load unchanged.
-
-Settled 2026-09-29:
-- **Style:** straight segments with rounded corners (subway-map look).
-- **Add:** double-click a wire; the point is inserted in path order.
-- **Move:** select the wire to show handles; drag a handle.
-- **Remove:** select a handle and press Delete.
-- **Node moves:** waypoints stay put, unless both ends of the wire move
-  together (selection drag, boundary drag, paste/Ctrl+D) — then they
-  translate with them.
-- **Collapse/expand:** crossing wires keep waypoints outside the box and
-  drop those inside; wires wholly inside keep theirs in the pocket.
-- **Rotation/length handle:** selecting a waypoint shows a second handle
-  orbiting it. The waypoint becomes a straight section **pivoting on its
-  center**; the handle's angle rotates it, its distance sets the length
-  (dragged onto the center = length 0, a plain corner). The section's ends
-  curve gently away toward the neighboring connection on each side.
-  Default length: small (~5px). No automatic flipping — the wire goes
-  through the section in the handle's direction even if that tangles it;
-  the user corrects by hand.
-- **Default orientation:** the section aligns with the wire's direction of
-  travel; the handle is drawn forward and a little off that axis so it's
-  easy to see and grab (a fixed visual offset — rotating the handle
-  rotates the section by the same amount).
-- **Minimum ring:** the handle can't come closer than a small ring around
-  the waypoint; the ring registers as length 0, and distance beyond it
-  scales the length up. The handle starts just outside the ring (~5px).
-- **Import naming** (library feature): a colliding import is suffixed with
-  its source project, e.g. `Links DB (Snip)`, then numbered if still taken.
-
-### Save feedback, unsaved marker, autosave, settings (v1.1)
-
-Decided 2026-09-29 (user), expanding the roadmap's "visual save
-confirmation":
-- **Feedback popup:** a small window dead center that fades after ~1.5s
-  on manual save (and open, PNG export, import). Errors are red and stay
-  until dismissed — previously save failures were silently swallowed.
-- **Project name** in the top bar and window title (`Untitled` when new),
-  with a `•` unsaved marker driven by real content changes only (not
-  pan/zoom/selection).
-- **Warnings only when dirty:** New and Open ask only with unsaved
-  changes; **closing the window** with unsaved changes asks Save / Don't
-  save / Cancel (needs a Tauri window capability).
-- **Autosave:** writes to the project's actual file, only when dirty.
-  Untitled projects wait until the first manual save, then autosave to
-  that file. Autosave feedback is a small popup in a corner — present but
-  less distracting. Interval choices: Never, 1, 2, 5, 10, 15 minutes;
-  default 5.
-- **Settings dialog** (gear in the top bar), stored per machine in the app
-  data dir; autosave interval is its first setting.
-- **Bug fix bundled:** New didn't clear the remembered file path, so the
-  next Ctrl+S silently overwrote the previously opened file. New now
-  clears it.
-
-### Full-name tooltips (v1.1)
-
-Decided 2026-09-29. Hovering a node whose name is truncated shows its full
-name in a label above it (same style as the existing pip hover label)
-after a 0.4s delay; untruncated names show nothing. Palette cards' hover
-text becomes the full name plus the placement hint. Pip labels were
-already shown on hover, instantly, and stay that way.
-
-### Drag-to-place from the palette (v1.1)
-
-Decided 2026-09-29. Dragging a palette card onto the canvas shows the
-existing dashed ghost and drops the node centered on release; plain click
-placement is unchanged; releasing off-canvas or Esc cancels; the browser's
-native drag image is suppressed. A Shift+click "keep placing" mode was
-considered and rejected as overkill (Ctrl+C/V and Ctrl+D cover it).
-
-### Layer display; seed pip relabel (v1.1)
-
-Decided 2026-09-29.
-- **Layer colors:** one color per layer used everywhere a layer is shown
-  (palette header, breadcrumbs, navigator); retired Code is neutral grey
-  and reads "Code (retired)"; pockets use their parent layer's color with
-  a "collapsed" note.
-- **Breadcrumbs:** each crumb gets a small colored layer tag. The bar stays
-  hidden at the root, as now.
-- **Navigator:** rows that open into a canvas (and Root) get a **colored
-  dot** for the layer they open into, with the layer name on hover; leaf
-  rows get nothing.
-- **Seed relabel:** the standard API Service's inbound pip label changes
-  "HTTP" → "API". Only the label — the pip id `p-srv-http` stays, since
-  wires reference pips by id. All other seed labels checked and match
-  their types.
-
-### Soft pip-type layer affinity (v1.1)
-
-Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
-hard-with-translating-ports). The definition wizard defaults to and lists
-first the pip types usual for the definition's layer (transport types for
-Containers, Call/Import for Components), but any type can still be picked.
-Hard affinity would have broken port nodes: ports carry the parent's
-transport types onto Component canvases, and `canConnect` requires an
-exact type match, so edge components (a repository speaking SQL, an API
-client speaking REST) must be allowed transport-typed pips.
-
-Build details settled 2026-09-29: each `PipType` gets a `layers` hint.
-The wizard's type dropdown groups "Usual for <layer>" first, "Other types"
-second; a new pip defaults to the first usual type. Custom types get layer
-toggles in the new-type form, defaulting to the current layer. Seed
-assignments: HTTP, REST/JSON, gRPC, TCP/IP, SQL, Event, Queue → Context +
-Container; File I/O → Container + Component; Import, Call → Component.
-Stored explicitly for now; v1.4's edge `kind` may later derive it.
+The v1.1 slice is built ([ADR 0007](decisions/0007-retire-code-layer-and-pockets.md)).
+Still to do: a **pocket variant of the port-node rules** (v1.2) — a pocket's
+ports derive bottom-up from the wires that crossed the boundary, not
+top-down from a parent definition — and **flattening pockets** in the
+`architecture.json` export (v1.4), so their contents belong to the pocket's
+parent.
 
 ### Inbound / Outbound port nodes (v1.2)
 

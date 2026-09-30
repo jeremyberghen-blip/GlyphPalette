@@ -1,6 +1,6 @@
 # Roadmap
 
-What v1.0.0 is, and where things go from here. Nothing below is a commitment
+What v1.1.0 is, and where things go from here. Nothing below is a commitment
 to build it, let alone on the version it's slated to — it's a place to put
 plans so they don't only live in conversation. Move items between versions,
 into Backlog, or out entirely as things change; that's the point of writing
@@ -12,49 +12,21 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.0.0 — current
+## v1.1.0 — current (2026-09-29)
 
-The full node/boundary/relationship model, a C4 layer system (Context →
-Container → Component → Code) with per-layer palette filtering, a
-per-machine default library with copy-on-use adoption into projects,
-persistence (`.glyph` save/load, undo, copy/paste, PNG export), and a dev
-launcher. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full shape and
-[`decisions/`](decisions/) for how it got here.
+Foundation, polish, and library, built from the Snip test run: a Vitest
+suite with a real-project regression fixture; the Code layer retired
+(Hephaestus owns it) and collapsed boundaries as same-layer pockets; the
+library married to the project, with a read-only standard library and
+import from another project; Duplicate / Permute / Ctrl+D; wire bend points
+with a rotation handle; soft pip-type affinity; save feedback, unsaved
+marker, autosave, settings, and a close warning; name tooltips;
+drag-to-place; layer colors in breadcrumbs and navigator. Full list in
+[`CHANGELOG.md`](CHANGELOG.md) § 1.1.0.
 
-## v1.1 — planned: foundation, polish, library
-
-Do first:
-- **Test harness.** GP has no tests yet. Add Vitest, a smoke test (the app's
-  store initializes, a project serializes and reloads), and unit tests for
-  the existing pure logic (`canConnect`, `persist.ts` migrations). Every
-  later item's logic gets its tests in the same pass.
-
-Then, in any order:
-- **Retire the Code layer from the UI.** Hephaestus owns function-level
-  structure. Component becomes the deepest drawable layer; Code seeds leave
-  the default library; files with Code canvases still load.
-- **Pockets:** a collapsed boundary's interior is a same-layer fold, not a
-  deeper level — fixes collapse assigning it the next layer down (with
-  on-load repair), labels pockets as collapsed groups, and hides collapsed
-  groups from the palette.
-- **Duplicate and Permute** for definitions (duplicate with an incremented
-  name; new definition pre-filled from an existing one).
-- **Library married to the project:** each project owns its library; a
-  read-only standard library is always present; import definitions from
-  another `.glyph`. Retires the per-machine default library.
-- **Edge waypoints:** double-click a wire to add a bend point.
-- **Soft pip-type layer affinity:** the definition wizard defaults to and
-  lists first the pip types usual for the definition's layer, but never
-  hides the others.
-- **Save feedback and autosave:** center popup on save, persistent error
-  popups, project name + unsaved marker, dirty-only warnings on New / Open
-  / window close, autosave on a configurable interval, and a Settings
-  dialog. Fixes New not clearing the remembered save path.
-- **Full-name tooltip on nodes** when the name is truncated (0.4s delay),
-  and full names on palette cards.
-- **Drag-to-place from the palette**, alongside click-then-click placement.
-- **Relabel the seed API Service pip** labeled "HTTP" but typed REST/JSON.
-- Show the active layer in the breadcrumb trail and nav tree.
+v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
+relationship model, C4 layers, the per-machine default library, persistence,
+and the dev launcher.
 
 ## v1.2 — planned: port nodes and connection rules
 
