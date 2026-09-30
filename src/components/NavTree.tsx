@@ -7,8 +7,20 @@ import {
   PanelRightOpen,
   Home,
 } from "lucide-react";
-import { NodeInstance } from "../types";
+import { Layer, NodeInstance } from "../types";
 import { useApp } from "../store";
+import { LAYER_COLORS, layerLabel } from "../lib/layerStyle";
+
+/** Colored dot for the layer a row opens into; the layer name shows on hover. */
+function LayerDot({ layer, pocket = false }: { layer: Layer; pocket?: boolean }) {
+  return (
+    <span
+      className="ml-auto mr-1 h-2 w-2 shrink-0 rounded-full"
+      style={{ background: LAYER_COLORS[layer] }}
+      title={layerLabel(layer, pocket)}
+    />
+  );
+}
 
 const MAX_DEPTH = 16;
 
@@ -29,6 +41,7 @@ function TreeNode({
     (s) => s.activeCanvasId === trail[trail.length - 1] && s.selection.includes(node.id)
   );
   const [open, setOpen] = useState(false);
+  const customIcons = useApp((s) => s.customIcons);
   if (!def) return null;
 
   const childCanvas = def.canvasId ? canvases[def.canvasId] : null;
@@ -40,7 +53,6 @@ function TreeNode({
   const Lucide = !def.icon.startsWith("custom:")
     ? icons[def.icon as keyof typeof icons]
     : null;
-  const customIcons = useApp((s) => s.customIcons);
 
   return (
     <div>
@@ -81,6 +93,7 @@ function TreeNode({
           />
         )}
         <span className="truncate">{def.name}</span>
+        {childCanvas && <LayerDot layer={childCanvas.layer} pocket={!!def.expandable} />}
       </div>
       {open && expandable && (
         <div>
@@ -148,6 +161,7 @@ export default function NavTree() {
         >
           <Home size={12} className="shrink-0" />
           <span>Root</span>
+          <LayerDot layer={root.layer} />
         </div>
         {root.nodes.map((n) => (
           <TreeNode key={n.id} node={n} trail={["canvas-root"]} depth={1} />

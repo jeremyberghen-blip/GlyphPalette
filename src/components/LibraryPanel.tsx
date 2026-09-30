@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { icons, Plus, Pencil, Trash2, Search, Library, Import, Copy, Shuffle } from "lucide-react";
-import { LAYER_LABELS, NodeDefinition, isRetiredLayer } from "../types";
+import { LAYER_LABELS, NodeDefinition } from "../types";
+import { LAYER_COLORS, layerLabel } from "../lib/layerStyle";
 import { useApp } from "../store";
 import { canvasOwner } from "../lib/layers";
 import { isStandardDef } from "../lib/standardLibrary";
@@ -199,9 +200,12 @@ export default function LibraryPanel() {
     <aside className="flex w-60 shrink-0 flex-col border-r border-[#2e3040] bg-[#1e1f28]">
       <div className="border-b border-[#2e3040] p-2.5">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
-            {LAYER_LABELS[activeLayer]} layer
-            {isRetiredLayer(activeLayer) && " (retired)"}
+          <span
+            className="truncate text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: LAYER_COLORS[activeLayer] }}
+            title={pocketName ? `Inside the collapsed group ${pocketName}` : undefined}
+          >
+            {layerLabel(activeLayer)} layer
             {pocketName && ` · ${pocketName} (collapsed)`}
           </span>
           <button
