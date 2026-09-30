@@ -192,9 +192,24 @@ to end. Once no wire uses it any more, the pip either disappears (its
 parent pip was deleted) or shows its new transport/style (its parent pip
 was retyped).
 
-To settle: the node dialog's two pickers and how the soft layer affinity
-works across them; where a pip's direction mark goes now that its center
-holds the style color.
+**Node dialog** (settled 2026-09-30): each pip row has a Transport and a
+Style dropdown. Transports keep the soft layer affinity (network transports
+first on Containers, In-process first on Components). Styles are ordered by
+the chosen transport — the styles usual with it first (with HTTP: any,
+REST/JSON, GraphQL, SOAP/XML, Web pages), everything else after; nothing is
+hidden. A new pip defaults to the layer's usual transport plus that
+transport's most common style (HTTP + REST/JSON on a Container, In-process +
+Call on a Component). "+ New transport…" / "+ New style…" end each list; a
+new style records which transports it usually goes with. Presets (named
+pairs) were considered and not chosen.
+
+**Direction mark:** the dark in/out arrow stays at the pip's center, drawn
+on top of the style core — sized so the core color stays readable.
+
+**Broken-but-kept everywhere** (user, 2026-09-30): the broken-link rule
+applies to every node, not just port nodes. Deleting or retyping a pip on
+any definition keeps its wires, drawn red, until the user removes them —
+replacing today's silent wire deletion (ARCHITECTURE § Known rough edges).
 
 Superseded the same day, never built: **HTTP ↔ REST/JSON compatibility** —
 one-way subtype matching (REST/JSON is-a HTTP), or leaving matching strict.
