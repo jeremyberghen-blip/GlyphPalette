@@ -10,6 +10,13 @@ import { toast } from "../lib/toast";
 import DefinitionWizard from "./DefinitionWizard";
 import ImportDialog from "./ImportDialog";
 
+/** MIME type carrying a definition id when a palette card is dragged onto the canvas. */
+export const DEF_DRAG_TYPE = "application/x-glyph-def";
+
+// Blank drag image, so only the canvas's own ghost node follows the cursor
+const BLANK_DRAG_IMAGE = new Image();
+BLANK_DRAG_IMAGE.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
 function DefCard({
   def,
   inUse,
@@ -33,13 +40,23 @@ function DefCard({
   return (
     <div
       onClick={() => useApp.getState().setPlacing(placing ? null : def.id)}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DEF_DRAG_TYPE, def.id);
+        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setDragImage(BLANK_DRAG_IMAGE, 0, 0);
+        useApp.getState().setPlacing(def.id); // drives the canvas ghost
+      }}
+      onDragEnd={() => {
+        // Dropped off the canvas, or cancelled with Esc: nothing placed
+        if (useApp.getState().placingDefId === def.id) useApp.getState().setPlacing(null);
+      }}
       className={`group flex cursor-pointer items-center gap-2.5 rounded border px-2.5 py-2 select-none ${
         placing
           ? "border-[#4c9aff] bg-[#2b3a55]"
           : "border-[#2e3040] bg-[#22242e] hover:border-[#4a4e63]"
       }`}
-      title={`${def.name}
-Click, then click the canvas to place`}
+      title={`${def.name}\nClick then click the canvas, or drag onto it, to place`}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
         {Lucide ? (

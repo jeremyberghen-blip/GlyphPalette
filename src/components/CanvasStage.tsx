@@ -7,6 +7,7 @@ import NodeShape, { NodeVisual } from "./NodeShape";
 import RelationshipShape from "./RelationshipShape";
 import BoundaryShape from "./BoundaryShape";
 import NodeNameTooltip from "./NodeNameTooltip";
+import { DEF_DRAG_TYPE } from "./LibraryPanel";
 import { Shape } from "react-konva";
 import { canConnect, pipWorldPos, wireGeometry } from "../lib/graph";
 
@@ -286,7 +287,37 @@ export default function CanvasStage({ width, height }: { width: number; height: 
     }
   };
 
+  // Drag-to-place from the palette (HTML drag and drop onto the stage)
+  const dropWorld = (e: React.DragEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return toWorld(e.clientX - rect.left, e.clientY - rect.top);
+  };
+  const isDefDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(DEF_DRAG_TYPE);
+
   return (
+    <div
+      className="h-full w-full"
+      onDragOver={(e) => {
+        if (!isDefDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        const w = dropWorld(e);
+        setGhostPos({ x: w.x - NODE_WIDTH / 2, y: w.y - NODE_HEIGHT / 2 });
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setGhostPos(null);
+      }}
+      onDrop={(e) => {
+        const defId = e.dataTransfer.getData(DEF_DRAG_TYPE);
+        if (!defId) return;
+        e.preventDefault();
+        const w = dropWorld(e);
+        const s = useApp.getState();
+        s.addNode(defId, w.x - NODE_WIDTH / 2, w.y - NODE_HEIGHT / 2);
+        s.setPlacing(null);
+        setGhostPos(null);
+      }}
+    >
     <Stage
       ref={stageRef}
       width={width}
@@ -350,5 +381,6 @@ export default function CanvasStage({ width, height }: { width: number; height: 
         )}
       </Layer>
     </Stage>
+    </div>
   );
 }
