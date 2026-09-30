@@ -264,6 +264,23 @@ placement is unchanged; releasing off-canvas or Esc cancels; the browser's
 native drag image is suppressed. A Shift+click "keep placing" mode was
 considered and rejected as overkill (Ctrl+C/V and Ctrl+D cover it).
 
+### Layer display; seed pip relabel (v1.1)
+
+Decided 2026-09-29.
+- **Layer colors:** one color per layer used everywhere a layer is shown
+  (palette header, breadcrumbs, navigator); retired Code is neutral grey
+  and reads "Code (retired)"; pockets use their parent layer's color with
+  a "collapsed" note.
+- **Breadcrumbs:** each crumb gets a small colored layer tag. The bar stays
+  hidden at the root, as now.
+- **Navigator:** rows that open into a canvas (and Root) get a **colored
+  dot** for the layer they open into, with the layer name on hover; leaf
+  rows get nothing.
+- **Seed relabel:** the standard API Service's inbound pip label changes
+  "HTTP" → "API". Only the label — the pip id `p-srv-http` stays, since
+  wires reference pips by id. All other seed labels checked and match
+  their types.
+
 ### Soft pip-type layer affinity (v1.1)
 
 Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
