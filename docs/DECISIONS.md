@@ -256,6 +256,14 @@ after a 0.4s delay; untruncated names show nothing. Palette cards' hover
 text becomes the full name plus the placement hint. Pip labels were
 already shown on hover, instantly, and stay that way.
 
+### Drag-to-place from the palette (v1.1)
+
+Decided 2026-09-29. Dragging a palette card onto the canvas shows the
+existing dashed ghost and drops the node centered on release; plain click
+placement is unchanged; releasing off-canvas or Esc cancels; the browser's
+native drag image is suppressed. A Shift+click "keep placing" mode was
+considered and rejected as overkill (Ctrl+C/V and Ctrl+D cover it).
+
 ### Soft pip-type layer affinity (v1.1)
 
 Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
