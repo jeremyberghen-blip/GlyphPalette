@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  CORNER_RADIUS,
   DEFAULT_HALF,
   HANDLE_OFFSET,
   HANDLE_RING,
   PIP_STUB,
   addWaypoint,
   applyHandle,
+  cornerRadius,
   handlePosition,
   insertionIndex,
   sectionEnds,
@@ -75,11 +77,40 @@ describe("section geometry", () => {
       {
         moveTo: (x, y) => calls.push(`M${x},${y}`),
         lineTo: (x, y) => calls.push(`L${x},${y}`),
-        arcTo: (_x1, _y1, _x2, _y2, r) => calls.push(`A${r}`),
+        arcTo: (_x1, _y1, _x2, _y2, r) => calls.push(`A${+r.toFixed(6)}`),
       },
       [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 10 }, { x: 200, y: 10 }]
     );
     expect(calls).toEqual(["M0,0", "A5", "A5", "L200,10"]);
+  });
+});
+
+describe("cornerRadius", () => {
+  /** How far along each segment the rounded corner starts. */
+  const reach = (r: number, from: { x: number; y: number }, at: { x: number; y: number }, to: { x: number; y: number }) => {
+    const a = Math.atan2(from.y - at.y, from.x - at.x);
+    const b = Math.atan2(to.y - at.y, to.x - at.x);
+    let theta = Math.abs(a - b);
+    if (theta > Math.PI) theta = 2 * Math.PI - theta;
+    return r / Math.tan(theta / 2);
+  };
+
+  it("uses the full radius on an ordinary right-angle corner", () => {
+    expect(cornerRadius({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 })).toBe(CORNER_RADIUS);
+  });
+
+  it("keeps a near-hairpin's curve within its segments (the rotation bug)", () => {
+    // The wire runs out 100px and folds almost straight back
+    const from = { x: 0, y: 0 };
+    const at = { x: 100, y: 0 };
+    const to = { x: 0, y: 3 };
+    const r = cornerRadius(from, at, to);
+    expect(reach(r, from, at, to)).toBeLessThanOrEqual(50 + 1e-9);
+  });
+
+  it("makes a full reversal a sharp point, and handles zero-length segments", () => {
+    expect(cornerRadius({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 0 })).toBe(0);
+    expect(cornerRadius({ x: 5, y: 5 }, { x: 5, y: 5 }, { x: 9, y: 9 })).toBe(0);
   });
 });
 

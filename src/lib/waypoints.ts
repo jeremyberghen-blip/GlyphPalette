@@ -60,12 +60,30 @@ export interface PathSink {
   arcTo(x1: number, y1: number, x2: number, y2: number, r: number): void;
 }
 
+/**
+ * Rounding radius for the corner at `at`. A rounded corner starts and ends
+ * r / tan(θ/2) along each segment (θ = the angle between them), which grows
+ * without bound as the wire folds back on itself — so the radius shrinks
+ * until the curve fits within half of each segment. A full hairpin gets a
+ * sharp point instead of a curve that shoots off into space.
+ */
+export function cornerRadius(from: Pt, at: Pt, to: Pt): number {
+  const lenIn = dist(from, at);
+  const lenOut = dist(at, to);
+  if (lenIn === 0 || lenOut === 0) return 0;
+  const cos =
+    ((from.x - at.x) * (to.x - at.x) + (from.y - at.y) * (to.y - at.y)) / (lenIn * lenOut);
+  const theta = Math.acos(Math.max(-1, Math.min(1, cos)));
+  const fit = (Math.min(lenIn, lenOut) / 2) * Math.tan(theta / 2);
+  return Math.max(0, Math.min(CORNER_RADIUS, fit));
+}
+
 /** Traces straight segments through `pts` with rounded corners. */
 export function traceRounded(ctx: PathSink, pts: Pt[]): void {
   if (!pts.length) return;
   ctx.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length - 1; i++) {
-    const r = Math.min(CORNER_RADIUS, dist(pts[i - 1], pts[i]) / 2, dist(pts[i], pts[i + 1]) / 2);
+    const r = cornerRadius(pts[i - 1], pts[i], pts[i + 1]);
     ctx.arcTo(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y, r);
   }
   const last = pts[pts.length - 1];
