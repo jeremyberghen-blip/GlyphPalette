@@ -44,22 +44,24 @@ with copy-on-use ([ADR 0004](decisions/0004-default-library-copy-on-use.md)):
 - Loading a library **replaces** the current library, so you always have
   standard + whatever you just loaded.
 
-Open problem (under discussion): what happens to nodes on a canvas whose
-definition isn't in the newly loaded library?
-
-Claude's proposal: **libraries first, project snapshot as a safety net.** A
+Orphan problem — decided 2026-09-29 (user chose option C, **libraries
+first, project snapshot as a safety net**), over (A) project references
+only / missing nodes shown as placeholders, and (B) loading a library
+silently absorbs the project's missing nodes. A
 placed node resolves its definition from the current library, then the
 standard library, and only if neither has it, from a copy the `.glyph`
 file keeps of every definition it uses. So a project always opens and
 renders on its own (sharing, Hephaestus export), and swapping libraries
 never breaks a canvas. Orphans — used on a canvas but in neither library —
-appear in a third palette section, "In this project, not in library", with
-an "Add to current library" action. If the current library has the same id
+appear in a third palette section, "In this project, not in library", and
+**every such node gets its own button to add it to the current library**. If the current library has the same id
 with different content, the library wins (it's the living one), and pips
 it no longer has are handled like port nodes: kept, marked broken.
 
-Consequences to settle: standard nodes can't be edited in place (only
-Duplicate/Permute into the current library); existing files that renamed
+Also decided: **standard nodes show no pencil — only Duplicate and
+Permute** (into the current library). Still open: whether a `.glyph`
+remembers which `.glyphlib` it was last used with and offers to switch.
+Other consequences: existing files that renamed
 seeds in place (Snip's `def-database` → Links DB) need re-id'ing on load;
 the "save to default library" button goes away (everything already goes to
 the library); the current library's file is remembered per machine and
