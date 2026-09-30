@@ -1,19 +1,24 @@
 import { useMemo, useState } from "react";
-import { icons, Plus, Pencil, Trash2, Search, BookMarked, Library } from "lucide-react";
+import { icons, Plus, Pencil, Trash2, Search, Library, Import } from "lucide-react";
 import { LAYER_LABELS, NodeDefinition, isRetiredLayer } from "../types";
 import { useApp } from "../store";
 import { canvasOwner } from "../lib/layers";
+import { isStandardDef } from "../lib/standardLibrary";
+import { pickGlyphFile, readProjectContent } from "../lib/persist";
+import { ProjectContent } from "../lib/projectFile";
 import DefinitionWizard from "./DefinitionWizard";
+import ImportDialog from "./ImportDialog";
 
 function DefCard({
   def,
   inUse,
-  fromLibrary,
+  standard,
   onEdit,
 }: {
   def: NodeDefinition;
   inUse: boolean;
-  fromLibrary: boolean;
+  /** Standard-library node: read-only, so no edit or delete. */
+  standard: boolean;
   onEdit: () => void;
 }) {
   const placing = useApp((s) => s.placingDefId === def.id);
@@ -46,8 +51,8 @@ function DefCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm text-[#e2e4ee]">{def.name}</span>
-          {fromLibrary && (
-            <Library size={11} className="shrink-0 text-[#565a72]" aria-label="From the default library" />
+          {standard && (
+            <Library size={11} className="shrink-0 text-[#565a72]" aria-label="Standard library" />
           )}
         </div>
         <div className="text-[10px] text-[#565a72]">
@@ -55,46 +60,40 @@ function DefCard({
         </div>
       </div>
       <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
-        {!fromLibrary && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              useApp.getState().promoteToDefaultLibrary(def.id);
-            }}
-            className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-[#4c9aff]"
-            title="Save to the default library (available in every project)"
-          >
-            <BookMarked size={13} />
-          </button>
+        {!standard && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+              title="Edit definition"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                useApp.getState().removeDefinition(def.id);
+              }}
+              disabled={inUse}
+              className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-[#f87171] disabled:cursor-not-allowed disabled:opacity-30"
+              title={inUse ? "In use on a canvas — remove instances first" : "Delete definition"}
+            >
+              <Trash2 size={13} />
+            </button>
+          </>
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
-          title="Edit definition"
-        >
-          <Pencil size={13} />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            useApp.getState().removeDefinition(def.id);
-          }}
-          disabled={inUse || fromLibrary}
-          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-[#f87171] disabled:cursor-not-allowed disabled:opacity-30"
-          title={
-            fromLibrary
-              ? "From the default library — place or edit it to bring it into this project"
-              : inUse
-                ? "In use on a canvas — remove instances first"
-                : "Delete definition"
-          }
-        >
-          <Trash2 size={13} />
-        </button>
       </div>
+    </div>
+  );
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
+      {children}
     </div>
   );
 }
@@ -103,7 +102,6 @@ export default function LibraryPanel() {
   const definitions = useApp((s) => s.definitions);
   const canvases = useApp((s) => s.canvases);
   const pipTypes = useApp((s) => s.pipTypes);
-  const defaultLibraryIds = useApp((s) => s.defaultLibraryIds);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
   const pocketName = useApp((s) => {
     const owner = canvasOwner(s.definitions, s.activeCanvasId);
@@ -114,6 +112,7 @@ export default function LibraryPanel() {
     open: false,
     editing: null,
   });
+  const [importing, setImporting] = useState<{ source: ProjectContent; name: string } | null>(null);
 
   const usedDefIds = useMemo(() => {
     const used = new Set<string>();
@@ -130,16 +129,45 @@ export default function LibraryPanel() {
       .filter((d) => !q || d.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [definitions, search, activeLayer]);
+  const projectDefs = defs.filter((d) => !isStandardDef(d.id));
+  const standardDefs = defs.filter((d) => isStandardDef(d.id));
+
+  const startImport = async () => {
+    const picked = await pickGlyphFile("Import nodes from another project");
+    if (!picked) return;
+    try {
+      setImporting({ source: readProjectContent(picked.text), name: picked.name });
+    } catch (e) {
+      window.alert(`Couldn't read ${picked.name}: ${(e as Error).message}`);
+    }
+  };
+
+  const card = (d: NodeDefinition) => (
+    <DefCard
+      key={d.id}
+      def={d}
+      inUse={usedDefIds.has(d.id)}
+      standard={isStandardDef(d.id)}
+      onEdit={() => setWizard({ open: true, editing: d })}
+    />
+  );
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-[#2e3040] bg-[#1e1f28]">
       <div className="border-b border-[#2e3040] p-2.5">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
             {LAYER_LABELS[activeLayer]} layer
             {isRetiredLayer(activeLayer) && " (retired)"}
             {pocketName && ` · ${pocketName} (collapsed)`}
           </span>
+          <button
+            onClick={() => void startImport()}
+            className="shrink-0 rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+            title="Import nodes from another project"
+          >
+            <Import size={13} />
+          </button>
         </div>
         <button
           onClick={() => setWizard({ open: true, editing: null })}
@@ -159,15 +187,18 @@ export default function LibraryPanel() {
       </div>
 
       <div className="flex-1 space-y-1.5 overflow-y-auto p-2.5">
-        {defs.map((d) => (
-          <DefCard
-            key={d.id}
-            def={d}
-            inUse={usedDefIds.has(d.id)}
-            fromLibrary={!!defaultLibraryIds[d.id]}
-            onEdit={() => setWizard({ open: true, editing: d })}
-          />
-        ))}
+        {projectDefs.length > 0 && (
+          <>
+            <SectionHeader>This project</SectionHeader>
+            {projectDefs.map(card)}
+          </>
+        )}
+        {standardDefs.length > 0 && (
+          <>
+            <SectionHeader>Standard</SectionHeader>
+            {standardDefs.map(card)}
+          </>
+        )}
         {defs.length === 0 && (
           <div className="p-3 text-center text-xs text-[#565a72]">
             No {LAYER_LABELS[activeLayer].toLowerCase()}-layer nodes
@@ -197,6 +228,14 @@ export default function LibraryPanel() {
         <DefinitionWizard
           editing={wizard.editing}
           onClose={() => setWizard({ open: false, editing: null })}
+        />
+      )}
+      {importing && (
+        <ImportDialog
+          source={importing.source}
+          sourceName={importing.name}
+          onClose={() => setImporting(null)}
+          onImported={() => {}}
         />
       )}
     </aside>

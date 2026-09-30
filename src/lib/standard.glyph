@@ -1,0 +1,451 @@
+{
+  "app": "glyph-palette",
+  "version": 1,
+  "pipTypes": {
+    "t-http": {
+      "id": "t-http",
+      "name": "HTTP",
+      "color": "#4ade80"
+    },
+    "t-rest": {
+      "id": "t-rest",
+      "name": "REST/JSON",
+      "color": "#22d3ee"
+    },
+    "t-grpc": {
+      "id": "t-grpc",
+      "name": "gRPC",
+      "color": "#818cf8"
+    },
+    "t-tcp": {
+      "id": "t-tcp",
+      "name": "TCP/IP",
+      "color": "#4c9aff"
+    },
+    "t-sql": {
+      "id": "t-sql",
+      "name": "SQL",
+      "color": "#f59e0b"
+    },
+    "t-event": {
+      "id": "t-event",
+      "name": "Event",
+      "color": "#a78bfa"
+    },
+    "t-queue": {
+      "id": "t-queue",
+      "name": "Queue",
+      "color": "#fb923c"
+    },
+    "t-file": {
+      "id": "t-file",
+      "name": "File I/O",
+      "color": "#f472b6"
+    },
+    "t-import": {
+      "id": "t-import",
+      "name": "Import",
+      "color": "#94a3b8"
+    },
+    "t-call": {
+      "id": "t-call",
+      "name": "Call",
+      "color": "#64748b"
+    }
+  },
+  "definitions": {
+    "def-system": {
+      "id": "def-system",
+      "name": "System",
+      "icon": "Box",
+      "layers": [
+        "context"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-person": {
+      "id": "def-person",
+      "name": "Person",
+      "icon": "User",
+      "layers": [
+        "context",
+        "container"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-external": {
+      "id": "def-external",
+      "name": "External System",
+      "icon": "Cloud",
+      "layers": [
+        "context",
+        "container",
+        "component"
+      ],
+      "pips": [
+        {
+          "id": "p-ext-in",
+          "label": "In",
+          "typeId": "t-rest",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-ext-out",
+          "label": "Out",
+          "typeId": "t-rest",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-internet": {
+      "id": "def-internet",
+      "name": "Internet",
+      "icon": "Globe",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-inet-http",
+          "label": "Requests",
+          "typeId": "t-http",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-firewall": {
+      "id": "def-firewall",
+      "name": "Firewall",
+      "icon": "Shield",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-fw-in",
+          "label": "WAN",
+          "typeId": "t-http",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-fw-out",
+          "label": "LAN",
+          "typeId": "t-http",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-webapp": {
+      "id": "def-webapp",
+      "name": "Web App",
+      "icon": "Globe",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-wa-in",
+          "label": "HTTP",
+          "typeId": "t-http",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-wa-api",
+          "label": "API",
+          "typeId": "t-rest",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-spa": {
+      "id": "def-spa",
+      "name": "Single-Page App",
+      "icon": "Monitor",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-spa-api",
+          "label": "API",
+          "typeId": "t-rest",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-mobile": {
+      "id": "def-mobile",
+      "name": "Mobile App",
+      "icon": "Smartphone",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-mob-api",
+          "label": "API",
+          "typeId": "t-rest",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-server": {
+      "id": "def-server",
+      "name": "API Service",
+      "icon": "Server",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-srv-http",
+          "label": "HTTP",
+          "typeId": "t-rest",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-srv-sql",
+          "label": "DB",
+          "typeId": "t-sql",
+          "direction": "outbound",
+          "side": "right"
+        },
+        {
+          "id": "p-srv-evt",
+          "label": "Events",
+          "typeId": "t-event",
+          "direction": "bidirectional",
+          "side": "bottom"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-gateway": {
+      "id": "def-gateway",
+      "name": "API Gateway",
+      "icon": "Network",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-gw-in",
+          "label": "Inbound",
+          "typeId": "t-http",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-gw-out",
+          "label": "Upstream",
+          "typeId": "t-rest",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-database": {
+      "id": "def-database",
+      "name": "Database",
+      "icon": "Database",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-db-sql",
+          "label": "SQL",
+          "typeId": "t-sql",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-db-evt",
+          "label": "Events",
+          "typeId": "t-event",
+          "direction": "bidirectional",
+          "side": "top"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-cache": {
+      "id": "def-cache",
+      "name": "Cache",
+      "icon": "Zap",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-cache-in",
+          "label": "Get/Set",
+          "typeId": "t-tcp",
+          "direction": "inbound",
+          "side": "left"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-queue": {
+      "id": "def-queue",
+      "name": "Message Queue",
+      "icon": "Layers",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-q-pub",
+          "label": "Publish",
+          "typeId": "t-queue",
+          "direction": "inbound",
+          "side": "left"
+        },
+        {
+          "id": "p-q-sub",
+          "label": "Consume",
+          "typeId": "t-queue",
+          "direction": "outbound",
+          "side": "right"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-blobstore": {
+      "id": "def-blobstore",
+      "name": "Object Store",
+      "icon": "Package",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-blob-io",
+          "label": "Get/Put",
+          "typeId": "t-rest",
+          "direction": "inbound",
+          "side": "left"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-worker": {
+      "id": "def-worker",
+      "name": "Worker / Job",
+      "icon": "Cog",
+      "layers": [
+        "container"
+      ],
+      "pips": [
+        {
+          "id": "p-wrk-q",
+          "label": "Jobs",
+          "typeId": "t-queue",
+          "direction": "inbound",
+          "side": "left"
+        }
+      ],
+      "canvasId": null
+    },
+    "def-file": {
+      "id": "def-file",
+      "name": "File",
+      "icon": "FileCode",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-module": {
+      "id": "def-module",
+      "name": "Module",
+      "icon": "Folder",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-controller": {
+      "id": "def-controller",
+      "name": "Controller",
+      "icon": "Workflow",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-service": {
+      "id": "def-service",
+      "name": "Service",
+      "icon": "Cog",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-repository": {
+      "id": "def-repository",
+      "name": "Repository",
+      "icon": "Database",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-client": {
+      "id": "def-client",
+      "name": "Client / Adapter",
+      "icon": "Cable",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    },
+    "def-model": {
+      "id": "def-model",
+      "name": "Model / Schema",
+      "icon": "Table",
+      "layers": [
+        "component"
+      ],
+      "pips": [],
+      "canvasId": null
+    }
+  },
+  "customIcons": {},
+  "canvases": {
+    "canvas-root": {
+      "id": "canvas-root",
+      "layer": "context",
+      "nodes": [],
+      "relationships": [],
+      "boundaries": []
+    }
+  }
+}

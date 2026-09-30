@@ -15,8 +15,13 @@ import {
 } from "./types";
 import { canConnect } from "./lib/graph";
 import { childLayer } from "./lib/layers";
-import { SEED_LIBRARY, LibraryFile } from "./lib/defaultLibrary";
-import { saveDefaultLibrary } from "./lib/library";
+import { STANDARD, isStandardDef } from "./lib/standardLibrary";
+import { nameTaken, uniqueName } from "./lib/definitions";
+import { ImportPlan } from "./lib/importDefs";
+import { uid } from "./lib/ids";
+
+export { nameTaken } from "./lib/definitions";
+export { uid } from "./lib/ids";
 
 interface Rect {
   x: number;
@@ -38,27 +43,31 @@ export const rectsIntersect = (a: Rect, b: Rect): boolean =>
   a.y < b.y + b.height &&
   a.y + a.height > b.y;
 
-let idCounter = 0;
-export const uid = () => `${Date.now().toString(36)}-${(idCounter++).toString(36)}`;
-
-// ---- Seed data ----
+// ---- Fresh project ----
 //
-// Node definitions and pip types come from the default library (lib/library.ts,
-// persisted per machine, seeded from SEED_LIBRARY). At store-init time we only
-// have the built-in seed; App hydrates the persisted copy on mount.
+// Definitions and pip types are the read-only standard library
+// (lib/standardLibrary.ts) plus the project's own. A fresh project is a
+// Context canvas holding one System node to decompose — the project's own
+// copy, since standard nodes can't be renamed or given pips.
 
-const seedDefIds = Object.keys(SEED_LIBRARY.definitions);
-
-/** A fresh project: a Context canvas with one System node to decompose. */
-function freshRootCanvas(): CanvasData {
-  return {
+function freshProject(): Pick<AppState, "pipTypes" | "definitions" | "customIcons" | "canvases"> {
+  const system: NodeDefinition = {
+    ...structuredClone(STANDARD.definitions["def-system"]),
+    id: `def-${uid()}`,
+    name: "My System",
+  };
+  const root: CanvasData = {
     id: "canvas-root",
     layer: "context",
-    nodes: [
-      { id: uid(), definitionId: "def-system", x: -NODE_WIDTH / 2, y: -NODE_HEIGHT / 2 },
-    ],
+    nodes: [{ id: uid(), definitionId: system.id, x: -NODE_WIDTH / 2, y: -NODE_HEIGHT / 2 }],
     relationships: [],
     boundaries: [],
+  };
+  return {
+    pipTypes: structuredClone(STANDARD.pipTypes),
+    definitions: { ...structuredClone(STANDARD.definitions), [system.id]: system },
+    customIcons: {},
+    canvases: { [root.id]: root },
   };
 }
 
@@ -68,7 +77,7 @@ export interface Snapshot {
   canvases: Record<string, CanvasData>;
   definitions: Record<string, NodeDefinition>;
   pipTypes: Record<string, PipType>;
-  defaultLibraryIds: Record<string, true>;
+  customIcons: Record<string, string>;
   activeCanvasId: string;
   trail: string[];
 }
@@ -81,7 +90,7 @@ function pushSnap(s: {
   canvases: Record<string, CanvasData>;
   definitions: Record<string, NodeDefinition>;
   pipTypes: Record<string, PipType>;
-  defaultLibraryIds: Record<string, true>;
+  customIcons: Record<string, string>;
   activeCanvasId: string;
   trail: string[];
 }): Snapshot[] {
@@ -89,7 +98,7 @@ function pushSnap(s: {
     canvases: s.canvases,
     definitions: s.definitions,
     pipTypes: s.pipTypes,
-    defaultLibraryIds: s.defaultLibraryIds,
+    customIcons: s.customIcons,
     activeCanvasId: s.activeCanvasId,
     trail: s.trail,
   });
@@ -121,15 +130,12 @@ export interface WireDrag {
 
 interface AppState {
   pipTypes: Record<string, PipType>;
-  definitions: Record<string, NodeDefinition>;
   /**
-   * Ids of definitions currently sourced from the default library (templates,
-   * not yet part of the open project). Placing or editing one "adopts" it — the
-   * id drops out of here and the definition is saved with the project.
+   * Standard-library definitions (read-only; see isStandardDef) plus the
+   * project's own. A standard definition's `canvasId` may be set in-project
+   * when the user draws its interior.
    */
-  defaultLibraryIds: Record<string, true>;
-  /** The persisted default library, kept so the user can promote defs into it. */
-  defaultLibrary: LibraryFile;
+  definitions: Record<string, NodeDefinition>;
   /** User-uploaded icon images, id → data URL. Referenced as icon "custom:<id>". */
   customIcons: Record<string, string>;
   canvases: Record<string, CanvasData>;
@@ -155,7 +161,7 @@ interface AppState {
   undo: () => void;
   copySelection: () => void;
   paste: () => void;
-  /** Resets to a fresh seeded project. */
+  /** Resets to a fresh project. */
   newProject: () => void;
 
   setPlacing: (defId: string | null) => void;
@@ -192,27 +198,15 @@ interface AppState {
 
   addPipType: (name: string, color: string) => string;
   addCustomIcon: (dataUrl: string) => string;
-  /** Adds or replaces a definition. Caller must have validated name uniqueness. */
+  /**
+   * Adds or replaces a project definition. Caller must have validated name
+   * uniqueness. Standard definitions are read-only and are ignored.
+   */
   saveDefinition: (def: NodeDefinition) => void;
-  /** Deletes a definition; only valid when no instance uses it. */
+  /** Deletes a project definition; only valid when no instance uses it. */
   removeDefinition: (defId: string) => void;
-
-  /** Merges the persisted default library over the built-in seed (App, on mount). */
-  hydrateDefaultLibrary: (lib: LibraryFile) => void;
-  /** Copies a project definition into the default library and persists it. */
-  promoteToDefaultLibrary: (defId: string) => void;
-}
-
-/** True if a definition name is taken (case-insensitive), excluding one id. */
-export function nameTaken(
-  defs: Record<string, NodeDefinition>,
-  name: string,
-  excludeId?: string
-): boolean {
-  const lower = name.trim().toLowerCase();
-  return Object.values(defs).some(
-    (d) => d.id !== excludeId && d.name.toLowerCase() === lower
-  );
+  /** Adds definitions (and the pip types / icons they need) planned by lib/importDefs. */
+  importDefinitions: (plan: ImportPlan) => void;
 }
 
 /** Looks up a pip definition from a node instance id. */
@@ -227,15 +221,7 @@ export function getPip(
 }
 
 export const useApp = create<AppState>((set) => ({
-  pipTypes: { ...SEED_LIBRARY.pipTypes },
-  definitions: structuredClone(SEED_LIBRARY.definitions),
-  defaultLibraryIds: Object.fromEntries(seedDefIds.map((id) => [id, true as const])),
-  defaultLibrary: SEED_LIBRARY,
-  customIcons: {},
-  canvases: (() => {
-    const root = freshRootCanvas();
-    return { [root.id]: root };
-  })(),
+  ...freshProject(),
   activeCanvasId: "canvas-root",
   trail: ["canvas-root"],
   viewports: {},
@@ -320,18 +306,11 @@ export const useApp = create<AppState>((set) => ({
     }),
 
   newProject: () =>
-    set((s) => {
-      const root = freshRootCanvas();
+    set(() => {
       return {
-        pipTypes: { ...s.defaultLibrary.pipTypes },
-        definitions: structuredClone(s.defaultLibrary.definitions),
-        defaultLibraryIds: Object.fromEntries(
-          Object.keys(s.defaultLibrary.definitions).map((id) => [id, true as const])
-        ),
-        customIcons: {},
-        canvases: { [root.id]: root },
-        activeCanvasId: root.id,
-        trail: [root.id],
+        ...freshProject(),
+        activeCanvasId: "canvas-root",
+        trail: ["canvas-root"],
         viewports: {},
         selection: [],
         placingDefId: null,
@@ -414,12 +393,7 @@ export const useApp = create<AppState>((set) => ({
       }
 
       // Unique library name: "Name", "Name 2", "Name 3", …
-      let name = box.name.trim() || "Boundary";
-      if (nameTaken(s.definitions, name)) {
-        let i = 2;
-        while (nameTaken(s.definitions, `${name} ${i}`)) i++;
-        name = `${name} ${i}`;
-      }
+      const name = uniqueName(box.name.trim() || "Boundary", (n) => nameTaken(s.definitions, n));
 
       const innerCanvas: CanvasData = {
         id: `canvas-${uid()}`,
@@ -570,7 +544,6 @@ export const useApp = create<AppState>((set) => ({
       let canvasId = def.canvasId;
       let definitions = s.definitions;
       let canvases = s.canvases;
-      let defaultLibraryIds = s.defaultLibraryIds;
       if (!canvasId) {
         const parent = s.canvases[s.activeCanvasId];
         canvasId = `canvas-${uid()}`;
@@ -584,21 +557,17 @@ export const useApp = create<AppState>((set) => ({
             boundaries: [],
           },
         };
+        // A standard node's interior belongs to this project; the file keeps
+        // it in `standardInteriors`.
         definitions = {
           ...definitions,
           [defId]: { ...def, canvasId },
         };
-        // Drawing a node's internals makes it project-specific — adopt it.
-        if (defaultLibraryIds[defId]) {
-          defaultLibraryIds = { ...defaultLibraryIds };
-          delete defaultLibraryIds[defId];
-        }
       }
       if (s.trail.includes(canvasId)) return {}; // no cycles into an ancestor
       return {
         definitions,
         canvases,
-        defaultLibraryIds,
         activeCanvasId: canvasId,
         trail: [...s.trail, canvasId],
         viewport: s.viewports[canvasId] ?? s.viewport,
@@ -678,15 +647,8 @@ export const useApp = create<AppState>((set) => ({
     set((s) => {
       const canvas = s.canvases[s.activeCanvasId];
       const node: NodeInstance = { id: uid(), definitionId, x, y };
-      // Placing a default-library node copies it into the project.
-      let defaultLibraryIds = s.defaultLibraryIds;
-      if (defaultLibraryIds[definitionId]) {
-        defaultLibraryIds = { ...defaultLibraryIds };
-        delete defaultLibraryIds[definitionId];
-      }
       return {
         undoStack: pushSnap(s),
-        defaultLibraryIds,
         canvases: {
           ...s.canvases,
           [canvas.id]: { ...canvas, nodes: [...canvas.nodes, node] },
@@ -778,6 +740,7 @@ export const useApp = create<AppState>((set) => ({
 
   saveDefinition: (def) =>
     set((s) => {
+      if (isStandardDef(def.id)) return {};
       // Pips may have been removed on edit — drop relationships that
       // reference a pip that no longer exists on this definition.
       const pipIds = new Set(def.pips.map((p) => p.id));
@@ -796,76 +759,42 @@ export const useApp = create<AppState>((set) => ({
           return [cid, { ...c, relationships }];
         })
       );
-      // Editing a definition makes a project-local copy — adopt it.
-      const defaultLibraryIds = { ...s.defaultLibraryIds };
-      delete defaultLibraryIds[def.id];
       return {
         undoStack: pushSnap(s),
         definitions: { ...s.definitions, [def.id]: { ...def, layers: def.layers?.length ? def.layers : (["container"] as Layer[]) } },
-        defaultLibraryIds,
         canvases,
       };
     }),
 
   removeDefinition: (defId) =>
     set((s) => {
+      if (isStandardDef(defId)) return {};
       const inUse = Object.values(s.canvases).some((c) =>
         c.nodes.some((n) => n.definitionId === defId)
       );
       if (inUse) return {};
       const definitions = { ...s.definitions };
       delete definitions[defId];
-      const defaultLibraryIds = { ...s.defaultLibraryIds };
-      delete defaultLibraryIds[defId];
       return {
+        undoStack: pushSnap(s),
         definitions,
-        defaultLibraryIds,
         placingDefId: s.placingDefId === defId ? null : s.placingDefId,
       };
     }),
 
-  hydrateDefaultLibrary: (lib) =>
+  importDefinitions: (plan) =>
     set((s) => {
+      if (!plan.definitions.length) return {};
       const definitions = { ...s.definitions };
+      for (const d of plan.definitions) definitions[d.id] = d;
       const pipTypes = { ...s.pipTypes };
-      const defaultLibraryIds = { ...s.defaultLibraryIds };
-      for (const [id, d] of Object.entries(lib.definitions)) {
-        // Replace only entries the project hasn't adopted or created.
-        if (s.defaultLibraryIds[id] || !definitions[id]) {
-          definitions[id] = structuredClone(d);
-          defaultLibraryIds[id] = true;
-        }
-      }
-      for (const [id, t] of Object.entries(lib.pipTypes)) {
-        if (!pipTypes[id]) pipTypes[id] = t;
-      }
-      return { definitions, pipTypes, defaultLibraryIds, defaultLibrary: lib };
-    }),
-
-  promoteToDefaultLibrary: (defId) =>
-    set((s) => {
-      const def = s.definitions[defId];
-      if (!def) return {};
-      // Store a plain template — no project-specific canvas or collapse metadata.
-      const template: NodeDefinition = {
-        id: def.id,
-        name: def.name,
-        icon: def.icon,
-        layers: def.layers?.length ? [...def.layers] : (["container"] as Layer[]),
-        pips: def.pips.map((p) => ({ ...p })),
-        canvasId: null,
-      };
-      const pipTypes = { ...s.defaultLibrary.pipTypes };
-      for (const p of template.pips) {
-        if (s.pipTypes[p.typeId] && !pipTypes[p.typeId]) pipTypes[p.typeId] = s.pipTypes[p.typeId];
-      }
-      const lib: LibraryFile = {
-        version: 1,
+      for (const t of plan.pipTypes) pipTypes[t.id] ??= t;
+      return {
+        undoStack: pushSnap(s),
+        definitions,
         pipTypes,
-        definitions: { ...s.defaultLibrary.definitions, [defId]: template },
+        customIcons: { ...s.customIcons, ...plan.customIcons },
       };
-      void saveDefaultLibrary(lib);
-      return { defaultLibrary: lib };
     }),
 }));
 

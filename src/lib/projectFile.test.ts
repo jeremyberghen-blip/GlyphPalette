@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildProjectFile, mergeWithLibrary, parseProjectFile } from "./projectFile";
-import { SEED_LIBRARY } from "./defaultLibrary";
+import { buildProjectFile, loadProjectFile, parseProjectFile, ProjectContent } from "./projectFile";
+import { STANDARD } from "./standardLibrary";
 import snipJson from "../test/fixtures/Snip.glyph?raw";
+
+const load = (json: string): ProjectContent => loadProjectFile(parseProjectFile(json), STANDARD);
+const byName = (c: ProjectContent, name: string) =>
+  Object.values(c.definitions).filter((d) => d.name === name);
 
 describe("parseProjectFile", () => {
   it("rejects files that aren't Glyph Palette projects", () => {
@@ -45,20 +49,58 @@ describe("parseProjectFile", () => {
         inner: { id: "inner", nodes: [], relationships: [], boundaries: [] },
       },
     };
-    const { content } = mergeWithLibrary(parseProjectFile(JSON.stringify(old)), SEED_LIBRARY);
+    const content = load(JSON.stringify(old));
     expect(content.canvases["canvas-root"].layer).toBe("context");
     expect(content.canvases.inner.layer).toBe("container");
     expect(content.definitions.d.layers).toEqual(["container"]);
   });
 });
 
-describe("Snip.glyph (real project fixture)", () => {
-  it("loads, and saves back unchanged apart from the pocket-layer repair", () => {
-    const original = JSON.parse(snipJson);
-    original.canvases["canvas-mun8ytko-3g"].layer = "container"; // Analytics pocket
-    const { content, libraryIds } = mergeWithLibrary(parseProjectFile(snipJson), SEED_LIBRARY);
-    const rebuilt = buildProjectFile(content, libraryIds);
-    expect(rebuilt.definitions).toEqual(original.definitions);
-    expect(rebuilt.canvases).toEqual(original.canvases);
+describe("standard library in project files", () => {
+  it("never writes standard definitions or pip types into the file", () => {
+    const file = buildProjectFile(load(snipJson), STANDARD);
+    for (const id of Object.keys(STANDARD.definitions)) expect(file.definitions[id]).toBeUndefined();
+    for (const id of Object.keys(STANDARD.pipTypes)) expect(file.pipTypes[id]).toBeUndefined();
+  });
+
+  it("keeps an interior drawn inside a standard node", () => {
+    const content = load(snipJson);
+    content.definitions["def-cache"].canvasId = "inner";
+    content.canvases.inner = { id: "inner", layer: "component", nodes: [], relationships: [], boundaries: [] };
+    const file = buildProjectFile(content, STANDARD);
+    expect(file.standardInteriors).toEqual({ "def-cache": "inner" });
+    expect(load(JSON.stringify(file)).definitions["def-cache"].canvasId).toBe("inner");
+  });
+});
+
+describe("Snip.glyph (real project fixture, saved by v1.0)", () => {
+  it("drops unedited seed copies in favor of the standard nodes", () => {
+    const content = load(snipJson);
+    expect(byName(content, "Cache").map((d) => d.id)).toEqual(["def-cache"]);
+    expect(byName(content, "Web App").map((d) => d.id)).toEqual(["def-webapp"]);
+  });
+
+  it("re-ids edited seeds so the standard node is available alongside", () => {
+    const content = load(snipJson);
+    const [linksDb] = byName(content, "Links DB");
+    expect(linksDb.id).not.toBe("def-database");
+    expect(content.definitions["def-database"].name).toBe("Database");
+    const nodes = Object.values(content.canvases).flatMap((c) => c.nodes);
+    expect(nodes.some((n) => n.definitionId === linksDb.id)).toBe(true);
+    expect(nodes.every((n) => content.definitions[n.definitionId])).toBe(true);
+  });
+
+  it("keeps interiors with the re-id'd definitions", () => {
+    const content = load(snipJson);
+    const [snipApi] = byName(content, "Snip API");
+    expect(snipApi.canvasId).toBe("canvas-mumw6w3y-22");
+    expect(content.definitions["def-gateway"].canvasId).toBeNull();
+  });
+
+  it("saves and reloads to the same content", () => {
+    const once = load(snipJson);
+    const twice = load(JSON.stringify(buildProjectFile(once, STANDARD)));
+    expect(twice.definitions).toEqual(once.definitions);
+    expect(twice.canvases).toEqual(once.canvases);
   });
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useApp } from "./store";
-import { buildProjectFile, mergeWithLibrary, parseProjectFile } from "./lib/projectFile";
-import { SEED_LIBRARY } from "./lib/defaultLibrary";
+import { buildProjectFile, loadProjectFile, parseProjectFile } from "./lib/projectFile";
+import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 
 const s = () => useApp.getState();
 const root = () => s().canvases["canvas-root"];
@@ -25,16 +25,19 @@ describe("smoke", () => {
   it("starts as a Context canvas holding one System node", () => {
     expect(root().layer).toBe("context");
     expect(root().nodes).toHaveLength(1);
-    expect(s().definitions[root().nodes[0].definitionId].name).toBe("System");
+    const system = s().definitions[root().nodes[0].definitionId];
+    expect(system.name).toBe("My System");
+    expect(isStandardDef(system.id)).toBe(false); // the project's own, so it can be renamed
   });
 
   it("saves and reloads a project without losing anything", () => {
     const web = place("def-webapp");
     const api = place("def-server", 300, 0);
     wire(web, "p-wa-api", api, "p-srv-http");
-    const json = JSON.stringify(buildProjectFile(s(), s().defaultLibraryIds));
-    const { content } = mergeWithLibrary(parseProjectFile(json), SEED_LIBRARY);
+    const json = JSON.stringify(buildProjectFile(s(), STANDARD));
+    const content = loadProjectFile(parseProjectFile(json), STANDARD);
     expect(content.canvases).toEqual(s().canvases);
+    expect(content.definitions).toEqual(s().definitions);
   });
 });
 
@@ -88,7 +91,7 @@ describe("boundaries", () => {
 
     s().expandNode(collapsed.id);
     const names = root().nodes.map((n) => s().definitions[n.definitionId].name).sort();
-    expect(names).toEqual(["API Service", "Database", "System", "Web App"]);
+    expect(names).toEqual(["API Service", "Database", "My System", "Web App"]);
     expect(root().relationships).toHaveLength(2);
     expect(root().boundaries).toHaveLength(1);
   });
@@ -99,6 +102,27 @@ describe("boundaries", () => {
     s().collapseBoundary(s().selection[0]);
     const def = s().definitions[root().nodes.find((n) => n.id === s().selection[0])!.definitionId];
     expect(s().canvases[def.canvasId!].layer).toBe(root().layer);
+  });
+});
+
+describe("standard library", () => {
+  it("is read-only: edits and deletes of standard definitions are ignored", () => {
+    const before = s().definitions["def-cache"];
+    s().saveDefinition({ ...before, name: "Renamed" });
+    s().removeDefinition("def-cache");
+    expect(s().definitions["def-cache"]).toEqual(before);
+  });
+
+  it("imports another project's nodes", () => {
+    s().importDefinitions({
+      definitions: [{ id: "def-x", name: "X", icon: "Box", layers: ["container"], pips: [], canvasId: null }],
+      pipTypes: [{ id: "t-x", name: "X", color: "#fff" }],
+      customIcons: {},
+    });
+    expect(s().definitions["def-x"].name).toBe("X");
+    expect(s().pipTypes["t-x"]).toBeDefined();
+    s().undo();
+    expect(s().definitions["def-x"]).toBeUndefined();
   });
 });
 

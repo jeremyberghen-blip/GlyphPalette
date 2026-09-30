@@ -3,7 +3,8 @@
 // (dev preview). The file format itself lives in projectFile.ts.
 
 import { useApp } from "../store";
-import { buildProjectFile, mergeWithLibrary, parseProjectFile } from "./projectFile";
+import { buildProjectFile, loadProjectFile, parseProjectFile, ProjectContent } from "./projectFile";
+import { STANDARD } from "./standardLibrary";
 
 export type { ProjectFile } from "./projectFile";
 
@@ -12,16 +13,17 @@ export const isTauri = () =>
   "undefined";
 
 export function serializeProject(): string {
-  const s = useApp.getState();
-  return JSON.stringify(buildProjectFile(s, s.defaultLibraryIds), null, 2);
+  return JSON.stringify(buildProjectFile(useApp.getState(), STANDARD), null, 2);
+}
+
+/** Parses and upgrades a `.glyph` file's text into project content. Throws if invalid. */
+export function readProjectContent(json: string): ProjectContent {
+  return loadProjectFile(parseProjectFile(json), STANDARD);
 }
 
 export function loadProjectData(json: string): void {
-  const file = parseProjectFile(json);
-  const { content, libraryIds } = mergeWithLibrary(file, useApp.getState().defaultLibrary);
   useApp.setState({
-    ...content,
-    defaultLibraryIds: libraryIds,
+    ...readProjectContent(json),
     activeCanvasId: "canvas-root",
     trail: ["canvas-root"],
     viewports: {},
@@ -31,6 +33,45 @@ export function loadProjectData(json: string): void {
     boundaryDrawing: false,
     pendingBoundaryRect: null,
     undoStack: [],
+  });
+}
+
+/** A `.glyph` file picked by the user: its text and where it came from. */
+export interface PickedFile {
+  text: string;
+  /** Full path in Tauri; null in the browser preview. */
+  path: string | null;
+  /** File name without the `.glyph` extension, e.g. "Snip". */
+  name: string;
+}
+
+export const baseName = (path: string): string =>
+  path.split(/[\\/]/).pop()!.replace(/\.glyph$/i, "");
+
+/** Shows an open dialog for a `.glyph` file. Resolves null if cancelled. */
+export async function pickGlyphFile(title: string): Promise<PickedFile | null> {
+  if (isTauri()) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const { readTextFile } = await import("@tauri-apps/plugin-fs");
+    const path = await open({
+      title,
+      multiple: false,
+      filters: [{ name: "Glyph Palette Project", extensions: ["glyph"] }],
+    });
+    if (typeof path !== "string") return null;
+    return { text: await readTextFile(path), path, name: baseName(path) };
+  }
+  // Browser fallback: file input
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".glyph,application/json";
+    input.onchange = async () => {
+      const f = input.files?.[0];
+      if (!f) return resolve(null);
+      resolve({ text: await f.text(), path: null, name: baseName(f.name) });
+    };
+    input.click();
   });
 }
 
@@ -67,32 +108,11 @@ export async function saveProject(forceDialog = false): Promise<boolean> {
 }
 
 export async function openProject(): Promise<boolean> {
-  if (isTauri()) {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    const path = await open({
-      title: "Open Project",
-      multiple: false,
-      filters: [{ name: "Glyph Palette Project", extensions: ["glyph"] }],
-    });
-    if (typeof path !== "string") return false;
-    loadProjectData(await readTextFile(path));
-    currentPath = path;
-    return true;
-  }
-  // Browser fallback: file input
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".glyph,application/json";
-    input.onchange = async () => {
-      const f = input.files?.[0];
-      if (!f) return resolve(false);
-      loadProjectData(await f.text());
-      resolve(true);
-    };
-    input.click();
-  });
+  const picked = await pickGlyphFile("Open Project");
+  if (!picked) return false;
+  loadProjectData(picked.text);
+  currentPath = picked.path;
+  return true;
 }
 
 export async function exportPng(dataUrl: string): Promise<boolean> {

@@ -6,7 +6,6 @@ import Breadcrumbs from "./components/Breadcrumbs";
 import BoundaryModal from "./components/BoundaryModal";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown } from "lucide-react";
 import { saveProject, openProject, exportPng } from "./lib/persist";
-import { loadDefaultLibrary } from "./lib/library";
 import Konva from "konva";
 import { useApp } from "./store";
 import { setCustomIconResolver } from "./lib/icons";
@@ -21,17 +20,6 @@ export default function App() {
   const boundaryDrawing = useApp((s) => s.boundaryDrawing);
   const pendingBoundaryRect = useApp((s) => s.pendingBoundaryRect);
   const activeCanvasId = useApp((s) => s.activeCanvasId);
-
-  // Pull in the persisted default library (seeded on first run).
-  useEffect(() => {
-    let cancelled = false;
-    void loadDefaultLibrary().then((lib) => {
-      if (!cancelled) useApp.getState().hydrateDefaultLibrary(lib);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // First visit to a canvas: center the world origin in the view
   useEffect(() => {

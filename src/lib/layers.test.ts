@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { nextLayer } from "../types";
 import { canvasOwner, childLayer, isPocket, repairPocketLayers } from "./layers";
-import { parseProjectFile, mergeWithLibrary } from "./projectFile";
-import { SEED_LIBRARY } from "./defaultLibrary";
+import { parseProjectFile, loadProjectFile } from "./projectFile";
+import { STANDARD } from "./standardLibrary";
 import snipJson from "../test/fixtures/Snip.glyph?raw";
 
 describe("nextLayer", () => {
@@ -37,7 +37,7 @@ describe("Snip.glyph pocket repair", () => {
   });
 
   it("moves the Analytics pocket back to Container and leaves legacy Code alone", () => {
-    const { content } = mergeWithLibrary(parseProjectFile(snipJson), SEED_LIBRARY);
+    const content = loadProjectFile(parseProjectFile(snipJson), STANDARD);
     expect(content.canvases[ANALYTICS_POCKET].layer).toBe("container");
     expect(isPocket(content.definitions, ANALYTICS_POCKET)).toBe(true);
     expect(canvasOwner(content.definitions, ANALYTICS_POCKET)?.name).toBe("Analytics");
@@ -45,7 +45,7 @@ describe("Snip.glyph pocket repair", () => {
   });
 
   it("changes nothing on a second pass", () => {
-    const { content } = mergeWithLibrary(parseProjectFile(snipJson), SEED_LIBRARY);
+    const content = loadProjectFile(parseProjectFile(snipJson), STANDARD);
     expect(repairPocketLayers(content.canvases, content.definitions)).toEqual([]);
   });
 });
