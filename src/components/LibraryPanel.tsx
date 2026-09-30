@@ -6,6 +6,7 @@ import { canvasOwner } from "../lib/layers";
 import { isStandardDef } from "../lib/standardLibrary";
 import { pickGlyphFile, readProjectContent } from "../lib/persist";
 import { ProjectContent } from "../lib/projectFile";
+import { toast } from "../lib/toast";
 import DefinitionWizard from "./DefinitionWizard";
 import ImportDialog from "./ImportDialog";
 
@@ -161,7 +162,7 @@ export default function LibraryPanel() {
     try {
       setImporting({ source: readProjectContent(picked.text), name: picked.name });
     } catch (e) {
-      window.alert(`Couldn't read ${picked.name}: ${(e as Error).message}`);
+      toast(`Couldn't read ${picked.name}: ${(e as Error).message}`, "error");
     }
   };
 
@@ -260,7 +261,7 @@ export default function LibraryPanel() {
           source={importing.source}
           sourceName={importing.name}
           onClose={() => setImporting(null)}
-          onImported={() => {}}
+          onImported={(summary) => toast(summary)}
         />
       )}
     </aside>

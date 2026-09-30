@@ -4,12 +4,28 @@ import LibraryPanel from "./components/LibraryPanel";
 import NavTree from "./components/NavTree";
 import Breadcrumbs from "./components/Breadcrumbs";
 import BoundaryModal from "./components/BoundaryModal";
-import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown } from "lucide-react";
-import { saveProject, openProject, exportPng } from "./lib/persist";
+import Toasts from "./components/Toasts";
+import UnsavedPrompt from "./components/UnsavedPrompt";
+import SettingsDialog from "./components/SettingsDialog";
+import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
+import { isTauri } from "./lib/persist";
+import {
+  confirmDiscardIfDirty,
+  exportPngFlow,
+  newProjectFlow,
+  openProjectFlow,
+  projectIsDirty,
+  saveNow,
+} from "./lib/fileActions";
+import { autosaveDue, isDirty, projectLabel, windowTitle } from "./lib/session";
+import { loadSettings, useSettings } from "./lib/settings";
 import Konva from "konva";
 import { useApp, getPointerWorld } from "./store";
 import { setCustomIconResolver } from "./lib/icons";
 import "./App.css";
+
+/** How often the autosave timer checks whether a save is due. */
+const AUTOSAVE_CHECK_MS = 10_000;
 
 setCustomIconResolver((id) => useApp.getState().customIcons[id]);
 
@@ -20,6 +36,57 @@ export default function App() {
   const boundaryDrawing = useApp((s) => s.boundaryDrawing);
   const pendingBoundaryRect = useApp((s) => s.pendingBoundaryRect);
   const activeCanvasId = useApp((s) => s.activeCanvasId);
+  const filePath = useApp((s) => s.filePath);
+  const dirty = useApp((s) => isDirty(s, s.savedRefs));
+  const autosaveMinutes = useSettings((s) => s.autosaveMinutes);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    void loadSettings();
+  }, []);
+
+  // Window title: project name, with a dot while there are unsaved changes
+  useEffect(() => {
+    const title = windowTitle(filePath, dirty);
+    document.title = title;
+    if (isTauri()) {
+      void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
+        getCurrentWindow().setTitle(title)
+      );
+    }
+  }, [filePath, dirty]);
+
+  // Autosave: into the project's file, only when there are unsaved changes
+  useEffect(() => {
+    if (!autosaveMinutes) return;
+    const timer = setInterval(() => {
+      const s = useApp.getState();
+      const due = autosaveDue({
+        now: Date.now(),
+        lastSavedAt: s.savedAt,
+        intervalMinutes: autosaveMinutes,
+        dirty: isDirty(s, s.savedRefs),
+        hasFile: !!s.filePath,
+      });
+      if (due) void saveNow({ auto: true });
+    }, AUTOSAVE_CHECK_MS);
+    return () => clearInterval(timer);
+  }, [autosaveMinutes]);
+
+  // Closing the window with unsaved changes asks first
+  useEffect(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | undefined;
+    void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+      const win = getCurrentWindow();
+      unlisten = await win.onCloseRequested(async (event) => {
+        if (!projectIsDirty()) return;
+        event.preventDefault();
+        if (await confirmDiscardIfDirty("closing")) await win.destroy();
+      });
+    });
+    return () => unlisten?.();
+  }, []);
 
   // First visit to a canvas: center the world origin in the view
   useEffect(() => {
@@ -66,10 +133,10 @@ export default function App() {
         s.duplicateSelection(getPointerWorld());
       } else if (e.ctrlKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        void saveProject(e.shiftKey);
+        void saveNow({ saveAs: e.shiftKey });
       } else if (e.ctrlKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
-        void openProject();
+        void openProjectFlow();
       } else if (e.key === "Delete" || e.key === "Backspace") {
         s.deleteSelection();
       } else if (e.key === "Escape") {
@@ -96,7 +163,7 @@ export default function App() {
       height: rect.height + pad * 2,
       pixelRatio: 2,
     });
-    void exportPng(dataUrl);
+    void exportPngFlow(dataUrl);
   };
 
   return (
@@ -105,27 +172,30 @@ export default function App() {
         <span className="text-sm font-semibold tracking-wide text-[#e2e4ee]">
           Glyph Palette
         </span>
+        <span
+          className="max-w-[16rem] truncate text-sm text-[#8a8ea6]"
+          title={filePath ?? "Not saved yet"}
+        >
+          {projectLabel(filePath)}
+          {dirty && <span className="ml-1 text-[#4c9aff]" title="Unsaved changes">•</span>}
+        </span>
         <div className="mx-1 h-5 w-px bg-[#2e3040]" />
         <button
-          onClick={() => {
-            if (window.confirm("Start a new project? Unsaved changes will be lost.")) {
-              useApp.getState().newProject();
-            }
-          }}
+          onClick={() => void newProjectFlow()}
           className="flex items-center gap-1.5 rounded border border-[#3a3d52] bg-[#262835] px-2.5 py-1 text-xs hover:border-[#4c9aff] hover:text-white"
           title="New project"
         >
           <FilePlus2 size={13} /> New
         </button>
         <button
-          onClick={() => void openProject()}
+          onClick={() => void openProjectFlow()}
           className="flex items-center gap-1.5 rounded border border-[#3a3d52] bg-[#262835] px-2.5 py-1 text-xs hover:border-[#4c9aff] hover:text-white"
           title="Open project (Ctrl+O)"
         >
           <FolderOpen size={13} /> Open
         </button>
         <button
-          onClick={() => void saveProject()}
+          onClick={() => void saveNow()}
           className="flex items-center gap-1.5 rounded border border-[#3a3d52] bg-[#262835] px-2.5 py-1 text-xs hover:border-[#4c9aff] hover:text-white"
           title="Save project (Ctrl+S; Ctrl+Shift+S to save as)"
         >
@@ -150,9 +220,16 @@ export default function App() {
         >
           <SquareDashed size={13} /> Boundary
         </button>
-        <div className="ml-auto text-xs text-[#565a72]">
+        <div className="ml-auto truncate text-xs text-[#565a72]">
           Ctrl+Z undo · Ctrl+C/V copy/paste · Ctrl+D duplicate · middle-drag pan · wheel zoom · Esc cancels
         </div>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="shrink-0 rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+          title="Settings"
+        >
+          <Settings size={15} />
+        </button>
       </header>
       <div className="flex min-h-0 flex-1">
         <LibraryPanel />
@@ -169,6 +246,9 @@ export default function App() {
         <NavTree />
       </div>
       {pendingBoundaryRect && <BoundaryModal />}
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      <UnsavedPrompt />
+      <Toasts />
     </div>
   );
 }

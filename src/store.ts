@@ -19,6 +19,7 @@ import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 import { copyDefinition, incrementName, nameTaken, uniqueName } from "./lib/definitions";
 import { ImportPlan } from "./lib/importDefs";
 import { uid } from "./lib/ids";
+import { ContentRefs, contentRefs } from "./lib/session";
 
 export { nameTaken } from "./lib/definitions";
 export { uid } from "./lib/ids";
@@ -163,14 +164,22 @@ interface AppState {
   pendingBoundaryRect: Rect | null;
   /** Snapshots for Ctrl+Z, newest last. Capped at 50. */
   undoStack: Snapshot[];
+  /** Where the open project is saved; null until its first save (Tauri only). */
+  filePath: string | null;
+  /** Content as of the last save/open/new — compared by reference to detect unsaved changes. */
+  savedRefs: ContentRefs;
+  /** When the project was last saved/opened/created (ms), for autosave timing. */
+  savedAt: number;
 
   /** Records the current graph state; call before a mutating gesture begins. */
   pushUndo: () => void;
   undo: () => void;
   copySelection: () => void;
   paste: () => void;
-  /** Resets to a fresh project. */
+  /** Resets to a fresh, untitled project. */
   newProject: () => void;
+  /** Records the current content as saved (at `filePath`). */
+  markSaved: (filePath: string | null) => void;
 
   setPlacing: (defId: string | null) => void;
   setViewport: (v: Viewport) => void;
@@ -240,8 +249,13 @@ export function getPip(
   return s.definitions[node.definitionId]?.pips.find((p) => p.id === pipId) ?? null;
 }
 
+const initial = freshProject();
+
 export const useApp = create<AppState>((set, get) => ({
-  ...freshProject(),
+  ...initial,
+  filePath: null,
+  savedRefs: contentRefs(initial),
+  savedAt: Date.now(),
   activeCanvasId: "canvas-root",
   trail: ["canvas-root"],
   viewports: {},
@@ -327,8 +341,14 @@ export const useApp = create<AppState>((set, get) => ({
 
   newProject: () =>
     set(() => {
+      const fresh = freshProject();
       return {
-        ...freshProject(),
+        ...fresh,
+        // Forget the last file, so the next save asks where (it used to
+        // silently overwrite the previously opened project).
+        filePath: null,
+        savedRefs: contentRefs(fresh),
+        savedAt: Date.now(),
         activeCanvasId: "canvas-root",
         trail: ["canvas-root"],
         viewports: {},
@@ -340,6 +360,9 @@ export const useApp = create<AppState>((set, get) => ({
         undoStack: [],
       };
     }),
+
+  markSaved: (filePath) =>
+    set((s) => ({ filePath, savedRefs: contentRefs(s), savedAt: Date.now() })),
 
   setBoundaryDrawing: (boundaryDrawing) =>
     set({ boundaryDrawing, placingDefId: null }),

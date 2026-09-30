@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useApp } from "./store";
 import { NODE_WIDTH } from "./types";
+import { isDirty } from "./lib/session";
 import { buildProjectFile, loadProjectFile, parseProjectFile } from "./lib/projectFile";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 
@@ -39,6 +40,31 @@ describe("smoke", () => {
     const content = loadProjectFile(parseProjectFile(json), STANDARD);
     expect(content.canvases).toEqual(s().canvases);
     expect(content.definitions).toEqual(s().definitions);
+  });
+});
+
+describe("save state", () => {
+  const dirty = () => isDirty(s(), s().savedRefs);
+
+  it("starts clean, and any content change makes it dirty", () => {
+    expect(dirty()).toBe(false);
+    place("def-cache");
+    expect(dirty()).toBe(true);
+    s().markSaved("C:/p/Snip.glyph");
+    expect(dirty()).toBe(false);
+  });
+
+  it("panning and selecting don't count as changes", () => {
+    s().setViewport({ x: 10, y: 10, scale: 2 });
+    s().setSelection([root().nodes[0].id]);
+    expect(dirty()).toBe(false);
+  });
+
+  it("New forgets the previous file, so the next save asks where", () => {
+    s().markSaved("C:/p/Snip.glyph");
+    s().newProject();
+    expect(s().filePath).toBeNull();
+    expect(dirty()).toBe(false);
   });
 });
 

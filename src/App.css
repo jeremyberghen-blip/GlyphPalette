@@ -9,3 +9,14 @@ body,
   overflow: hidden;
   background: #191a21;
 }
+
+/* Pop-up messages: fade in, hold, fade out over ~1.5s */
+@keyframes toast-fade {
+  0% { opacity: 0; transform: translateY(4px); }
+  12% { opacity: 1; transform: none; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.toast-fade {
+  animation: toast-fade 1.5s ease-out forwards;
+}

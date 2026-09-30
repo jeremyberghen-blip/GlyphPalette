@@ -75,27 +75,28 @@ export async function pickGlyphFile(title: string): Promise<PickedFile | null> {
   });
 }
 
-/** Remembered path of the current project (Tauri only). */
-let currentPath: string | null = null;
-export const getCurrentPath = () => currentPath;
-
-export async function saveProject(forceDialog = false): Promise<boolean> {
+/**
+ * Saves the project: to its current file, or via a Save dialog when it has
+ * none (or `saveAs`). Resolves "cancelled" if the dialog was dismissed;
+ * throws if the write fails.
+ */
+export async function saveProject(saveAs = false): Promise<"saved" | "cancelled"> {
   const json = serializeProject();
   if (isTauri()) {
     const { save } = await import("@tauri-apps/plugin-dialog");
     const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-    let path = currentPath;
-    if (!path || forceDialog) {
+    let path = useApp.getState().filePath;
+    if (!path || saveAs) {
       path = await save({
         title: "Save Project",
-        defaultPath: "project.glyph",
+        defaultPath: path ?? "project.glyph",
         filters: [{ name: "Glyph Palette Project", extensions: ["glyph"] }],
       });
-      if (!path) return false;
+      if (!path) return "cancelled";
     }
     await writeTextFile(path, json);
-    currentPath = path;
-    return true;
+    useApp.getState().markSaved(path);
+    return "saved";
   }
   // Browser fallback: download
   const blob = new Blob([json], { type: "application/json" });
@@ -104,14 +105,16 @@ export async function saveProject(forceDialog = false): Promise<boolean> {
   a.download = "project.glyph";
   a.click();
   URL.revokeObjectURL(a.href);
-  return true;
+  useApp.getState().markSaved(null);
+  return "saved";
 }
 
+/** Opens a project chosen in a dialog. Resolves false if cancelled; throws if the file is invalid. */
 export async function openProject(): Promise<boolean> {
   const picked = await pickGlyphFile("Open Project");
   if (!picked) return false;
   loadProjectData(picked.text);
-  currentPath = picked.path;
+  useApp.getState().markSaved(picked.path);
   return true;
 }
 
