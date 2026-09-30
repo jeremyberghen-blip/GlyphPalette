@@ -24,13 +24,10 @@
     },
     {
       "name": "glyph-work-preview",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "node",
       "runtimeArgs": [
-        "--prefix",
+        "D:\\Glyph Palette-work\node_modules\u000bite\bin\u000bite.js",
         "D:\\Glyph Palette-work",
-        "run",
-        "dev",
-        "--",
         "--port",
         "1431"
       ],
