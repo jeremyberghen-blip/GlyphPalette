@@ -12,8 +12,10 @@ import {
   insertionIndex,
   sectionEnds,
   traceRounded,
+  foldWaypoints,
+  remapFoldedKeys,
   translateWaypoints,
-  waypointsOutside,
+  unfoldWaypoints,
   wireVertices,
 } from "./waypoints";
 import { Waypoint } from "../types";
@@ -148,8 +150,27 @@ describe("moving and collapsing", () => {
     expect(translateWaypoints(undefined, 1, 1)).toBeUndefined();
   });
 
-  it("keeps only the waypoints outside a collapsing boundary", () => {
+  it("folds a crossing wire's inside points away under the collapsed node", () => {
     const box = { x: 0, y: 0, width: 100, height: 100 };
-    expect(waypointsOutside([wp(50, 50), wp(150, 50)], box)).toEqual([wp(150, 50)]);
+    const rel = { waypoints: [wp(50, 50), wp(150, 50)] };
+    expect(foldWaypoints(rel, box, "n1")).toEqual({
+      waypoints: [wp(150, 50)],
+      foldedWaypoints: { n1: [wp(50, 50)] },
+    });
+    expect(foldWaypoints({ waypoints: [wp(150, 50)] }, box, "n1")).toEqual({ waypoints: [wp(150, 50)] });
+  });
+
+  it("unfolds them shifted, at the end of the wire that leads inside", () => {
+    const rel = { waypoints: [wp(150, 50)], foldedWaypoints: { n1: [wp(50, 50)], other: [wp(1, 1)] } };
+    expect(unfoldWaypoints(rel, "n1", "from", 10, 20)).toEqual({
+      waypoints: [wp(60, 70), wp(150, 50)],
+      foldedWaypoints: { other: [wp(1, 1)] },
+    });
+    expect(unfoldWaypoints(rel, "n1", "to", 0, 0).waypoints).toEqual([wp(150, 50), wp(50, 50)]);
+  });
+
+  it("renames folded keys when instances get new ids", () => {
+    expect(remapFoldedKeys({ a: [wp(1, 1)], b: [] }, new Map([["a", "a2"]]))).toEqual({ a2: [wp(1, 1)], b: [] });
+    expect(remapFoldedKeys(undefined, new Map())).toBeUndefined();
   });
 });

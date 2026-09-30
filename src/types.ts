@@ -124,6 +124,12 @@ export interface Relationship {
   to: RelEnd;
   /** Bend points, in order from `from` to `to`. Absent on a plain curved wire. */
   waypoints?: Waypoint[];
+  /**
+   * Bend points folded away inside collapsed boundaries this wire crosses,
+   * keyed by the collapsed node's instance id, in that pocket's coordinates.
+   * Restored when the node expands. See lib/waypoints.ts.
+   */
+  foldedWaypoints?: Record<string, Waypoint[]>;
 }
 
 export interface CanvasData {

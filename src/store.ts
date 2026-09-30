@@ -18,8 +18,10 @@ import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
 import {
   addWaypoint,
   applyHandle,
+  foldWaypoints,
+  remapFoldedKeys,
   translateWaypoints,
-  waypointsOutside,
+  unfoldWaypoints,
 } from "./lib/waypoints";
 import { childLayer } from "./lib/layers";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
@@ -345,6 +347,7 @@ export const useApp = create<AppState>((set, get) => ({
         from: { ...r.from, nodeId: idMap.get(r.from.nodeId)! },
         to: { ...r.to, nodeId: idMap.get(r.to.nodeId)! },
         waypoints: translateWaypoints(r.waypoints, off, off),
+        foldedWaypoints: remapFoldedKeys(r.foldedWaypoints, idMap),
       }));
       return {
         undoStack: pushSnap(s),
@@ -543,9 +546,9 @@ export const useApp = create<AppState>((set, get) => ({
           const newPipId = innerEndToNewPip.get(`${end.nodeId}|${end.pipId}`);
           if (!newPipId) return r;
           const newEnd: RelEnd = { nodeId: instance.id, pipId: newPipId };
-          // Bend points inside the box go with it; those outside stay
-          const waypoints = waypointsOutside(r.waypoints, box);
-          return fromInside ? { ...r, from: newEnd, waypoints } : { ...r, to: newEnd, waypoints };
+          // Bend points inside the box fold away with it (restored on expand)
+          const folded = foldWaypoints(r, box, instance.id);
+          return fromInside ? { ...folded, from: newEnd } : { ...folded, to: newEnd };
         });
 
       return {
@@ -610,6 +613,7 @@ export const useApp = create<AppState>((set, get) => ({
         from: { ...r.from, nodeId: idMap.get(r.from.nodeId) ?? r.from.nodeId },
         to: { ...r.to, nodeId: idMap.get(r.to.nodeId) ?? r.to.nodeId },
         waypoints: translateWaypoints(r.waypoints, dx, dy),
+        foldedWaypoints: remapFoldedKeys(r.foldedWaypoints, idMap),
       }));
 
       // Rewire boundary relationships from the instance's pips to the inner nodes
@@ -623,7 +627,15 @@ export const useApp = create<AppState>((set, get) => ({
             pipId: target.pipId,
           };
         };
-        return { ...r, from: remap(r.from), to: remap(r.to) };
+        // Bend points folded inside this node come back, at the end that leads in
+        const insideEnd = r.from.nodeId === instanceId ? "from" : r.to.nodeId === instanceId ? "to" : null;
+        const unfolded = insideEnd ? unfoldWaypoints(r, instanceId, insideEnd, dx, dy) : r;
+        return {
+          ...unfolded,
+          from: remap(r.from),
+          to: remap(r.to),
+          foldedWaypoints: remapFoldedKeys(unfolded.foldedWaypoints, idMap),
+        };
       });
 
       // Drop the definition (and its canvas) if this was the only instance anywhere

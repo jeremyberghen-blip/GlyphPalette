@@ -251,13 +251,68 @@ describe("wire bend points", () => {
     expect(waypoints(rel)[0].half).toBeCloseTo(30);
   });
 
-  it("collapsing a boundary drops a crossing wire's bend points inside the box", () => {
+  /** The collapsed node on the root canvas. */
+  const collapsedNode = () => root().nodes.find((n) => s().definitions[n.definitionId].expandable)!;
+  const nodeOf = (defId: string) => root().nodes.find((n) => n.definitionId === defId)!;
+
+  it("folds a crossing wire's bend points inside a collapsing box, and restores them on expand", () => {
     const { rel } = wired();
     s().addWaypointAt(rel, { x: 250, y: 100 }); // outside the box
-    s().addWaypointAt(rel, { x: 380, y: 60 }); // inside
+    s().addWaypointAt(rel, { x: 380, y: 60 }); // inside, 20 left of API Service (x 400)
     s().addBoundary("B", "Box", { x: 350, y: -20, width: 250, height: 150 });
     s().collapseBoundary(s().selection[0]);
     expect(waypoints(rel).map((w) => w.x)).toEqual([250]);
+
+    s().expandNode(collapsedNode().id);
+    const api = nodeOf("def-server");
+    const [outside, inside] = waypoints(rel);
+    expect(outside.x).toBe(250); // never moved
+    expect(inside.x - api.x).toBeCloseTo(-20); // back in place relative to its node
+    expect(inside.y - api.y).toBeCloseTo(60);
+  });
+
+  it("restored bend points follow a collapsed node that was moved", () => {
+    const { rel } = wired();
+    s().addWaypointAt(rel, { x: 380, y: 60 });
+    s().addBoundary("B", "Box", { x: 350, y: -20, width: 250, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const node = collapsedNode();
+    s().moveNodes([{ id: node.id, x: node.x + 100, y: node.y + 50 }]);
+    const before = { x: collapsedNode().x, y: collapsedNode().y };
+    s().expandNode(collapsedNode().id);
+    const api = nodeOf("def-server");
+    const [w] = waypoints(rel);
+    expect(w.x - api.x).toBeCloseTo(-20);
+    expect(w.y - api.y).toBeCloseTo(60);
+    expect(api.x).toBeGreaterThan(before.x - 200); // content landed where the node was moved to
+  });
+
+  it("survives boxes collapsed inside boxes", () => {
+    const web = place("def-webapp", 0, 0);
+    const api = place("def-server", 400, 0);
+    const db = place("def-database", 700, 0);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    const rel = root().relationships[0].id;
+    wire(api, "p-srv-sql", db, "p-db-sql");
+    s().addWaypointAt(rel, { x: 250, y: 100 }); // inside the outer box only
+    s().addWaypointAt(rel, { x: 380, y: 60 }); // inside the inner box: 20 left of API Service
+    s().addBoundary("Inner", "Box", { x: 350, y: -20, width: 200, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const innerAt = collapsedNode().x; // outer-only point sits 250 - innerAt from it
+    s().addBoundary("Outer", "Box", { x: 200, y: -60, width: 700, height: 250 });
+    s().collapseBoundary(s().selection[0]);
+    expect(waypoints(rel)).toEqual([]);
+
+    s().expandNode(collapsedNode().id); // outer
+    const inner = collapsedNode();
+    expect(waypoints(rel)).toHaveLength(1);
+    expect(waypoints(rel)[0].x - inner.x).toBeCloseTo(250 - innerAt);
+
+    s().expandNode(inner.id); // inner
+    const apiNode = nodeOf("def-server");
+    const [a, b] = waypoints(rel);
+    expect(a.x - inner.x).toBeCloseTo(250 - innerAt); // unchanged by the inner expand
+    expect(b.x - apiNode.x).toBeCloseTo(-20);
   });
 });
 

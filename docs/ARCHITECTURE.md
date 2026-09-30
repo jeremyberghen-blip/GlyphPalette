@@ -31,7 +31,9 @@ Tests: Vitest (`npm test`).
   directional. Optional `waypoints`: bend points, each a short straight
   section pivoting on its center (`angle`, `half`-length). With waypoints a
   wire is drawn as straight runs with rounded corners
-  ([`src/lib/waypoints.ts`](../src/lib/waypoints.ts)).
+  ([`src/lib/waypoints.ts`](../src/lib/waypoints.ts)). Bend points inside a
+  collapsed boundary the wire crosses are kept in `foldedWaypoints` (keyed by
+  the collapsed node) and restored on expand.
 - **Boundary** ([`Boundary`](../src/types.ts)) — a resizable box that groups
   every node it overlaps. Collapsing one (`collapseBoundary` in
   [`src/store.ts`](../src/store.ts)) turns it into a single node: one

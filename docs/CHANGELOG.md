@@ -4,6 +4,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [Unreleased]
+
+Fixes from hand-testing 1.1.0.
+
+### Fixed
+- Wire corners shot off across the canvas when a bend point's section was
+  rotated so the wire doubled back on itself; tight turns now stay tight.
+- The window's close button did nothing (no prompt, no close): a
+  development-mode double registration left a stale close handler. Close
+  failures are now reported instead of swallowed.
+- Collapsing a boundary threw away the bend points of wires crossing it
+  that sat inside the box. They're now folded away with the box and
+  restored on expand, following the nodes if the collapsed node was moved,
+  including boxes collapsed inside boxes.
+
+### Changed
+- The top-bar shortcut hint mentions Del (delete from canvas).
+
 ## [1.1.0] — 2026-09-29
 
 Foundation, polish, and library — the fixes and ideas from the Snip test

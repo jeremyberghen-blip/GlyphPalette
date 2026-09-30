@@ -144,8 +144,58 @@ export function applyHandle(w: Waypoint, p: Pt): Waypoint {
 export const translateWaypoints = (ws: Waypoint[] | undefined, dx: number, dy: number) =>
   ws?.map((w) => ({ ...w, x: w.x + dx, y: w.y + dy }));
 
-/** Waypoints outside a rectangle (used when a boundary collapses to a node). */
-export const waypointsOutside = (
-  ws: Waypoint[] | undefined,
-  r: { x: number; y: number; width: number; height: number }
-) => ws?.filter((w) => w.x < r.x || w.x > r.x + r.width || w.y < r.y || w.y > r.y + r.height);
+const inRect = (w: Pt, r: { x: number; y: number; width: number; height: number }) =>
+  w.x >= r.x && w.x <= r.x + r.width && w.y >= r.y && w.y <= r.y + r.height;
+
+/**
+ * A wire crossing a collapsing boundary: its bend points inside the box are
+ * folded away under the collapsed node's instance id, and the rest stay.
+ */
+export function foldWaypoints<T extends { waypoints?: Waypoint[]; foldedWaypoints?: Record<string, Waypoint[]> }>(
+  rel: T,
+  box: { x: number; y: number; width: number; height: number },
+  instanceId: string
+): T {
+  const inside = rel.waypoints?.filter((w) => inRect(w, box)) ?? [];
+  if (!inside.length) return rel;
+  const outside = rel.waypoints!.filter((w) => !inRect(w, box));
+  return {
+    ...rel,
+    waypoints: outside.length ? outside : undefined,
+    foldedWaypoints: { ...rel.foldedWaypoints, [instanceId]: inside },
+  };
+}
+
+/**
+ * Expanding a collapsed node: puts back the bend points folded under it,
+ * shifted by the expansion offset, at the end of the wire that leads inside.
+ */
+export function unfoldWaypoints<T extends { waypoints?: Waypoint[]; foldedWaypoints?: Record<string, Waypoint[]> }>(
+  rel: T,
+  instanceId: string,
+  insideEnd: "from" | "to",
+  dx: number,
+  dy: number
+): T {
+  const folded = rel.foldedWaypoints?.[instanceId];
+  if (!folded) return rel;
+  const rest = { ...rel.foldedWaypoints };
+  delete rest[instanceId];
+  const back = translateWaypoints(folded, dx, dy)!;
+  const current = rel.waypoints ?? [];
+  const waypoints = insideEnd === "from" ? [...back, ...current] : [...current, ...back];
+  return {
+    ...rel,
+    waypoints: waypoints.length ? waypoints : undefined,
+    foldedWaypoints: Object.keys(rest).length ? rest : undefined,
+  };
+}
+
+/** Renames folded-waypoint keys when node instances get new ids (expand, paste). */
+export function remapFoldedKeys(
+  folded: Record<string, Waypoint[]> | undefined,
+  idMap: Map<string, string>
+): Record<string, Waypoint[]> | undefined {
+  if (!folded) return folded;
+  return Object.fromEntries(Object.entries(folded).map(([k, v]) => [idMap.get(k) ?? k, v]));
+}
