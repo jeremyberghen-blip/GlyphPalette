@@ -33,6 +33,26 @@ no pips, so nothing can be wired on a fresh project until definitions are
 edited. Intended (forces deliberate interfaces) or should they ship with
 generic ones? Not slotted; on the Backlog.
 
+### Library married to the project (reconsidering the two-tier model)
+
+Raised 2026-09-29 by the user, pausing feature work: maybe each project
+should own its library, with an option to **import library contents from
+another project**, instead of a separately loaded "current library".
+Under discussion; if adopted it supersedes the two-tier model below
+(standard library stays: read-only, always present, no pencil — only
+Duplicate/Permute).
+
+Claude's notes: this is the simpler model. The orphan problem disappears
+(a project's canvases can only use its own library or the standard one),
+as do backup copies, the orphan palette section, "add to library"
+buttons, per-machine library state, and "which library is loaded". A
+separate `.glyphlib` format becomes optional — any `.glyph` can serve as a
+library to import from, and the standard library can itself be a bundled
+`.glyph` with no canvas content. The cost: no single personal library
+that follows you between projects; reuse is an explicit import. Checked
+2026-09-29: the user's per-machine `library.json` holds only the 25 seeds,
+so retiring it loses nothing.
+
 ### Two-tier library model: standard + current
 
 Raised 2026-09-29 by the user, replacing the per-machine default library
