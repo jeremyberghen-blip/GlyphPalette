@@ -50,33 +50,6 @@ canvas; the fix was listing "Del delete" in the top-bar shortcut hint. The
 user declined an on-canvas trash button, consistent with holding off on
 right-click menus until use shows a need.
 
-### Two-part connection types: transport + API style
-
-Raised 2026-09-30 by the user while discussing HTTP ↔ REST/JSON. Instead of
-one flat list of pip types, every connection carries **both a transport and
-an API style**, drawn as a line in the transport's color with a core in the
-style's color (e.g. a green HTTP line with a blue REST/JSON core).
-
-Context: HTTP is a transport; REST/JSON is an API style + payload riding on
-it, as are GraphQL, SOAP/XML, web pages, and gRPC. The flat list mixes the
-two layers, which is why "can HTTP connect to REST/JSON?" has no clean
-answer. Considered first: one-way subtype compatibility (REST/JSON is-a
-HTTP), or leaving matching strict.
-
-Claude's notes: this models real protocol layering and dissolves the
-question rather than patching it. It also carries exactly what Hephaestus
-needs (transport → which client/server plumbing; style → what to
-generate), and could subsume v1.4's planned edge `kind`
-(network vs. in-process transport). An "any" style would stand for
-pass-through infrastructure (firewall, load balancer, proxy). Costs: a data
-model change (pip types split into transports + styles, with a mapping for
-the existing ten), a two-part picker in the wizard, two-color pips and
-wires (wires likely need to be thicker for a visible core), and a
-compatibility rule for "any". Scope: bigger than the item it replaces.
-
-Open: the compatibility rule for "any"; whether two layers are enough; the
-starting lists of transports and styles; which version it lands in.
-
 ## Decided
 
 Cleared to build, not yet built. Versions refer to [`ROADMAP.md`](ROADMAP.md).
@@ -162,20 +135,44 @@ Settled 2026-09-30 after the palette change:
 - **Deleting a port node removes its wires**, like any node (undoable). The
   broken-but-kept rule is for parent changes, not deliberate deletion.
 
-### HTTP ↔ REST/JSON compatibility (v1.2) — under reconsideration
+### Two-part connection types: transport + API style (v1.2)
 
-See "Two-part connection types" under Open, raised 2026-09-30, which
-would replace this item.
+Raised and decided 2026-09-30 (user), while discussing HTTP ↔ REST/JSON.
+Every pip and wire carries **both a transport and an API style**, drawn as
+a line in the transport's color with a core in the style's color (e.g. a
+green HTTP line with a blue REST/JSON core). Ships in v1.2 with port nodes,
+so the wire model changes once ("ports and connections").
 
-#### Original entry: HTTP ↔ REST/JSON compatibility (v1.2)
+Why: HTTP is a transport; REST/JSON is an API style + payload riding on it
+(as are GraphQL, SOAP/XML, web pages, gRPC). The old flat list mixed the two
+layers, so "can HTTP connect to REST/JSON?" had no clean answer. This models
+real protocol layering, and carries what Hephaestus needs: transport →
+which client/server plumbing, style → what to generate. It may subsume
+v1.4's planned edge `kind` (network vs. in-process transport).
 
-Raised 2026-09-28 during the Snip test run; slotted 2026-09-29. REST/JSON
-*is* HTTP, so today's hard incompatibility between them reads as "wrong
-granularity", not "wrong protocol". Direction: pip-type compatibility or
-hierarchy, so a subtype (REST/JSON) can connect to its parent protocol
-(HTTP). To settle during the build: a general parent-type field on
-`PipType` vs. an explicit compatibility list; whether the wire takes the
-more specific or the more general type; how it interacts with port nodes.
+Settled:
+- **Connection rule:** transports must match exactly; styles must match,
+  **or either side is "any"** (pass-through infrastructure: firewall, load
+  balancer, proxy). The wire shows the specific style's core; "any"–"any"
+  shows no core.
+- **Two layers only.** Lower layers (TCP under HTTP, HTTP/2 under gRPC)
+  are implied, and generated code works at the library level, so recording
+  them would tell Hephaestus nothing. Facts that *aren't* implied — TLS,
+  auth, ports/hosts — are connection attributes, not layers; on the Backlog
+  until the v2.0 export shows they're needed.
+- **Starting mapping** of today's ten types (upgrade path for files and the
+  standard library): HTTP → HTTP/any; REST/JSON → HTTP/REST-JSON;
+  gRPC → HTTP/2/gRPC; TCP/IP → TCP/any; SQL → TCP/SQL; Queue → Message
+  queue/any; Event → Message queue/Event; File I/O → Filesystem/any;
+  Call → In-process/Call; Import → In-process/Import.
+
+To settle during v1.2 planning: the starting transport and style lists and
+colors; how the wizard's two pickers and the soft layer affinity work
+together; pip and wire rendering (thicker wires so the core shows).
+
+Superseded the same day, never built: **HTTP ↔ REST/JSON compatibility** —
+one-way subtype matching (REST/JSON is-a HTTP), or leaving matching strict.
+Both were patches on a flat type list the two-part model removes.
 
 ### Installable release build — deferred until after v2.0
 

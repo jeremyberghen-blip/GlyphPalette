@@ -30,15 +30,17 @@ v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
 
-## v1.2 — planned: port nodes and connection rules
+## v1.2 — planned: ports and connections
 
-- **Inbound / Outbound port nodes** on every inner canvas, generated from
-  the parent definition's pips; broken-pip and broken-wire marking when the
-  parent changes. Old files get ports on load.
-- Pocket variant of the port rules: a pocket's ports derive bottom-up
-  from the wires that crossed the boundary, not from a parent definition.
-- **HTTP ↔ REST/JSON compatibility:** pip-type compatibility so a subtype
-  (REST/JSON) can connect to its parent protocol (HTTP).
+- **Inbound / Outbound port nodes**, placed from the palette on any inner
+  canvas (never the top level), one of each, carrying the pips of the node
+  you're inside; broken-but-kept pips and wires when that parent changes.
+  Pocket variant: a pocket's ports derive from the wires that crossed the
+  boundary.
+- **Two-part connection types:** every pip and wire has a transport and an
+  API style (line color + core color); transports must match, styles match
+  or either is "any". Existing pip types, files, and the standard library
+  upgrade to the new model.
 
 ## v1.3 — planned: Hephaestus Tier 1
 
@@ -92,6 +94,9 @@ Real ideas, not currently slated to a version:
 - Chase down the harmless Konva `drawImage` console warning (see
   `ARCHITECTURE.md` § Known rough edges). Dropped from v1.1 on 2026-09-29 —
   cosmetic, not worth the time yet.
+- **Connection attributes** — facts about a wire that its transport and
+  style don't imply: TLS, auth, ports/hosts. Only if the v2.0 export shows
+  Hephaestus needs them.
 - **Right-click menus** — deliberately deferred until use reveals where
   they're wanted.
 - **Installable release build** (`npm run tauri build` → Windows installers).
