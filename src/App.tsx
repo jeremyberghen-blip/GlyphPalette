@@ -138,7 +138,12 @@ export default function App() {
         e.preventDefault();
         void openProjectFlow();
       } else if (e.key === "Delete" || e.key === "Backspace") {
-        s.deleteSelection();
+        // A selected bend point is deleted on its own; otherwise the selection
+        if (s.selectedWaypoint && s.selection.includes(s.selectedWaypoint.relId)) {
+          s.removeSelectedWaypoint();
+        } else {
+          s.deleteSelection();
+        }
       } else if (e.key === "Escape") {
         s.setPlacing(null);
         useApp.setState({ wireDrag: null, boundaryDrawing: false });

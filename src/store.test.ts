@@ -193,6 +193,74 @@ describe("duplicating", () => {
   });
 });
 
+describe("wire bend points", () => {
+  /** Two wired nodes; returns their ids and the wire's id. */
+  function wired() {
+    const web = place("def-webapp", 0, 0);
+    const api = place("def-server", 400, 0);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    return { web, api, rel: root().relationships[0].id };
+  }
+  const waypoints = (rel: string) => root().relationships.find((r) => r.id === rel)!.waypoints ?? [];
+
+  it("double-click adds one in path order and selects it; undo removes it", () => {
+    const { rel } = wired();
+    s().addWaypointAt(rel, { x: 300, y: 100 });
+    s().addWaypointAt(rel, { x: 200, y: 100 });
+    expect(waypoints(rel).map((w) => w.x)).toEqual([200, 300]);
+    expect(s().selectedWaypoint).toEqual({ relId: rel, index: 0 });
+    s().undo();
+    expect(waypoints(rel).map((w) => w.x)).toEqual([300]);
+  });
+
+  it("Delete removes just the selected one", () => {
+    const { rel } = wired();
+    s().addWaypointAt(rel, { x: 200, y: 100 });
+    s().addWaypointAt(rel, { x: 300, y: 100 });
+    s().selectWaypoint(rel, 0);
+    s().removeSelectedWaypoint();
+    expect(waypoints(rel).map((w) => w.x)).toEqual([300]);
+  });
+
+  it("stay put when one end moves, and follow when both ends move together", () => {
+    const { web, api, rel } = wired();
+    s().addWaypointAt(rel, { x: 250, y: 100 });
+    s().moveNodes([{ id: web, x: 0, y: 50 }]);
+    expect(waypoints(rel)[0]).toMatchObject({ x: 250, y: 100 });
+    s().moveNodes([
+      { id: web, x: 10, y: 70 },
+      { id: api, x: 410, y: 20 },
+    ]);
+    expect(waypoints(rel)[0]).toMatchObject({ x: 260, y: 120 });
+  });
+
+  it("paste and Ctrl+D carry them along, offset with the nodes", () => {
+    const { web, api, rel } = wired();
+    s().addWaypointAt(rel, { x: 250, y: 100 });
+    s().setSelection([web, api]);
+    s().copySelection();
+    s().paste();
+    const pasted = root().relationships.find((r) => r.id !== rel)!;
+    expect(pasted.waypoints![0]).toMatchObject({ x: 270, y: 120 });
+  });
+
+  it("dragging the handle turns and lengthens the section", () => {
+    const { rel } = wired();
+    s().addWaypointAt(rel, { x: 250, y: 100 });
+    s().dragWaypointHandle(rel, 0, { x: 250, y: 100 + 14 + 30 });
+    expect(waypoints(rel)[0].half).toBeCloseTo(30);
+  });
+
+  it("collapsing a boundary drops a crossing wire's bend points inside the box", () => {
+    const { rel } = wired();
+    s().addWaypointAt(rel, { x: 250, y: 100 }); // outside the box
+    s().addWaypointAt(rel, { x: 380, y: 60 }); // inside
+    s().addBoundary("B", "Box", { x: 350, y: -20, width: 250, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    expect(waypoints(rel).map((w) => w.x)).toEqual([250]);
+  });
+});
+
 describe("layers", () => {
   it("opens a node one layer down, and nests Component inside Component", () => {
     const sys = root().nodes[0];

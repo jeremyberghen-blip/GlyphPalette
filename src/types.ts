@@ -103,12 +103,27 @@ export interface RelEnd {
   pipId: string;
 }
 
+/**
+ * A bend point on a wire: a short straight section pivoting on (x, y).
+ * See lib/waypoints.ts.
+ */
+export interface Waypoint {
+  x: number;
+  y: number;
+  /** Direction of the straight section, in radians (0 = +x, clockwise on screen). */
+  angle: number;
+  /** How far the section runs either side of (x, y); 0 is a plain corner. */
+  half: number;
+}
+
 export interface Relationship {
   id: string;
   typeId: string;
   /** Normalized so `from` is the outbound side when the link is directional. */
   from: RelEnd;
   to: RelEnd;
+  /** Bend points, in order from `from` to `to`. Absent on a plain curved wire. */
+  waypoints?: Waypoint[];
 }
 
 export interface CanvasData {

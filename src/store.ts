@@ -10,10 +10,17 @@ import {
   RelEnd,
   Relationship,
   Viewport,
+  Waypoint,
   NODE_WIDTH,
   NODE_HEIGHT,
 } from "./types";
-import { canConnect, offsetToCenter } from "./lib/graph";
+import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
+import {
+  addWaypoint,
+  applyHandle,
+  translateWaypoints,
+  waypointsOutside,
+} from "./lib/waypoints";
 import { childLayer } from "./lib/layers";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 import { copyDefinition, incrementName, nameTaken, uniqueName } from "./lib/definitions";
@@ -164,6 +171,8 @@ interface AppState {
   pendingBoundaryRect: Rect | null;
   /** Snapshots for Ctrl+Z, newest last. Capped at 50. */
   undoStack: Snapshot[];
+  /** The waypoint whose rotation handle is showing (its wire is selected), if any. */
+  selectedWaypoint: { relId: string; index: number } | null;
   /** Where the open project is saved; null until its first save (Tauri only). */
   filePath: string | null;
   /** Content as of the last save/open/new — compared by reference to detect unsaved changes. */
@@ -180,6 +189,16 @@ interface AppState {
   newProject: () => void;
   /** Records the current content as saved (at `filePath`). */
   markSaved: (filePath: string | null) => void;
+
+  /** Double-click on a wire: adds a waypoint there, in path order. */
+  addWaypointAt: (relId: string, at: { x: number; y: number }) => void;
+  selectWaypoint: (relId: string, index: number) => void;
+  /** Drags a waypoint's center (call pushUndo when the drag starts). */
+  moveWaypoint: (relId: string, index: number, to: { x: number; y: number }) => void;
+  /** Drags a waypoint's rotation/length handle (call pushUndo when the drag starts). */
+  dragWaypointHandle: (relId: string, index: number, to: { x: number; y: number }) => void;
+  /** Delete key with a waypoint selected. */
+  removeSelectedWaypoint: () => void;
 
   setPlacing: (defId: string | null) => void;
   setViewport: (v: Viewport) => void;
@@ -256,6 +275,7 @@ export const useApp = create<AppState>((set, get) => ({
   filePath: null,
   savedRefs: contentRefs(initial),
   savedAt: Date.now(),
+  selectedWaypoint: null,
   activeCanvasId: "canvas-root",
   trail: ["canvas-root"],
   viewports: {},
@@ -278,6 +298,7 @@ export const useApp = create<AppState>((set, get) => ({
         ...snap,
         undoStack: stack,
         selection: [],
+        selectedWaypoint: null,
         placingDefId: null,
         wireDrag: null,
         boundaryDrawing: false,
@@ -323,6 +344,7 @@ export const useApp = create<AppState>((set, get) => ({
         id: uid(),
         from: { ...r.from, nodeId: idMap.get(r.from.nodeId)! },
         to: { ...r.to, nodeId: idMap.get(r.to.nodeId)! },
+        waypoints: translateWaypoints(r.waypoints, off, off),
       }));
       return {
         undoStack: pushSnap(s),
@@ -349,6 +371,7 @@ export const useApp = create<AppState>((set, get) => ({
         filePath: null,
         savedRefs: contentRefs(fresh),
         savedAt: Date.now(),
+        selectedWaypoint: null,
         activeCanvasId: "canvas-root",
         trail: ["canvas-root"],
         viewports: {},
@@ -358,6 +381,53 @@ export const useApp = create<AppState>((set, get) => ({
         boundaryDrawing: false,
         pendingBoundaryRect: null,
         undoStack: [],
+      };
+    }),
+
+  addWaypointAt: (relId, at) =>
+    set((s) => {
+      const canvas = s.canvases[s.activeCanvasId];
+      const rel = canvas.relationships.find((r) => r.id === relId);
+      if (!rel) return {};
+      const end = (e: RelEnd) => {
+        const node = canvas.nodes.find((n) => n.id === e.nodeId);
+        const def = node && s.definitions[node.definitionId];
+        return node && def ? pipWorldPos(node, def, e.pipId) : null;
+      };
+      const p1 = end(rel.from);
+      const p2 = end(rel.to);
+      if (!p1 || !p2) return {};
+      const waypoints = addWaypoint(p1, p2, rel.waypoints ?? [], at);
+      const index = waypoints.findIndex((w) => !rel.waypoints?.includes(w));
+      return {
+        undoStack: pushSnap(s),
+        canvases: withRel(s, relId, (r) => ({ ...r, waypoints })),
+        selection: [relId],
+        selectedWaypoint: { relId, index },
+      };
+    }),
+
+  selectWaypoint: (relId, index) => set({ selection: [relId], selectedWaypoint: { relId, index } }),
+
+  moveWaypoint: (relId, index, to) =>
+    set((s) => ({
+      canvases: withWaypoint(s, relId, index, (w) => ({ ...w, x: to.x, y: to.y })),
+    })),
+
+  dragWaypointHandle: (relId, index, to) =>
+    set((s) => ({ canvases: withWaypoint(s, relId, index, (w) => applyHandle(w, to)) })),
+
+  removeSelectedWaypoint: () =>
+    set((s) => {
+      const sw = s.selectedWaypoint;
+      if (!sw) return {};
+      return {
+        undoStack: pushSnap(s),
+        canvases: withRel(s, sw.relId, (r) => {
+          const waypoints = (r.waypoints ?? []).filter((_, i) => i !== sw.index);
+          return { ...r, waypoints: waypoints.length ? waypoints : undefined };
+        }),
+        selectedWaypoint: null,
       };
     }),
 
@@ -473,7 +543,9 @@ export const useApp = create<AppState>((set, get) => ({
           const newPipId = innerEndToNewPip.get(`${end.nodeId}|${end.pipId}`);
           if (!newPipId) return r;
           const newEnd: RelEnd = { nodeId: instance.id, pipId: newPipId };
-          return fromInside ? { ...r, from: newEnd } : { ...r, to: newEnd };
+          // Bend points inside the box go with it; those outside stay
+          const waypoints = waypointsOutside(r.waypoints, box);
+          return fromInside ? { ...r, from: newEnd, waypoints } : { ...r, to: newEnd, waypoints };
         });
 
       return {
@@ -537,6 +609,7 @@ export const useApp = create<AppState>((set, get) => ({
         id: uid(),
         from: { ...r.from, nodeId: idMap.get(r.from.nodeId) ?? r.from.nodeId },
         to: { ...r.to, nodeId: idMap.get(r.to.nodeId) ?? r.to.nodeId },
+        waypoints: translateWaypoints(r.waypoints, dx, dy),
       }));
 
       // Rewire boundary relationships from the instance's pips to the inner nodes
@@ -677,12 +750,22 @@ export const useApp = create<AppState>((set, get) => ({
     set((s) => {
       const canvas = s.canvases[s.activeCanvasId];
       const byId = new Map(moves.map((m) => [m.id, m]));
+      const delta = new Map<string, { dx: number; dy: number }>();
       const nodes = canvas.nodes.map((n) => {
         const m = byId.get(n.id);
-        return m ? { ...n, x: m.x, y: m.y } : n;
+        if (!m) return n;
+        delta.set(n.id, { dx: m.x - n.x, dy: m.y - n.y });
+        return { ...n, x: m.x, y: m.y };
+      });
+      // A wire's bend points stay put unless both its ends move together
+      const relationships = canvas.relationships.map((r) => {
+        const a = delta.get(r.from.nodeId);
+        const b = delta.get(r.to.nodeId);
+        if (!r.waypoints?.length || !a || !b || a.dx !== b.dx || a.dy !== b.dy) return r;
+        return { ...r, waypoints: translateWaypoints(r.waypoints, a.dx, a.dy) };
       });
       return {
-        canvases: { ...s.canvases, [canvas.id]: { ...canvas, nodes } },
+        canvases: { ...s.canvases, [canvas.id]: { ...canvas, nodes, relationships } },
       };
     }),
 
@@ -871,6 +954,7 @@ export const useApp = create<AppState>((set, get) => ({
           id: uid(),
           from: { ...r.from, nodeId: idMap.get(r.from.nodeId)! },
           to: { ...r.to, nodeId: idMap.get(r.to.nodeId)! },
+          waypoints: translateWaypoints(r.waypoints, dx, dy),
         }));
       return {
         undoStack: pushSnap(s),
@@ -902,6 +986,36 @@ export const useApp = create<AppState>((set, get) => ({
       };
     }),
 }));
+
+/** Canvases with one relationship on the active canvas replaced. */
+function withRel(
+  s: Pick<AppState, "canvases" | "activeCanvasId">,
+  relId: string,
+  fn: (r: Relationship) => Relationship
+): Record<string, CanvasData> {
+  const canvas = s.canvases[s.activeCanvasId];
+  return {
+    ...s.canvases,
+    [canvas.id]: {
+      ...canvas,
+      relationships: canvas.relationships.map((r) => (r.id === relId ? fn(r) : r)),
+    },
+  };
+}
+
+/** Canvases with one waypoint of one relationship replaced. */
+function withWaypoint(
+  s: Pick<AppState, "canvases" | "activeCanvasId">,
+  relId: string,
+  index: number,
+  fn: (w: Waypoint) => Waypoint
+): Record<string, CanvasData> {
+  return withRel(s, relId, (r) =>
+    r.waypoints?.[index]
+      ? { ...r, waypoints: r.waypoints.map((w, i) => (i === index ? fn(w) : w)) }
+      : r
+  );
+}
 
 /** Display label for a canvas: owning definition's name, or "Root". */
 export function canvasLabel(

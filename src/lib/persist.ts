@@ -28,6 +28,7 @@ export function loadProjectData(json: string): void {
     trail: ["canvas-root"],
     viewports: {},
     selection: [],
+    selectedWaypoint: null,
     placingDefId: null,
     wireDrag: null,
     boundaryDrawing: false,

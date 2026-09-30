@@ -3,6 +3,7 @@ import Konva from "konva";
 import { Relationship } from "../types";
 import { useApp, getPip, useActiveCanvas } from "../store";
 import { pipWorldPos, wireGeometry, sideVector } from "../lib/graph";
+import { traceRounded, wireVertices } from "../lib/waypoints";
 
 /** Draws a small arrowhead at (x,y) pointing along `dir`. */
 function drawArrow(
@@ -25,6 +26,14 @@ function drawArrow(
   ctx.fill();
 }
 
+/** World position of the pointer on this shape's stage. */
+function pointerWorld(e: Konva.KonvaEventObject<MouseEvent>) {
+  const stage = e.target.getStage();
+  const p = stage?.getPointerPosition();
+  if (!stage || !p) return null;
+  return { x: (p.x - stage.x()) / stage.scaleX(), y: (p.y - stage.y()) / stage.scaleY() };
+}
+
 export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const canvas = useActiveCanvas();
   const s = useApp.getState();
@@ -44,7 +53,20 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const directional = fromPip?.direction === "outbound";
   const bidirectional = fromPip?.direction === "bidirectional";
   const color = type?.color ?? "#888";
+
+  // Plain wires are one curve; wires with bend points are straight runs with rounded corners
+  const bent = !!rel.waypoints?.length;
   const g = wireGeometry(p1, p1.side, p2, p2.side);
+  const vertices = bent ? wireVertices(p1, p1.side, p2, p2.side, rel.waypoints!) : [];
+  const tracePath = (ctx: Konva.Context) => {
+    ctx.beginPath();
+    if (bent) {
+      traceRounded(ctx, vertices);
+    } else {
+      ctx.moveTo(g.x1, g.y1);
+      ctx.bezierCurveTo(g.c1x, g.c1y, g.c2x, g.c2y, g.x2, g.y2);
+    }
+  };
 
   return (
     <Shape
@@ -53,9 +75,7 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
       stroke={color}
       strokeWidth={14}
       sceneFunc={(ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(g.x1, g.y1);
-        ctx.bezierCurveTo(g.c1x, g.c1y, g.c2x, g.c2y, g.x2, g.y2);
+        tracePath(ctx);
         ctx.setAttr("lineWidth", selected ? 3 : 2);
         ctx.setAttr("strokeStyle", color);
         if (selected) {
@@ -67,17 +87,15 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
         // Arrowheads point into the pip they terminate at (reverse of its outward normal)
         if (directional || bidirectional) {
           const inTo = sideVector(p2.side);
-          drawArrow(ctx, g.x2, g.y2, { x: -inTo.x, y: -inTo.y }, color);
+          drawArrow(ctx, p2.x, p2.y, { x: -inTo.x, y: -inTo.y }, color);
         }
         if (bidirectional) {
           const inFrom = sideVector(p1.side);
-          drawArrow(ctx, g.x1, g.y1, { x: -inFrom.x, y: -inFrom.y }, color);
+          drawArrow(ctx, p1.x, p1.y, { x: -inFrom.x, y: -inFrom.y }, color);
         }
       }}
       hitFunc={(ctx, shape) => {
-        ctx.beginPath();
-        ctx.moveTo(g.x1, g.y1);
-        ctx.bezierCurveTo(g.c1x, g.c1y, g.c2x, g.c2y, g.x2, g.y2);
+        tracePath(ctx);
         ctx.fillStrokeShape(shape);
       }}
       onClick={(e) => {
@@ -86,6 +104,12 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
         const app = useApp.getState();
         if (e.evt.ctrlKey || e.evt.shiftKey) app.toggleSelected(rel.id);
         else app.setSelection([rel.id]);
+      }}
+      onDblClick={(e) => {
+        if (e.evt.button !== 0) return;
+        e.cancelBubble = true;
+        const at = pointerWorld(e);
+        if (at) useApp.getState().addWaypointAt(rel.id, at);
       }}
       onMouseEnter={(e) => {
         const stage = e.target.getStage();
