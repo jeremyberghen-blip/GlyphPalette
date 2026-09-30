@@ -20,6 +20,8 @@ interface PromptState {
 export const useUnsavedPrompt = create<PromptState>(() => ({ question: null, resolve: null }));
 
 function askUnsaved(question: string): Promise<UnsavedChoice> {
+  // A second request (e.g. clicking close twice) cancels the first rather than orphaning it
+  useUnsavedPrompt.getState().resolve?.("cancel");
   return new Promise((resolve) => {
     useUnsavedPrompt.setState({
       question,
@@ -76,6 +78,19 @@ export async function openProjectFlow(): Promise<void> {
     if (await openProject()) toast(`Opened ${projectLabel(useApp.getState().filePath)}`);
   } catch (e) {
     toast(`Couldn't open that file: ${errorText(e)}`, "error");
+  }
+}
+
+/**
+ * The window's close button: asks first if there are unsaved changes, then
+ * closes. Anything that goes wrong is shown, never swallowed.
+ */
+export async function closeWindowFlow(destroy: () => Promise<void>): Promise<void> {
+  try {
+    if (await confirmDiscardIfDirty("closing")) await destroy();
+  } catch (e) {
+    console.error("Closing the window failed", e);
+    toast(`Couldn't close the window: ${errorText(e)}`, "error");
   }
 }
 

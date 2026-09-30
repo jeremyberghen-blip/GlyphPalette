@@ -10,11 +10,10 @@ import SettingsDialog from "./components/SettingsDialog";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
 import { isTauri } from "./lib/persist";
 import {
-  confirmDiscardIfDirty,
+  closeWindowFlow,
   exportPngFlow,
   newProjectFlow,
   openProjectFlow,
-  projectIsDirty,
   saveNow,
 } from "./lib/fileActions";
 import { autosaveDue, isDirty, projectLabel, windowTitle } from "./lib/session";
@@ -77,15 +76,24 @@ export default function App() {
   useEffect(() => {
     if (!isTauri()) return;
     let unlisten: (() => void) | undefined;
-    void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+    let disposed = false;
+    void (async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();
-      unlisten = await win.onCloseRequested(async (event) => {
-        if (!projectIsDirty()) return;
+      const off = await win.onCloseRequested((event) => {
+        // GP always decides (and reports failures) rather than leaving it to Tauri
         event.preventDefault();
-        if (await confirmDiscardIfDirty("closing")) await win.destroy();
+        return closeWindowFlow(() => win.destroy());
       });
-    });
-    return () => unlisten?.();
+      // Unmounted while registering (React runs effects twice in dev): don't leak
+      // a second, stale close handler that could block closing.
+      if (disposed) off();
+      else unlisten = off;
+    })();
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
   }, []);
 
   // First visit to a canvas: center the world origin in the view
@@ -226,7 +234,7 @@ export default function App() {
           <SquareDashed size={13} /> Boundary
         </button>
         <div className="ml-auto truncate text-xs text-[#565a72]">
-          Ctrl+Z undo · Ctrl+C/V copy/paste · Ctrl+D duplicate · middle-drag pan · wheel zoom · Esc cancels
+          Del delete · Ctrl+Z undo · Ctrl+C/V copy/paste · Ctrl+D duplicate · middle-drag pan · wheel zoom · Esc cancels
         </div>
         <button
           onClick={() => setSettingsOpen(true)}
