@@ -39,7 +39,9 @@ it in place with an updated `Status` line so history stays readable.
 |---|---|---|
 | [0001](0001-node-boundary-relationship-model.md) | Node / Boundary / Relationship model | Accepted |
 | [0002](0002-container-to-boundary-rename.md) | Rename Container → Boundary | Accepted |
-| [0003](0003-c4-layer-system.md) | C4 layer system on canvases and definitions | Accepted |
-| [0004](0004-default-library-copy-on-use.md) | Default library, split from the project file, copy-on-use | Accepted |
+| [0003](0003-c4-layer-system.md) | C4 layer system on canvases and definitions | Accepted; amended by 0007 |
+| [0004](0004-default-library-copy-on-use.md) | Default library, split from the project file, copy-on-use | Superseded by 0008 |
 | [0005](0005-defer-hephaestus-integration.md) | Defer Project Hephaestus integration | Accepted |
 | [0006](0006-versioning-and-git.md) | Start versioning at v1.0.0; adopt git | Accepted |
+| [0007](0007-retire-code-layer-and-pockets.md) | Retire the Code layer; collapsed boundaries are same-layer pockets | Accepted |
+| [0008](0008-project-owned-library.md) | The library belongs to the project; a read-only standard library | Accepted |

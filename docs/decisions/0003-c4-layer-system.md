@@ -1,7 +1,7 @@
 # 0003: C4 layer system on canvases and definitions
 
 Date: 2026-08-30
-Status: Accepted
+Status: Accepted; amended by [0007](0007-retire-code-layer-and-pockets.md) (Code layer retired, pockets)
 
 ## Context
 

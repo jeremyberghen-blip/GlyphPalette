@@ -1,7 +1,7 @@
 # 0004: Default library, split from the project file, copy-on-use
 
 Date: 2026-08-30
-Status: Accepted
+Status: Superseded by [0008](0008-project-owned-library.md)
 
 ## Context
 
