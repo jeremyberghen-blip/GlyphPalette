@@ -13,10 +13,10 @@ import {
   NODE_WIDTH,
   NODE_HEIGHT,
 } from "./types";
-import { canConnect } from "./lib/graph";
+import { canConnect, offsetToCenter } from "./lib/graph";
 import { childLayer } from "./lib/layers";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
-import { nameTaken, uniqueName } from "./lib/definitions";
+import { copyDefinition, incrementName, nameTaken, uniqueName } from "./lib/definitions";
 import { ImportPlan } from "./lib/importDefs";
 import { uid } from "./lib/ids";
 
@@ -117,6 +117,14 @@ interface ClipboardData {
 let clipboard: ClipboardData | null = null;
 let pasteCount = 0;
 
+// ---- Last cursor position on the canvas (world coords; not reactive) ----
+
+let pointerWorld: { x: number; y: number } | null = null;
+export const setPointerWorld = (p: { x: number; y: number } | null) => {
+  pointerWorld = p;
+};
+export const getPointerWorld = () => pointerWorld;
+
 // ---- Wire drag (relationship being pulled from a pip) ----
 
 export interface WireDrag {
@@ -207,6 +215,17 @@ interface AppState {
   removeDefinition: (defId: string) => void;
   /** Adds definitions (and the pip types / icons they need) planned by lib/importDefs. */
   importDefinitions: (plan: ImportPlan) => void;
+  /**
+   * Adds an independent copy of a definition with the next numbered name
+   * ("Link Service 2") and an empty interior. Returns the new id.
+   */
+  duplicateDefinition: (defId: string) => string | null;
+  /**
+   * Ctrl+D: gives each selected node a duplicated definition and places the
+   * copies centered on `at` (or just offset, with no cursor), keeping their
+   * layout and the wires between them. Collapsed groups are skipped.
+   */
+  duplicateSelection: (at: { x: number; y: number } | null) => void;
 }
 
 /** Looks up a pip definition from a node instance id. */
@@ -220,7 +239,7 @@ export function getPip(
   return s.definitions[node.definitionId]?.pips.find((p) => p.id === pipId) ?? null;
 }
 
-export const useApp = create<AppState>((set) => ({
+export const useApp = create<AppState>((set, get) => ({
   ...freshProject(),
   activeCanvasId: "canvas-root",
   trail: ["canvas-root"],
@@ -779,6 +798,67 @@ export const useApp = create<AppState>((set) => ({
         undoStack: pushSnap(s),
         definitions,
         placingDefId: s.placingDefId === defId ? null : s.placingDefId,
+      };
+    }),
+
+  duplicateDefinition: (defId) => {
+    const s = get();
+    const src = s.definitions[defId];
+    if (!src || src.expandable) return null;
+    const def = copyDefinition(
+      src,
+      `def-${uid()}`,
+      incrementName(src.name, (n) => nameTaken(s.definitions, n))
+    );
+    set({ undoStack: pushSnap(s), definitions: { ...s.definitions, [def.id]: def } });
+    return def.id;
+  },
+
+  duplicateSelection: (at) =>
+    set((s) => {
+      const canvas = s.canvases[s.activeCanvasId];
+      const sel = new Set(s.selection);
+      const picked = canvas.nodes.filter(
+        (n) => sel.has(n.id) && s.definitions[n.definitionId] && !s.definitions[n.definitionId].expandable
+      );
+      if (!picked.length) return {};
+
+      const definitions = { ...s.definitions };
+      const { dx, dy } = at ? offsetToCenter(picked, at) : { dx: 40, dy: 40 };
+      const idMap = new Map<string, string>();
+      const nodes: NodeInstance[] = picked.map((n) => {
+        const src = definitions[n.definitionId];
+        const def = copyDefinition(
+          src,
+          `def-${uid()}`,
+          incrementName(src.name, (name) => nameTaken(definitions, name))
+        );
+        definitions[def.id] = def;
+        const id = uid();
+        idMap.set(n.id, id);
+        return { id, definitionId: def.id, x: n.x + dx, y: n.y + dy };
+      });
+      // Wires between duplicated nodes come along; pip ids carry over with the copies
+      const relationships: Relationship[] = canvas.relationships
+        .filter((r) => idMap.has(r.from.nodeId) && idMap.has(r.to.nodeId))
+        .map((r) => ({
+          ...r,
+          id: uid(),
+          from: { ...r.from, nodeId: idMap.get(r.from.nodeId)! },
+          to: { ...r.to, nodeId: idMap.get(r.to.nodeId)! },
+        }));
+      return {
+        undoStack: pushSnap(s),
+        definitions,
+        canvases: {
+          ...s.canvases,
+          [canvas.id]: {
+            ...canvas,
+            nodes: [...canvas.nodes, ...nodes],
+            relationships: [...canvas.relationships, ...relationships],
+          },
+        },
+        selection: nodes.map((n) => n.id),
       };
     }),
 

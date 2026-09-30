@@ -7,7 +7,7 @@ import BoundaryModal from "./components/BoundaryModal";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown } from "lucide-react";
 import { saveProject, openProject, exportPng } from "./lib/persist";
 import Konva from "konva";
-import { useApp } from "./store";
+import { useApp, getPointerWorld } from "./store";
 import { setCustomIconResolver } from "./lib/icons";
 import "./App.css";
 
@@ -61,6 +61,9 @@ export default function App() {
         s.copySelection();
       } else if (e.ctrlKey && e.key.toLowerCase() === "v") {
         s.paste();
+      } else if (e.ctrlKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        s.duplicateSelection(getPointerWorld());
       } else if (e.ctrlKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void saveProject(e.shiftKey);
@@ -148,7 +151,7 @@ export default function App() {
           <SquareDashed size={13} /> Boundary
         </button>
         <div className="ml-auto text-xs text-[#565a72]">
-          Ctrl+Z undo · Ctrl+C/V copy/paste · middle-drag pan · wheel zoom · Esc cancels
+          Ctrl+Z undo · Ctrl+C/V copy/paste · Ctrl+D duplicate · middle-drag pan · wheel zoom · Esc cancels
         </div>
       </header>
       <div className="flex min-h-0 flex-1">

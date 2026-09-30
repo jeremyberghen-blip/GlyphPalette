@@ -1,7 +1,7 @@
 import { Stage, Layer, Rect, Circle, Group } from "react-konva";
 import Konva from "konva";
 import { useMemo, useRef, useState } from "react";
-import { useApp, useActiveCanvas, getPip } from "../store";
+import { useApp, useActiveCanvas, getPip, setPointerWorld } from "../store";
 import { NODE_WIDTH, NODE_HEIGHT } from "../types";
 import NodeShape, { NodeVisual } from "./NodeShape";
 import RelationshipShape from "./RelationshipShape";
@@ -205,6 +205,8 @@ export default function CanvasStage({ width, height }: { width: number; height: 
   const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = stageRef.current;
     if (!stage) return;
+    const pointer = stage.getPointerPosition();
+    if (pointer) setPointerWorld(toWorld(pointer.x, pointer.y)); // Ctrl+D target
     if (panning.current) {
       setViewport({
         x: viewport.x + e.evt.movementX,
@@ -296,6 +298,7 @@ export default function CanvasStage({ width, height }: { width: number; height: 
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={() => setPointerWorld(null)}
       onContextMenu={(e) => e.evt.preventDefault()}
     >
       <Layer>

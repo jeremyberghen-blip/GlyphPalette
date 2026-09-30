@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useApp } from "./store";
+import { NODE_WIDTH } from "./types";
 import { buildProjectFile, loadProjectFile, parseProjectFile } from "./lib/projectFile";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 
@@ -123,6 +124,46 @@ describe("standard library", () => {
     expect(s().pipTypes["t-x"]).toBeDefined();
     s().undo();
     expect(s().definitions["def-x"]).toBeUndefined();
+  });
+});
+
+describe("duplicating", () => {
+  it("Duplicate makes an independent, numbered copy with an empty interior", () => {
+    s().enterDefinition("def-server"); // give it an interior first
+    s().goBack();
+    const id = s().duplicateDefinition("def-server")!;
+    expect(s().definitions[id].name).toBe("API Service 2");
+    expect(s().definitions[id].canvasId).toBeNull();
+    expect(isStandardDef(id)).toBe(false);
+    const again = s().duplicateDefinition("def-server")!;
+    expect(s().definitions[again].name).toBe("API Service 3");
+  });
+
+  it("Ctrl+D copies selected nodes as new definitions at the cursor, wires included", () => {
+    const web = place("def-webapp", 0, 0);
+    const api = place("def-server", 300, 0);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    s().setSelection([web, api]);
+    s().duplicateSelection({ x: 1000, y: 1000 });
+
+    const copies = root().nodes.filter((n) => s().selection.includes(n.id));
+    expect(copies.map((n) => s().definitions[n.definitionId].name).sort()).toEqual(["API Service 2", "Web App 2"]);
+    // Layout kept, centered on the cursor
+    const [a, b] = copies;
+    expect(b.x - a.x).toBe(300);
+    expect((Math.min(a.x, b.x) + Math.max(a.x, b.x) + NODE_WIDTH) / 2).toBe(1000);
+    // The wire between them came along
+    const copyIds = new Set(copies.map((n) => n.id));
+    expect(root().relationships.filter((r) => copyIds.has(r.from.nodeId) && copyIds.has(r.to.nodeId))).toHaveLength(1);
+  });
+
+  it("Ctrl+D skips collapsed groups", () => {
+    place("def-cache", 0, 0);
+    s().addBoundary("Group", "Box", { x: -10, y: -10, width: 200, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const before = root().nodes.length;
+    s().duplicateSelection(null);
+    expect(root().nodes.length).toBe(before);
   });
 });
 

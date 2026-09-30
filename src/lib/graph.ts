@@ -123,3 +123,16 @@ export function wireGeometry(
     y2: p2.y,
   };
 }
+
+/** Offset that moves a group of nodes so their bounding box is centered on `at`. */
+export function offsetToCenter(
+  nodes: { x: number; y: number }[],
+  at: { x: number; y: number }
+): { dx: number; dy: number } {
+  if (!nodes.length) return { dx: 0, dy: 0 };
+  const x0 = Math.min(...nodes.map((n) => n.x));
+  const y0 = Math.min(...nodes.map((n) => n.y));
+  const x1 = Math.max(...nodes.map((n) => n.x + NODE_WIDTH));
+  const y1 = Math.max(...nodes.map((n) => n.y + NODE_HEIGHT));
+  return { dx: at.x - (x0 + x1) / 2, dy: at.y - (y0 + y1) / 2 };
+}

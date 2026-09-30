@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { icons, Plus, Pencil, Trash2, Search, Library, Import } from "lucide-react";
+import { icons, Plus, Pencil, Trash2, Search, Library, Import, Copy, Shuffle } from "lucide-react";
 import { LAYER_LABELS, NodeDefinition, isRetiredLayer } from "../types";
 import { useApp } from "../store";
 import { canvasOwner } from "../lib/layers";
@@ -14,12 +14,14 @@ function DefCard({
   inUse,
   standard,
   onEdit,
+  onPermute,
 }: {
   def: NodeDefinition;
   inUse: boolean;
   /** Standard-library node: read-only, so no edit or delete. */
   standard: boolean;
   onEdit: () => void;
+  onPermute: () => void;
 }) {
   const placing = useApp((s) => s.placingDefId === def.id);
   const customIcons = useApp((s) => s.customIcons);
@@ -59,7 +61,27 @@ function DefCard({
           {def.pips.length} pip{def.pips.length === 1 ? "" : "s"}
         </div>
       </div>
-      <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
+      <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useApp.getState().duplicateDefinition(def.id);
+          }}
+          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+          title="Duplicate — a copy with the next numbered name"
+        >
+          <Copy size={13} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPermute();
+          }}
+          className="rounded p-1 text-[#7a7d92] hover:bg-[#2b2d3a] hover:text-white"
+          title="Permute — a new node based on this one"
+        >
+          <Shuffle size={13} />
+        </button>
         {!standard && (
           <>
             <button
@@ -108,10 +130,11 @@ export default function LibraryPanel() {
     return owner?.expandable ? owner.name : null;
   });
   const [search, setSearch] = useState("");
-  const [wizard, setWizard] = useState<{ open: boolean; editing: NodeDefinition | null }>({
-    open: false,
-    editing: null,
-  });
+  const [wizard, setWizard] = useState<{
+    open: boolean;
+    editing: NodeDefinition | null;
+    base: NodeDefinition | null;
+  }>({ open: false, editing: null, base: null });
   const [importing, setImporting] = useState<{ source: ProjectContent; name: string } | null>(null);
 
   const usedDefIds = useMemo(() => {
@@ -148,7 +171,8 @@ export default function LibraryPanel() {
       def={d}
       inUse={usedDefIds.has(d.id)}
       standard={isStandardDef(d.id)}
-      onEdit={() => setWizard({ open: true, editing: d })}
+      onEdit={() => setWizard({ open: true, editing: d, base: null })}
+      onPermute={() => setWizard({ open: true, editing: null, base: d })}
     />
   );
 
@@ -170,7 +194,7 @@ export default function LibraryPanel() {
           </button>
         </div>
         <button
-          onClick={() => setWizard({ open: true, editing: null })}
+          onClick={() => setWizard({ open: true, editing: null, base: null })}
           className="flex w-full items-center justify-center gap-1.5 rounded bg-[#2b6cb0] px-3 py-1.5 text-sm text-white hover:bg-[#3182ce]"
         >
           <Plus size={15} /> New Node
@@ -227,7 +251,8 @@ export default function LibraryPanel() {
       {wizard.open && (
         <DefinitionWizard
           editing={wizard.editing}
-          onClose={() => setWizard({ open: false, editing: null })}
+          base={wizard.base}
+          onClose={() => setWizard({ open: false, editing: null, base: null })}
         />
       )}
       {importing && (

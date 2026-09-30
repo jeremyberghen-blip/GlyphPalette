@@ -57,20 +57,26 @@ function NewTypeForm({ onCreate }: { onCreate: (typeId: string) => void }) {
 interface Props {
   /** Definition being edited, or null when creating a new one. */
   editing: NodeDefinition | null;
+  /**
+   * Permute: pre-fill a *new* definition from this one — every field except
+   * the name, which starts blank.
+   */
+  base?: NodeDefinition | null;
   onClose: () => void;
 }
 
-export default function DefinitionWizard({ editing, onClose }: Props) {
+export default function DefinitionWizard({ editing, base = null, onClose }: Props) {
   const pipTypes = useApp((s) => s.pipTypes);
   const definitions = useApp((s) => s.definitions);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
 
+  const source = editing ?? base;
   const [name, setName] = useState(editing?.name ?? "");
-  const [icon, setIcon] = useState(editing?.icon ?? "Box");
+  const [icon, setIcon] = useState(source?.icon ?? "Box");
   const [layers, setLayers] = useState<Layer[]>(
-    editing?.layers?.length ? editing.layers : [activeLayer]
+    source?.layers?.length ? [...source.layers] : [activeLayer]
   );
-  const [pips, setPips] = useState<PipDef[]>(editing?.pips ?? []);
+  const [pips, setPips] = useState<PipDef[]>(() => source?.pips.map((p) => ({ ...p })) ?? []);
 
   const toggleLayer = (l: Layer) =>
     setLayers((ls) =>
@@ -128,7 +134,11 @@ export default function DefinitionWizard({ editing, onClose }: Props) {
       <div className="flex max-h-[85vh] w-[560px] flex-col rounded-lg border border-[#3a3d52] bg-[#22242e] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#2e3040] px-4 py-3">
           <span className="text-sm font-semibold text-[#e2e4ee]">
-            {editing ? `Edit "${editing.name}"` : "New Node Definition"}
+            {editing
+              ? `Edit "${editing.name}"`
+              : base
+                ? `Permute "${base.name}"`
+                : "New Node Definition"}
           </span>
           <button onClick={onClose} className="text-[#7a7d92] hover:text-white">
             <X size={16} />
@@ -160,7 +170,7 @@ export default function DefinitionWizard({ editing, onClose }: Props) {
             </label>
             <div className="flex gap-1.5">
               {/* The retired Code layer is only offered to remove it from old definitions */}
-              {LAYERS.filter((l) => DRAWABLE_LAYERS.includes(l) || editing?.layers.includes(l)).map((l) => (
+              {LAYERS.filter((l) => DRAWABLE_LAYERS.includes(l) || source?.layers.includes(l)).map((l) => (
                 <button
                   key={l}
                   onClick={() => toggleLayer(l)}

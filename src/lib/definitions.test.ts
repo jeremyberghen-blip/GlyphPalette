@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
+import { copyDefinition, incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
 import { NodeDefinition } from "../types";
 
 const takenFrom = (names: string[]) => (n: string) =>
@@ -56,5 +56,31 @@ describe("sameDefinition", () => {
     expect(sameDefinition(base, { ...base, name: "Snip API" })).toBe(false);
     expect(sameDefinition(base, { ...base, pips: [...base.pips, { ...base.pips[0], id: "q" }] })).toBe(false);
     expect(sameDefinition(base, { ...base, pips: [{ ...base.pips[0], typeId: "t-http" }] })).toBe(false);
+  });
+});
+
+describe("copyDefinition", () => {
+  it("copies icon, layers, and pips, but not the interior or pocket data", () => {
+    const src: NodeDefinition = {
+      id: "a",
+      name: "Analytics",
+      icon: "Boxes",
+      layers: ["container"],
+      pips: [{ id: "p", label: "In", typeId: "t", direction: "inbound", side: "left" }],
+      canvasId: "inner",
+      expandable: true,
+      pipMap: { p: { nodeId: "n", pipId: "q" } },
+    };
+    const copy = copyDefinition(src, "b", "Analytics 2");
+    expect(copy).toEqual({
+      id: "b",
+      name: "Analytics 2",
+      icon: "Boxes",
+      layers: ["container"],
+      pips: [{ id: "p", label: "In", typeId: "t", direction: "inbound", side: "left" }],
+      canvasId: null,
+    });
+    copy.pips[0].label = "changed";
+    expect(src.pips[0].label).toBe("In");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canConnect, pipOffsets, pipWorldPos, sideVector, wireGeometry } from "./graph";
+import { canConnect, offsetToCenter, pipOffsets, pipWorldPos, sideVector, wireGeometry } from "./graph";
 import { NodeDefinition, PipDef, PipDirection, NODE_WIDTH, NODE_HEIGHT } from "../types";
 
 const pip = (direction: PipDirection, typeId = "t-http"): PipDef => ({
@@ -75,5 +75,15 @@ describe("wireGeometry", () => {
     expect(g.c1y).toBe(0);
     expect(g.c2x).toBeLessThan(200);
     expect(sideVector("top")).toEqual({ x: 0, y: -1 });
+  });
+});
+
+describe("offsetToCenter", () => {
+  it("centers a group's bounding box on a point", () => {
+    const nodes = [{ x: 0, y: 0 }, { x: 200, y: 100 }];
+    // bbox is 0..200+W by 0..100+H
+    const { dx, dy } = offsetToCenter(nodes, { x: 1000, y: 1000 });
+    expect(dx).toBe(1000 - (200 + NODE_WIDTH) / 2);
+    expect(dy).toBe(1000 - (100 + NODE_HEIGHT) / 2);
   });
 });

@@ -46,3 +46,18 @@ export function sameDefinition(a: NodeDefinition, b: NodeDefinition): boolean {
     pipKey(a) === pipKey(b)
   );
 }
+
+/**
+ * An independent copy of a definition under a new id and name. It starts with
+ * an empty interior and none of a collapsed boundary's pocket metadata.
+ */
+export function copyDefinition(def: NodeDefinition, id: string, name: string): NodeDefinition {
+  return {
+    id,
+    name,
+    icon: def.icon,
+    layers: [...def.layers],
+    pips: def.pips.map((p) => ({ ...p })),
+    canvasId: null,
+  };
+}
