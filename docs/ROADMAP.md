@@ -50,8 +50,8 @@ Then, in any order:
   popups, project name + unsaved marker, dirty-only warnings on New / Open
   / window close, autosave on a configurable interval, and a Settings
   dialog. Fixes New not clearing the remembered save path.
-- **Full-name tooltip on nodes** (long names are truncated); a natural place
-  to also show pip label + type.
+- **Full-name tooltip on nodes** when the name is truncated (0.4s delay),
+  and full names on palette cards.
 - **Drag-to-place from the palette**, alongside click-then-click placement.
 - **Relabel the seed API Service pip** labeled "HTTP" but typed REST/JSON.
 - Show the active layer in the breadcrumb trail and nav tree.

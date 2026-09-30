@@ -248,6 +248,14 @@ confirmation":
   next Ctrl+S silently overwrote the previously opened file. New now
   clears it.
 
+### Full-name tooltips (v1.1)
+
+Decided 2026-09-29. Hovering a node whose name is truncated shows its full
+name in a label above it (same style as the existing pip hover label)
+after a 0.4s delay; untruncated names show nothing. Palette cards' hover
+text becomes the full name plus the placement hint. Pip labels were
+already shown on hover, instantly, and stay that way.
+
 ### Soft pip-type layer affinity (v1.1)
 
 Decided 2026-09-29 (option b of three weighed: drop affinity / soft /
@@ -355,8 +363,8 @@ went:
 - **Instance names come from definitions** (two people = two
   definitions) → Duplicate and Permute, v1.1.
 - **Seed pip label contradicts its type** (API Service's inbound pip
-  labeled "HTTP", typed REST/JSON) → relabel on the v1.1 list; pip type on
-  hover folded into the tooltip item.
+  labeled "HTTP", typed REST/JSON) → relabel on the v1.1 list. (Pips turned
+  out to already show "label · type (direction)" on hover.)
 - **Boundaries worked cleanly** — draw → name → collapse → expand
   round-tripped without issues.
 - **No save feedback** → v1.1.
