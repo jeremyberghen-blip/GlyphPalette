@@ -206,10 +206,17 @@ Settled 2026-09-29:
   translate with them.
 - **Collapse/expand:** crossing wires keep waypoints outside the box and
   drop those inside; wires wholly inside keep theirs in the pocket.
-- **Rotation/length handle (under discussion):** selecting a waypoint shows
-  a second handle that can be dragged in a circle around it, rotating a
-  straight section through the waypoint; distance from the waypoint sets
-  the section's length. Geometry details being clarified.
+- **Rotation/length handle:** selecting a waypoint shows a second handle
+  orbiting it. The waypoint becomes a straight section **pivoting on its
+  center**; the handle's angle rotates it, its distance sets the length
+  (dragged onto the center = length 0, a plain corner). The section's ends
+  curve gently away toward the neighboring connection on each side.
+  Default length: small (~5px). No automatic flipping — the wire goes
+  through the section in the handle's direction even if that tangles it;
+  the user corrects by hand. (Default orientation and handle grab
+  distance being confirmed.)
+- **Import naming** (library feature): a colliding import is suffixed with
+  its source project, e.g. `Links DB (Snip)`, then numbered if still taken.
 
 ### Soft pip-type layer affinity (v1.1)
 
