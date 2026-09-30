@@ -254,7 +254,7 @@
       "pips": [
         {
           "id": "p-srv-http",
-          "label": "HTTP",
+          "label": "API",
           "typeId": "t-rest",
           "direction": "inbound",
           "side": "left"
