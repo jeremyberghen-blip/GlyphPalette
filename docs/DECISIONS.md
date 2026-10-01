@@ -138,6 +138,35 @@ the placement hint in its footer. Paths are per placed node, not per
 definition, so item 5 needs an instance-level view (likely the same card on
 hovering a placed node).
 
+**Language** (settled 2026-10-01):
+- A Language setting on every definition (folders too — an AI-decided
+  folder needs one), defaulting to **Inherit**: a node uses the nearest
+  ancestor's language. The effective language can differ per placement; the
+  palette card shows "inherited" or the explicit value, the placed-node view
+  shows the real one. Nothing set anywhere up the tree → unspecified, which
+  the export flags rather than guesses.
+- List: Python, TypeScript, JavaScript, Go, Rust, Ruby, Java, C#, Kotlin,
+  Swift, SQL (for buildable databases). Additions and an "Other…" option wait
+  for a later version.
+- **Names follow each language's conventions** in the output — because
+  that's what correct code in the language looks like (tooling, imports, the
+  AI's own habits), not as a hint. GP keeps one canonical snake_case slug;
+  the export converts it. A folder is named by its own language.
+
+| Language | Files | Folders |
+|---|---|---|
+| Python | `link_service.py` | `link_service` |
+| TypeScript, JavaScript | `link-service.ts` | `link-service` |
+| Go | `link_service.go` | `linkservice` |
+| Rust | `link_service.rs` | `link_service` |
+| Ruby | `link_service.rb` | `link_service` |
+| Java, Kotlin | `LinkService.java` | `linkservice` |
+| C#, Swift | `LinkService.cs` | `LinkService` |
+| SQL | `link_service.sql` | `link_service` |
+
+  Limitation: React component files (`LinkService.tsx`) can't be told apart
+  from other TypeScript; type a custom slug for those.
+
 ### Installable release build — deferred until after v2.0
 
 Raised 2026-09-29; the user decided the same day not to pursue it before
