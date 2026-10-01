@@ -45,7 +45,7 @@ describe("sameDefinition", () => {
     icon: "Server",
     layers: ["container"],
     canvasId: null,
-    pips: [{ id: "p", label: "HTTP", typeId: "t-rest", direction: "inbound", side: "left" }],
+    pips: [{ id: "p", label: "HTTP", transportId: "tr-http", styleId: "s-rest", direction: "inbound", side: "left" }],
   };
 
   it("ignores pip label changes", () => {
@@ -55,7 +55,13 @@ describe("sameDefinition", () => {
   it("notices renames, new pips, and retyped pips", () => {
     expect(sameDefinition(base, { ...base, name: "Snip API" })).toBe(false);
     expect(sameDefinition(base, { ...base, pips: [...base.pips, { ...base.pips[0], id: "q" }] })).toBe(false);
-    expect(sameDefinition(base, { ...base, pips: [{ ...base.pips[0], typeId: "t-http" }] })).toBe(false);
+    expect(sameDefinition(base, { ...base, pips: [{ ...base.pips[0], transportId: "tr-tcp" }] })).toBe(false);
+    expect(sameDefinition(base, { ...base, pips: [{ ...base.pips[0], styleId: "s-any" }] })).toBe(false);
+  });
+
+  it("can compare by transport only, for files from before styles existed", () => {
+    const upgraded = { ...base, pips: [{ ...base.pips[0], styleId: "s-any" }] };
+    expect(sameDefinition(upgraded, base, { ignoreStyles: true })).toBe(true);
   });
 });
 
@@ -66,7 +72,7 @@ describe("copyDefinition", () => {
       name: "Analytics",
       icon: "Boxes",
       layers: ["container"],
-      pips: [{ id: "p", label: "In", typeId: "t", direction: "inbound", side: "left" }],
+      pips: [{ id: "p", label: "In", transportId: "tr-http", styleId: "s-any", direction: "inbound", side: "left" }],
       canvasId: "inner",
       expandable: true,
       pipMap: { p: { nodeId: "n", pipId: "q" } },
@@ -77,7 +83,7 @@ describe("copyDefinition", () => {
       name: "Analytics 2",
       icon: "Boxes",
       layers: ["container"],
-      pips: [{ id: "p", label: "In", typeId: "t", direction: "inbound", side: "left" }],
+      pips: [{ id: "p", label: "In", transportId: "tr-http", styleId: "s-any", direction: "inbound", side: "left" }],
       canvasId: null,
     });
     copy.pips[0].label = "changed";

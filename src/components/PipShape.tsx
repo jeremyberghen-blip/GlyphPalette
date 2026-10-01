@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PipDef } from "../types";
 import { PIP_RADIUS, sideVector, canConnect } from "../lib/graph";
 import { useApp, getPip } from "../store";
+import { connLabel, isAnyStyle } from "../lib/connections";
 
 interface Props {
   nodeId: string;
@@ -12,17 +13,23 @@ interface Props {
   y: number;
 }
 
+/** Size of the in/out mark, small enough that the style core shows around it. */
+const DIR_MARK = 2.2;
+
 /** Angle (deg) so a triangle points along the given vector. */
 function angleFor(v: { x: number; y: number }): number {
   return (Math.atan2(v.y, v.x) * 180) / Math.PI + 90;
 }
 
 export default function PipShape({ nodeId, pip, x, y }: Props) {
-  const type = useApp((s) => s.pipTypes[pip.typeId]);
+  const transport = useApp((s) => s.transports[pip.transportId]);
+  const style = useApp((s) => s.styles[pip.styleId]);
+  const label = useApp((s) => connLabel(pip, s.transports, s.styles));
   const wireDrag = useApp((s) => s.wireDrag);
   const [hover, setHover] = useState(false);
 
-  const color = type?.color ?? "#888";
+  const color = transport?.color ?? "#888";
+  const core = !isAnyStyle(pip.styleId) ? style?.color : undefined;
 
   // While a wire is being dragged, light up compatible pips and dim the rest
   let validTarget = false;
@@ -87,11 +94,13 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
           if (stage) stage.container().style.cursor = "";
         }}
       />
+      {/* Style core; drawn under the direction mark, which stays small so the color reads */}
+      {core && <Circle radius={PIP_RADIUS * 0.55} fill={core} listening={false} />}
       {/* Direction marker: triangle out = outbound, in = inbound, diamond = bidirectional */}
       {pip.direction === "outbound" && (
         <RegularPolygon
           sides={3}
-          radius={3}
+          radius={DIR_MARK}
           fill="#191a21"
           rotation={angleFor(outward)}
           listening={false}
@@ -100,7 +109,7 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
       {pip.direction === "inbound" && (
         <RegularPolygon
           sides={3}
-          radius={3}
+          radius={DIR_MARK}
           fill="#191a21"
           rotation={angleFor(inward)}
           listening={false}
@@ -109,12 +118,12 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
       {pip.direction === "bidirectional" && (
         <RegularPolygon
           sides={4}
-          radius={3}
+          radius={DIR_MARK}
           fill="#191a21"
           listening={false}
         />
       )}
-      {(hover || snapped) && type && (
+      {(hover || snapped) && transport && (
         <Label
           x={outward.x * 14}
           y={outward.y * 14 - 10}
@@ -127,7 +136,7 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
             cornerRadius={4}
           />
           <Text
-            text={` ${pip.label} · ${type.name} ${
+            text={` ${pip.label} · ${label} ${
               pip.direction === "inbound"
                 ? "(in)"
                 : pip.direction === "outbound"

@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { canConnect, offsetToCenter, pipOffsets, pipWorldPos, sideVector, wireGeometry } from "./graph";
 import { NodeDefinition, PipDef, PipDirection, NODE_WIDTH, NODE_HEIGHT } from "../types";
 
-const pip = (direction: PipDirection, typeId = "t-http"): PipDef => ({
+const pip = (direction: PipDirection, transportId = "tr-http", styleId = "s-rest"): PipDef => ({
   id: `p-${direction}`,
   label: direction,
-  typeId,
+  transportId,
+  styleId,
   direction,
   side: "left",
 });
@@ -29,8 +30,18 @@ describe("canConnect", () => {
     expect(canConnect(pip("bidirectional"), pip("none"))).toBe(false);
   });
 
-  it("rejects mismatched types even when directions pair", () => {
-    expect(canConnect(pip("outbound", "t-http"), pip("inbound", "t-rest"))).toBe(false);
+  it("rejects mismatched transports or styles even when directions pair", () => {
+    expect(canConnect(pip("outbound", "tr-http"), pip("inbound", "tr-tcp"))).toBe(false);
+    expect(canConnect(pip("outbound", "tr-http", "s-rest"), pip("inbound", "tr-http", "s-graphql"))).toBe(false);
+  });
+
+  it("lets an 'any' style connect to a specific one on the same transport", () => {
+    expect(canConnect(pip("outbound", "tr-http", "s-any"), pip("inbound", "tr-http", "s-rest"))).toBe(true);
+    expect(canConnect(pip("outbound", "tr-http", "s-rest"), pip("inbound", "tr-http", "s-any"))).toBe(true);
+  });
+
+  it("never connects to a pip deleted from its definition", () => {
+    expect(canConnect(pip("outbound"), { ...pip("inbound"), removed: true })).toBe(false);
   });
 });
 
@@ -42,10 +53,10 @@ describe("pip placement", () => {
     layers: ["container"],
     canvasId: null,
     pips: [
-      { id: "l1", label: "", typeId: "t", direction: "inbound", side: "left" },
-      { id: "l2", label: "", typeId: "t", direction: "inbound", side: "left" },
-      { id: "r1", label: "", typeId: "t", direction: "outbound", side: "right" },
-      { id: "t1", label: "", typeId: "t", direction: "none", side: "top" },
+      { id: "l1", label: "", transportId: "tr-http", styleId: "s-any", direction: "inbound", side: "left" },
+      { id: "l2", label: "", transportId: "tr-http", styleId: "s-any", direction: "inbound", side: "left" },
+      { id: "r1", label: "", transportId: "tr-http", styleId: "s-any", direction: "outbound", side: "right" },
+      { id: "t1", label: "", transportId: "tr-http", styleId: "s-any", direction: "none", side: "top" },
     ],
   };
 

@@ -34,11 +34,18 @@ export function uniqueName(name: string, taken: (candidate: string) => boolean):
 /**
  * Same node, as far as a user would care: name, icon, layers, and pip
  * structure match. Pip labels are ignored so relabeling a standard pip
- * doesn't orphan older files' unedited copies of it.
+ * doesn't orphan older files' unedited copies of it; `ignoreStyles` compares
+ * pips by transport only (for files from before styles existed).
  */
-export function sameDefinition(a: NodeDefinition, b: NodeDefinition): boolean {
+export function sameDefinition(
+  a: NodeDefinition,
+  b: NodeDefinition,
+  opts: { ignoreStyles?: boolean } = {}
+): boolean {
   const pipKey = (d: NodeDefinition) =>
-    d.pips.map((p) => `${p.id}|${p.typeId}|${p.direction}|${p.side}`).join(",");
+    d.pips
+      .map((p) => `${p.id}|${p.transportId}|${opts.ignoreStyles ? "" : p.styleId}|${p.direction}|${p.side}`)
+      .join(",");
   return (
     a.name === b.name &&
     a.icon === b.icon &&

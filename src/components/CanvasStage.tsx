@@ -35,7 +35,7 @@ function WirePreview() {
   const fromPip = getPip(s, wireDrag.fromNodeId, wireDrag.fromPipId);
   const p1 = pipWorldPos(fromNode, def, wireDrag.fromPipId);
   if (!p1 || !fromPip) return null;
-  const color = s.pipTypes[fromPip.typeId]?.color ?? "#888";
+  const color = s.transports[fromPip.transportId]?.color ?? "#888";
 
   let end = wireDrag.cursor;
   let endSide: Parameters<typeof wireGeometry>[3] = null;
@@ -57,7 +57,7 @@ function WirePreview() {
         ctx.beginPath();
         ctx.moveTo(g.x1, g.y1);
         ctx.bezierCurveTo(g.c1x, g.c1y, g.c2x, g.c2y, g.x2, g.y2);
-        ctx.setAttr("lineWidth", 2);
+        ctx.setAttr("lineWidth", 3);
         ctx.setAttr("strokeStyle", color);
         if (!wireDrag.snap) ctx.setAttr("lineDashOffset", 0);
         ctx.setLineDash(wireDrag.snap ? [] : [7, 5]);

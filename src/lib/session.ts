@@ -5,14 +5,16 @@
 export interface ContentRefs {
   canvases: unknown;
   definitions: unknown;
-  pipTypes: unknown;
+  transports: unknown;
+  styles: unknown;
   customIcons: unknown;
 }
 
 export const contentRefs = (s: ContentRefs): ContentRefs => ({
   canvases: s.canvases,
   definitions: s.definitions,
-  pipTypes: s.pipTypes,
+  transports: s.transports,
+  styles: s.styles,
   customIcons: s.customIcons,
 });
 
@@ -21,7 +23,8 @@ export function isDirty(current: ContentRefs, saved: ContentRefs): boolean {
   return (
     current.canvases !== saved.canvases ||
     current.definitions !== saved.definitions ||
-    current.pipTypes !== saved.pipTypes ||
+    current.transports !== saved.transports ||
+    current.styles !== saved.styles ||
     current.customIcons !== saved.customIcons
   );
 }

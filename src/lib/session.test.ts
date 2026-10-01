@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { autosaveDue, contentRefs, isDirty, projectLabel, windowTitle } from "./session";
 
 describe("isDirty", () => {
-  const state = { canvases: {}, definitions: {}, pipTypes: {}, customIcons: {} };
+  const state = { canvases: {}, definitions: {}, transports: {}, styles: {}, customIcons: {} };
 
   it("is clean right after a save", () => {
     expect(isDirty(state, contentRefs(state))).toBe(false);
@@ -12,7 +12,8 @@ describe("isDirty", () => {
     const saved = contentRefs(state);
     expect(isDirty({ ...state, canvases: {} }, saved)).toBe(true);
     expect(isDirty({ ...state, definitions: {} }, saved)).toBe(true);
-    expect(isDirty({ ...state, pipTypes: {} }, saved)).toBe(true);
+    expect(isDirty({ ...state, transports: {} }, saved)).toBe(true);
+    expect(isDirty({ ...state, styles: {} }, saved)).toBe(true);
     expect(isDirty({ ...state, customIcons: {} }, saved)).toBe(true);
   });
 

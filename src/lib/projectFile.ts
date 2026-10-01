@@ -2,37 +2,55 @@
 // parsing/upgrading one back. Pure — no store, no filesystem — so every
 // migration can be tested against hand-made old files.
 //
-// A project owns its library: the file holds the project's own definitions.
-// Standard-library definitions are never written; the standard library is
-// merged back in on load (see standardLibrary.ts).
+// A project owns its library: the file holds the project's own definitions,
+// transports, and styles. Standard-library ones are never written; the
+// standard library is merged back in on load (see standardLibrary.ts).
 
-import { CanvasData, Layer, NodeDefinition, PipType, nextLayer } from "../types";
+import {
+  ApiStyle,
+  CanvasData,
+  Layer,
+  NodeDefinition,
+  Relationship,
+  Transport,
+  nextLayer,
+} from "../types";
 import { repairPocketLayers } from "./layers";
 import { sameDefinition, uniqueName } from "./definitions";
 import { Library } from "./standardLibrary";
+import { LegacyPipType, convertLegacyTypes, legacyConn } from "./legacyTypes";
 import { uid } from "./ids";
 
 export interface ProjectFile {
   app: "glyph-palette";
-  version: 1;
-  /** The project's own pip types (standard ones are merged in on load). */
-  pipTypes: Record<string, PipType>;
+  /** 1: v1.0–v1.1 (flat pip types). 2: v1.2+ (transport + style). */
+  version: 2;
+  /** The project's own transports (standard ones are merged in on load). */
+  transports: Record<string, Transport>;
+  /** The project's own API styles (standard ones are merged in on load). */
+  styles: Record<string, ApiStyle>;
   /** The project's own definitions (standard ones are merged in on load). */
   definitions: Record<string, NodeDefinition>;
   /** Interiors drawn inside standard nodes in this project: definition id → canvas id. */
   standardInteriors?: Record<string, string>;
   customIcons: Record<string, string>;
   canvases: Record<string, CanvasData>;
+  /** Set by the parser (never written) when the file was upgraded from version 1. */
+  upgradedFromV1?: boolean;
 }
 
 /** The project content a file is built from / loaded into. */
 export interface ProjectContent {
-  pipTypes: Record<string, PipType>;
+  transports: Record<string, Transport>;
+  styles: Record<string, ApiStyle>;
   /** Standard and project definitions together. */
   definitions: Record<string, NodeDefinition>;
   customIcons: Record<string, string>;
   canvases: Record<string, CanvasData>;
 }
+
+const own = <T,>(all: Record<string, T>, standard: Record<string, T>) =>
+  Object.fromEntries(Object.entries(all).filter(([id]) => !(id in standard)));
 
 export function buildProjectFile(content: ProjectContent, standard: Library): ProjectFile {
   const definitions: Record<string, NodeDefinition> = {};
@@ -43,10 +61,9 @@ export function buildProjectFile(content: ProjectContent, standard: Library): Pr
   }
   return {
     app: "glyph-palette",
-    version: 1,
-    pipTypes: Object.fromEntries(
-      Object.entries(content.pipTypes).filter(([id]) => !(id in standard.pipTypes))
-    ),
+    version: 2,
+    transports: own(content.transports, standard.transports),
+    styles: own(content.styles, standard.styles),
     definitions,
     ...(Object.keys(standardInteriors).length ? { standardInteriors } : {}),
     customIcons: content.customIcons,
@@ -81,6 +98,30 @@ export function backfillLayers(
   for (const c of Object.values(canvases)) if (!c.layer) c.layer = "container";
 }
 
+/** Version 1 files: flat `typeId` on pips and wires → transport + style. */
+function upgradeFromV1(data: Record<string, unknown>): void {
+  const { map, transports } = convertLegacyTypes(
+    (data.pipTypes ?? {}) as Record<string, LegacyPipType>
+  );
+  delete data.pipTypes;
+  data.transports = { ...transports, ...((data.transports as object) ?? {}) };
+  data.styles ??= {};
+  for (const d of Object.values((data.definitions ?? {}) as Record<string, NodeDefinition>)) {
+    d.pips = d.pips.map((p) => {
+      const { typeId, ...rest } = p as typeof p & { typeId?: string };
+      return { ...rest, ...legacyConn(map, typeId) };
+    });
+  }
+  for (const c of Object.values(data.canvases as Record<string, CanvasData>)) {
+    c.relationships = c.relationships.map((r) => {
+      const { typeId, ...rest } = r as Relationship & { typeId?: string };
+      return { ...rest, ...legacyConn(map, typeId) };
+    });
+  }
+  data.version = 2;
+  data.upgradedFromV1 = true;
+}
+
 /**
  * Parses a `.glyph` file and upgrades anything older formats left out.
  * Throws on a file that isn't a Glyph Palette project.
@@ -97,13 +138,17 @@ export function parseProjectFile(json: string): ProjectFile {
     }
     delete c.containers;
     c.boundaries ??= [];
+    c.relationships ??= [];
   }
   data.definitions ??= {};
-  data.pipTypes ??= {};
   data.customIcons ??= {};
   for (const d of Object.values(data.definitions)) {
     if (!d.layers || !d.layers.length) d.layers = ["container"] as Layer[];
+    d.pips ??= [];
   }
+  if ((data.version as number) !== 2) upgradeFromV1(data as unknown as Record<string, unknown>);
+  data.transports ??= {};
+  data.styles ??= {};
   return data;
 }
 
@@ -111,11 +156,13 @@ export function parseProjectFile(json: string): ProjectFile {
  * Turns a parsed file into project content: the standard library underneath,
  * the file's own definitions on top.
  *
- * Older files (per-machine library with copy-on-use) stored their own copy of
+ * v1.0 files (per-machine library with copy-on-use) stored their own copy of
  * every seed they used, under the seed's id. An unedited copy is dropped in
  * favor of the standard node; an edited one (e.g. Database renamed to Links
  * DB) gets a new id — its instances follow — so the standard node is
- * available alongside it.
+ * available alongside it. Files upgraded from version 1 compare pips by
+ * transport only: styles didn't exist, so v1.2's more specific standard
+ * styles (Cache → Key-value) aren't an edit.
  */
 export function loadProjectFile(
   file: ProjectFile,
@@ -128,15 +175,15 @@ export function loadProjectFile(
   }
 
   const renamed = new Map<string, string>(); // old id → new id
-  const own = Object.values(file.definitions);
+  const ownDefs = Object.values(file.definitions);
   const taken = (name: string) =>
     Object.values(definitions).some((d) => d.name.toLowerCase() === name.toLowerCase()) ||
-    own.some((d) => !renamed.has(d.id) && !(d.id in standard.definitions) && d.name.toLowerCase() === name.toLowerCase());
+    ownDefs.some((d) => !renamed.has(d.id) && !(d.id in standard.definitions) && d.name.toLowerCase() === name.toLowerCase());
 
-  for (const d of own) {
+  for (const d of ownDefs) {
     const std = standard.definitions[d.id];
     if (!std) continue;
-    if (sameDefinition(d, std)) {
+    if (sameDefinition(d, std, { ignoreStyles: !!file.upgradedFromV1 })) {
       if (d.canvasId) definitions[d.id].canvasId = d.canvasId;
       continue;
     }
@@ -144,7 +191,7 @@ export function loadProjectFile(
     renamed.set(d.id, id);
     definitions[id] = { ...d, id, name: uniqueName(d.name, taken) };
   }
-  for (const d of own) {
+  for (const d of ownDefs) {
     if (!(d.id in standard.definitions)) definitions[d.id] = d;
   }
 
@@ -160,7 +207,8 @@ export function loadProjectFile(
   backfillLayers(file.canvases, definitions);
   repairPocketLayers(file.canvases, definitions);
   return {
-    pipTypes: { ...file.pipTypes, ...standard.pipTypes },
+    transports: { ...file.transports, ...standard.transports },
+    styles: { ...file.styles, ...standard.styles },
     definitions,
     customIcons: file.customIcons,
     canvases: file.canvases,

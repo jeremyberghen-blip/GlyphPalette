@@ -7,8 +7,9 @@ import {
   NODE_WIDTH,
   NODE_HEIGHT,
 } from "../types";
+import { compatible } from "./connections";
 
-export const PIP_RADIUS = 6;
+export const PIP_RADIUS = 7;
 
 export interface PipPlacement {
   x: number; // offset within the node
@@ -75,11 +76,13 @@ export function sideVector(side: PipDef["side"]): { x: number; y: number } {
 }
 
 /**
- * Connection validity: types must match exactly, and directions must pair
- * outbound→inbound, bidirectional↔bidirectional, or none↔none.
+ * Connection validity: the two-part types must be compatible (same
+ * transport; same style or either "any" — see connections.ts), and
+ * directions must pair outbound→inbound, bidirectional↔bidirectional, or
+ * none↔none. Pips deleted from their definition never accept new wires.
  */
 export function canConnect(a: PipDef, b: PipDef): boolean {
-  if (a.typeId !== b.typeId) return false;
+  if (a.removed || b.removed || !compatible(a, b)) return false;
   const pair = (x: PipDef["direction"], y: PipDef["direction"]) =>
     (a.direction === x && b.direction === y) ||
     (a.direction === y && b.direction === x);

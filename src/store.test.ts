@@ -77,7 +77,8 @@ describe("wiring", () => {
     const [rel] = root().relationships;
     expect(rel.from).toEqual({ nodeId: web, pipId: "p-wa-api" });
     expect(rel.to).toEqual({ nodeId: api, pipId: "p-srv-http" });
-    expect(rel.typeId).toBe("t-rest");
+    expect(rel.transportId).toBe("tr-http");
+    expect(rel.styleId).toBe("s-rest");
   });
 
   it("refuses incompatible pips and duplicate wires", () => {
@@ -143,11 +144,12 @@ describe("standard library", () => {
   it("imports another project's nodes", () => {
     s().importDefinitions({
       definitions: [{ id: "def-x", name: "X", icon: "Box", layers: ["container"], pips: [], canvasId: null }],
-      pipTypes: [{ id: "t-x", name: "X", color: "#fff" }],
+      transports: [{ id: "tr-x", name: "X", color: "#fff" }],
+      styles: [],
       customIcons: {},
     });
     expect(s().definitions["def-x"].name).toBe("X");
-    expect(s().pipTypes["t-x"]).toBeDefined();
+    expect(s().transports["tr-x"]).toBeDefined();
     s().undo();
     expect(s().definitions["def-x"]).toBeUndefined();
   });

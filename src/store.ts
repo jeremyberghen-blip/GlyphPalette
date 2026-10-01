@@ -6,7 +6,8 @@ import {
   NodeDefinition,
   NodeInstance,
   PipDef,
-  PipType,
+  Transport,
+  ApiStyle,
   RelEnd,
   Relationship,
   Viewport,
@@ -15,6 +16,7 @@ import {
   NODE_HEIGHT,
 } from "./types";
 import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
+import { wireType } from "./lib/connections";
 import {
   addWaypoint,
   applyHandle,
@@ -60,7 +62,7 @@ export const rectsIntersect = (a: Rect, b: Rect): boolean =>
 // Context canvas holding one System node to decompose — the project's own
 // copy, since standard nodes can't be renamed or given pips.
 
-function freshProject(): Pick<AppState, "pipTypes" | "definitions" | "customIcons" | "canvases"> {
+function freshProject(): Pick<AppState, "transports" | "styles" | "definitions" | "customIcons" | "canvases"> {
   const system: NodeDefinition = {
     ...structuredClone(STANDARD.definitions["def-system"]),
     id: `def-${uid()}`,
@@ -74,7 +76,8 @@ function freshProject(): Pick<AppState, "pipTypes" | "definitions" | "customIcon
     boundaries: [],
   };
   return {
-    pipTypes: structuredClone(STANDARD.pipTypes),
+    transports: structuredClone(STANDARD.transports),
+    styles: structuredClone(STANDARD.styles),
     definitions: { ...structuredClone(STANDARD.definitions), [system.id]: system },
     customIcons: {},
     canvases: { [root.id]: root },
@@ -86,7 +89,8 @@ function freshProject(): Pick<AppState, "pipTypes" | "definitions" | "customIcon
 export interface Snapshot {
   canvases: Record<string, CanvasData>;
   definitions: Record<string, NodeDefinition>;
-  pipTypes: Record<string, PipType>;
+  transports: Record<string, Transport>;
+  styles: Record<string, ApiStyle>;
   customIcons: Record<string, string>;
   activeCanvasId: string;
   trail: string[];
@@ -99,7 +103,8 @@ function pushSnap(s: {
   undoStack: Snapshot[];
   canvases: Record<string, CanvasData>;
   definitions: Record<string, NodeDefinition>;
-  pipTypes: Record<string, PipType>;
+  transports: Record<string, Transport>;
+  styles: Record<string, ApiStyle>;
   customIcons: Record<string, string>;
   activeCanvasId: string;
   trail: string[];
@@ -107,7 +112,8 @@ function pushSnap(s: {
   const snap: Snapshot = structuredClone({
     canvases: s.canvases,
     definitions: s.definitions,
-    pipTypes: s.pipTypes,
+    transports: s.transports,
+    styles: s.styles,
     customIcons: s.customIcons,
     activeCanvasId: s.activeCanvasId,
     trail: s.trail,
@@ -147,7 +153,10 @@ export interface WireDrag {
 }
 
 interface AppState {
-  pipTypes: Record<string, PipType>;
+  /** Connection transports (standard + the project's own). See lib/connections.ts. */
+  transports: Record<string, Transport>;
+  /** Connection API styles (standard + the project's own). */
+  styles: Record<string, ApiStyle>;
   /**
    * Standard-library definitions (read-only; see isStandardDef) plus the
    * project's own. A standard definition's `canvasId` may be set in-project
@@ -234,8 +243,10 @@ interface AppState {
   /** Navigate to an explicit canvas path (from the nav tree), optionally selecting a node. */
   navigateTo: (trail: string[], selectNodeId?: string) => void;
 
-  /** Adds a custom pip type, usual on `layers` (see lib/pipTypes). Returns its id. */
-  addPipType: (name: string, color: string, layers?: Layer[]) => string;
+  /** Adds a custom transport, usual on `layers` (see lib/connections). Returns its id. */
+  addTransport: (name: string, color: string, layers?: Layer[]) => string;
+  /** Adds a custom API style, usual with `transports`. Returns its id. */
+  addStyle: (name: string, color: string, transports?: string[]) => string;
   addCustomIcon: (dataUrl: string) => string;
   /**
    * Adds or replaces a project definition. Caller must have validated name
@@ -850,7 +861,7 @@ export const useApp = create<AppState>((set, get) => ({
       );
       if (dup) return { wireDrag: null };
 
-      const rel: Relationship = { id: uid(), typeId: fromPip.typeId, from, to };
+      const rel: Relationship = { id: uid(), ...wireType(fromPip, toPip), from, to };
       return {
         undoStack: pushSnap(s),
         wireDrag: null,
@@ -864,10 +875,17 @@ export const useApp = create<AppState>((set, get) => ({
         selection: [rel.id],
       };
     }),
-  addPipType: (name, color, layers) => {
-    const id = `t-${uid()}`;
-    const type: PipType = { id, name, color, ...(layers?.length ? { layers } : {}) };
-    set((s) => ({ pipTypes: { ...s.pipTypes, [id]: type } }));
+  addTransport: (name, color, layers) => {
+    const id = `tr-${uid()}`;
+    const t: Transport = { id, name, color, ...(layers?.length ? { layers } : {}) };
+    set((s) => ({ undoStack: pushSnap(s), transports: { ...s.transports, [id]: t } }));
+    return id;
+  },
+
+  addStyle: (name, color, transports) => {
+    const id = `s-${uid()}`;
+    const st: ApiStyle = { id, name, color, ...(transports?.length ? { transports } : {}) };
+    set((s) => ({ undoStack: pushSnap(s), styles: { ...s.styles, [id]: st } }));
     return id;
   },
 
@@ -988,12 +1006,15 @@ export const useApp = create<AppState>((set, get) => ({
       if (!plan.definitions.length) return {};
       const definitions = { ...s.definitions };
       for (const d of plan.definitions) definitions[d.id] = d;
-      const pipTypes = { ...s.pipTypes };
-      for (const t of plan.pipTypes) pipTypes[t.id] ??= t;
+      const transports = { ...s.transports };
+      for (const t of plan.transports) transports[t.id] ??= t;
+      const styles = { ...s.styles };
+      for (const st of plan.styles) styles[st.id] ??= st;
       return {
         undoStack: pushSnap(s),
         definitions,
-        pipTypes,
+        transports,
+        styles,
         customIcons: { ...s.customIcons, ...plan.customIcons },
       };
     }),

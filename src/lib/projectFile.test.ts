@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildProjectFile, loadProjectFile, parseProjectFile, ProjectContent } from "./projectFile";
 import { STANDARD } from "./standardLibrary";
+import { canConnect } from "./graph";
 import snipJson from "../test/fixtures/Snip.glyph?raw";
 
 const load = (json: string): ProjectContent => loadProjectFile(parseProjectFile(json), STANDARD);
@@ -60,7 +61,8 @@ describe("standard library in project files", () => {
   it("never writes standard definitions or pip types into the file", () => {
     const file = buildProjectFile(load(snipJson), STANDARD);
     for (const id of Object.keys(STANDARD.definitions)) expect(file.definitions[id]).toBeUndefined();
-    for (const id of Object.keys(STANDARD.pipTypes)) expect(file.pipTypes[id]).toBeUndefined();
+    for (const id of Object.keys(STANDARD.transports)) expect(file.transports[id]).toBeUndefined();
+    for (const id of Object.keys(STANDARD.styles)) expect(file.styles[id]).toBeUndefined();
   });
 
   it("keeps an interior drawn inside a standard node", () => {
@@ -70,6 +72,52 @@ describe("standard library in project files", () => {
     const file = buildProjectFile(content, STANDARD);
     expect(file.standardInteriors).toEqual({ "def-cache": "inner" });
     expect(load(JSON.stringify(file)).definitions["def-cache"].canvasId).toBe("inner");
+  });
+});
+
+describe("upgrading version 1 files to two-part connection types", () => {
+  it("converts every pip and wire, leaving no flat typeId behind", () => {
+    const content = load(snipJson);
+    const json = JSON.stringify(content);
+    expect(json).not.toContain('"typeId"');
+    const snipApi = Object.values(content.definitions).find((d) => d.name === "Snip API")!;
+    const byLabel = Object.fromEntries(snipApi.pips.map((p) => [p.label, `${p.transportId}/${p.styleId}`]));
+    expect(byLabel.DB).toBe("tr-tcp/s-sql");
+    expect(byLabel.Cache).toBe("tr-tcp/s-any");
+  });
+
+  it("keeps old wires valid against the more specific standard styles", () => {
+    // Snip API's Cache pip (was TCP/IP → TCP/any) still fits the standard Cache (now TCP/Key-value)
+    const content = load(snipJson);
+    const std = content.definitions["def-cache"].pips[0];
+    expect(std.styleId).toBe("s-kv");
+    const snipApi = Object.values(content.definitions).find((d) => d.name === "Snip API")!;
+    const cachePip = snipApi.pips.find((p) => p.label === "Cache")!;
+    expect(canConnect({ ...cachePip, direction: "outbound" }, std)).toBe(true);
+  });
+
+  it("turns a custom v1 pip type into a transport", () => {
+    const old = {
+      app: "glyph-palette",
+      version: 1,
+      pipTypes: { "t-abc": { id: "t-abc", name: "MQTT", color: "#123456" } },
+      definitions: {
+        d: { id: "d", name: "D", icon: "Box", layers: ["container"], canvasId: null,
+          pips: [{ id: "p", label: "Bus", typeId: "t-abc", direction: "inbound", side: "left" }] },
+      },
+      canvases: { "canvas-root": { id: "canvas-root", nodes: [], relationships: [], boundaries: [] } },
+    };
+    const content = load(JSON.stringify(old));
+    const pip = content.definitions.d.pips[0];
+    expect(content.transports[pip.transportId].name).toBe("MQTT");
+    expect(pip.styleId).toBe("s-any");
+  });
+
+  it("saves in the new format", () => {
+    const file = buildProjectFile(load(snipJson), STANDARD);
+    expect(file.version).toBe(2);
+    expect((file as unknown as Record<string, unknown>).pipTypes).toBeUndefined();
+    expect(file.upgradedFromV1).toBeUndefined();
   });
 });
 

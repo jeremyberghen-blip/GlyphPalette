@@ -1,93 +1,159 @@
 {
   "app": "glyph-palette",
-  "version": 1,
-  "pipTypes": {
-    "t-http": {
-      "id": "t-http",
+  "version": 2,
+  "transports": {
+    "tr-http": {
+      "id": "tr-http",
       "name": "HTTP",
       "color": "#4ade80",
       "layers": [
         "context",
         "container"
-      ]
+      ],
+      "defaultStyle": "s-rest"
     },
-    "t-rest": {
-      "id": "t-rest",
-      "name": "REST/JSON",
-      "color": "#22d3ee",
-      "layers": [
-        "context",
-        "container"
-      ]
-    },
-    "t-grpc": {
-      "id": "t-grpc",
-      "name": "gRPC",
+    "tr-http2": {
+      "id": "tr-http2",
+      "name": "HTTP/2",
       "color": "#818cf8",
       "layers": [
         "context",
         "container"
+      ],
+      "defaultStyle": "s-grpc"
+    },
+    "tr-ws": {
+      "id": "tr-ws",
+      "name": "WebSocket",
+      "color": "#2dd4bf",
+      "layers": [
+        "context",
+        "container"
       ]
     },
-    "t-tcp": {
-      "id": "t-tcp",
-      "name": "TCP/IP",
+    "tr-tcp": {
+      "id": "tr-tcp",
+      "name": "TCP",
       "color": "#4c9aff",
       "layers": [
         "context",
         "container"
       ]
     },
-    "t-sql": {
-      "id": "t-sql",
-      "name": "SQL",
-      "color": "#f59e0b",
-      "layers": [
-        "context",
-        "container"
-      ]
-    },
-    "t-event": {
-      "id": "t-event",
-      "name": "Event",
-      "color": "#a78bfa",
-      "layers": [
-        "context",
-        "container"
-      ]
-    },
-    "t-queue": {
-      "id": "t-queue",
-      "name": "Queue",
+    "tr-queue": {
+      "id": "tr-queue",
+      "name": "Message queue",
       "color": "#fb923c",
       "layers": [
         "context",
         "container"
-      ]
+      ],
+      "defaultStyle": "s-event"
     },
-    "t-file": {
-      "id": "t-file",
-      "name": "File I/O",
+    "tr-fs": {
+      "id": "tr-fs",
+      "name": "Filesystem",
       "color": "#f472b6",
       "layers": [
         "container",
         "component"
       ]
     },
-    "t-call": {
-      "id": "t-call",
-      "name": "Call",
+    "tr-inproc": {
+      "id": "tr-inproc",
+      "name": "In-process",
       "color": "#64748b",
       "layers": [
         "component"
+      ],
+      "defaultStyle": "s-call"
+    }
+  },
+  "styles": {
+    "s-any": {
+      "id": "s-any",
+      "name": "any",
+      "color": "#000000"
+    },
+    "s-rest": {
+      "id": "s-rest",
+      "name": "REST/JSON",
+      "color": "#3b82f6",
+      "transports": [
+        "tr-http"
       ]
     },
-    "t-import": {
-      "id": "t-import",
+    "s-graphql": {
+      "id": "s-graphql",
+      "name": "GraphQL",
+      "color": "#e879f9",
+      "transports": [
+        "tr-http"
+      ]
+    },
+    "s-soap": {
+      "id": "s-soap",
+      "name": "SOAP/XML",
+      "color": "#d4a373",
+      "transports": [
+        "tr-http"
+      ]
+    },
+    "s-html": {
+      "id": "s-html",
+      "name": "Web pages",
+      "color": "#f1f5f9",
+      "transports": [
+        "tr-http"
+      ]
+    },
+    "s-grpc": {
+      "id": "s-grpc",
+      "name": "gRPC",
+      "color": "#a78bfa",
+      "transports": [
+        "tr-http2"
+      ]
+    },
+    "s-sql": {
+      "id": "s-sql",
+      "name": "SQL",
+      "color": "#f59e0b",
+      "transports": [
+        "tr-tcp"
+      ]
+    },
+    "s-kv": {
+      "id": "s-kv",
+      "name": "Key-value",
+      "color": "#a3e635",
+      "transports": [
+        "tr-tcp"
+      ]
+    },
+    "s-event": {
+      "id": "s-event",
+      "name": "Event",
+      "color": "#facc15",
+      "transports": [
+        "tr-queue",
+        "tr-ws"
+      ]
+    },
+    "s-call": {
+      "id": "s-call",
+      "name": "Call",
+      "color": "#cbd5e1",
+      "transports": [
+        "tr-inproc"
+      ]
+    },
+    "s-import": {
+      "id": "s-import",
       "name": "Import",
-      "color": "#94a3b8",
-      "layers": [
-        "component"
+      "color": "#67e8f9",
+      "transports": [
+        "tr-inproc"
       ]
     }
   },
@@ -126,14 +192,16 @@
         {
           "id": "p-ext-in",
           "label": "In",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-ext-out",
           "label": "Out",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "outbound",
           "side": "right"
         }
@@ -151,7 +219,8 @@
         {
           "id": "p-inet-http",
           "label": "Requests",
-          "typeId": "t-http",
+          "transportId": "tr-http",
+          "styleId": "s-any",
           "direction": "outbound",
           "side": "right"
         }
@@ -169,14 +238,16 @@
         {
           "id": "p-fw-in",
           "label": "WAN",
-          "typeId": "t-http",
+          "transportId": "tr-http",
+          "styleId": "s-any",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-fw-out",
           "label": "LAN",
-          "typeId": "t-http",
+          "transportId": "tr-http",
+          "styleId": "s-any",
           "direction": "outbound",
           "side": "right"
         }
@@ -194,14 +265,16 @@
         {
           "id": "p-wa-in",
           "label": "HTTP",
-          "typeId": "t-http",
+          "transportId": "tr-http",
+          "styleId": "s-html",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-wa-api",
           "label": "API",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "outbound",
           "side": "right"
         }
@@ -219,7 +292,8 @@
         {
           "id": "p-spa-api",
           "label": "API",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "outbound",
           "side": "right"
         }
@@ -237,7 +311,8 @@
         {
           "id": "p-mob-api",
           "label": "API",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "outbound",
           "side": "right"
         }
@@ -255,21 +330,24 @@
         {
           "id": "p-srv-http",
           "label": "API",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-srv-sql",
           "label": "DB",
-          "typeId": "t-sql",
+          "transportId": "tr-tcp",
+          "styleId": "s-sql",
           "direction": "outbound",
           "side": "right"
         },
         {
           "id": "p-srv-evt",
           "label": "Events",
-          "typeId": "t-event",
+          "transportId": "tr-queue",
+          "styleId": "s-event",
           "direction": "bidirectional",
           "side": "bottom"
         }
@@ -287,14 +365,16 @@
         {
           "id": "p-gw-in",
           "label": "Inbound",
-          "typeId": "t-http",
+          "transportId": "tr-http",
+          "styleId": "s-any",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-gw-out",
           "label": "Upstream",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "outbound",
           "side": "right"
         }
@@ -312,14 +392,16 @@
         {
           "id": "p-db-sql",
           "label": "SQL",
-          "typeId": "t-sql",
+          "transportId": "tr-tcp",
+          "styleId": "s-sql",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-db-evt",
           "label": "Events",
-          "typeId": "t-event",
+          "transportId": "tr-queue",
+          "styleId": "s-event",
           "direction": "bidirectional",
           "side": "top"
         }
@@ -337,7 +419,8 @@
         {
           "id": "p-cache-in",
           "label": "Get/Set",
-          "typeId": "t-tcp",
+          "transportId": "tr-tcp",
+          "styleId": "s-kv",
           "direction": "inbound",
           "side": "left"
         }
@@ -355,14 +438,16 @@
         {
           "id": "p-q-pub",
           "label": "Publish",
-          "typeId": "t-queue",
+          "transportId": "tr-queue",
+          "styleId": "s-any",
           "direction": "inbound",
           "side": "left"
         },
         {
           "id": "p-q-sub",
           "label": "Consume",
-          "typeId": "t-queue",
+          "transportId": "tr-queue",
+          "styleId": "s-any",
           "direction": "outbound",
           "side": "right"
         }
@@ -380,7 +465,8 @@
         {
           "id": "p-blob-io",
           "label": "Get/Put",
-          "typeId": "t-rest",
+          "transportId": "tr-http",
+          "styleId": "s-rest",
           "direction": "inbound",
           "side": "left"
         }
@@ -398,7 +484,8 @@
         {
           "id": "p-wrk-q",
           "label": "Jobs",
-          "typeId": "t-queue",
+          "transportId": "tr-queue",
+          "styleId": "s-any",
           "direction": "inbound",
           "side": "left"
         }

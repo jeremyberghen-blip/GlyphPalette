@@ -39,24 +39,47 @@ export function nextLayer(l: Layer): Layer {
   return DRAWABLE_LAYERS[Math.min(i + 1, DRAWABLE_LAYERS.length - 1)];
 }
 
-export interface PipType {
+/**
+ * How a connection's bytes travel — HTTP, TCP, a message queue, in-process
+ * calls. Drawn as a pip's outer circle and a wire's outer line.
+ */
+export interface Transport {
   id: string;
-  name: string; // e.g. "TCP/IP", "HTTP"
+  name: string;
   color: string;
-  /**
-   * Layers this type is usual on — a hint for the definition wizard, never a
-   * restriction. Absent means no preference (usual everywhere).
-   */
+  /** Layers this transport is usual on — a hint for the node dialog, never a restriction. */
   layers?: Layer[];
+  /** The style a new pip on this transport starts with (e.g. HTTP → REST/JSON). */
+  defaultStyle?: string;
 }
+
+/**
+ * What a connection's bytes mean — REST/JSON, SQL, events. Drawn as a pip's
+ * inner circle and a wire's core. `ANY_STYLE` means pass-through: no core.
+ */
+export interface ApiStyle {
+  id: string;
+  name: string;
+  color: string;
+  /** Transports this style usually rides on — a hint for the node dialog. */
+  transports?: string[];
+}
+
+export const ANY_STYLE = "s-any";
 
 export interface PipDef {
   id: string;
   label: string;
-  typeId: string;
+  transportId: string;
+  styleId: string;
   direction: PipDirection;
   /** Which side of the node the pip sits on. */
   side: "left" | "right" | "top" | "bottom";
+  /**
+   * Deleted from its definition while wires still used it: kept (drawn red,
+   * broken) until those wires are removed, then dropped.
+   */
+  removed?: boolean;
 }
 
 export interface NodeDefinition {
@@ -118,7 +141,12 @@ export interface Waypoint {
 
 export interface Relationship {
   id: string;
-  typeId: string;
+  /**
+   * The connection type the wire carried when it was drawn. A wire is broken
+   * when either end pip no longer matches it (or was deleted).
+   */
+  transportId: string;
+  styleId: string;
   /** Normalized so `from` is the outbound side when the link is directional. */
   from: RelEnd;
   to: RelEnd;

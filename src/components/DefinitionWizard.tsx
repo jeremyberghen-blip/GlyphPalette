@@ -11,7 +11,7 @@ import {
   PipDirection,
 } from "../types";
 import { useApp, uid, nameTaken } from "../store";
-import { defaultPipType, groupPipTypes } from "../lib/pipTypes";
+import { defaultConnType, groupStyles, groupTransports, isAnyStyle, styleUsualWith } from "../lib/connections";
 
 const DIRECTIONS: { value: PipDirection; label: string }[] = [
   { value: "inbound", label: "Inbound" },
@@ -25,26 +25,31 @@ const SIDES: PipDef["side"][] = ["left", "right", "top", "bottom"];
 const inputCls =
   "rounded border border-[#3a3d52] bg-[#191a21] px-2 py-1 text-sm text-[#e2e4ee] outline-none focus:border-[#4c9aff]";
 
-/** Inline creator shown when a pip row's type select is set to "new type". */
-function NewTypeForm({
-  initialLayer,
+/**
+ * Inline creator for a custom transport or style: a name, a color, and which
+ * layers (transport) or transports (style) it's usual with.
+ */
+function NewConnPartForm({
+  kind,
+  hintOptions,
+  initialHints,
   onCreate,
 }: {
-  initialLayer: Layer;
-  onCreate: (typeId: string) => void;
+  kind: "transport" | "style";
+  hintOptions: { id: string; label: string }[];
+  initialHints: string[];
+  onCreate: (name: string, color: string, hints: string[]) => void;
 }) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#4c9aff");
-  const [layers, setLayers] = useState<Layer[]>(
-    DRAWABLE_LAYERS.includes(initialLayer) ? [initialLayer] : []
-  );
-  const toggle = (l: Layer) =>
-    setLayers((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]));
+  const [color, setColor] = useState(kind === "transport" ? "#4c9aff" : "#e2e4ee");
+  const [hints, setHints] = useState<string[]>(initialHints);
+  const toggle = (id: string) =>
+    setHints((hs) => (hs.includes(id) ? hs.filter((x) => x !== id) : [...hs, id]));
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2 rounded border border-[#3a3d52] bg-[#1e1f28] p-2">
       <input
-        className={inputCls + " w-32"}
-        placeholder="Type name"
+        className={inputCls + " w-36"}
+        placeholder={kind === "transport" ? "Transport name" : "Style name"}
         value={name}
         onChange={(e) => setName(e.target.value)}
         autoFocus
@@ -58,27 +63,39 @@ function NewTypeForm({
       <button
         className="rounded bg-[#2b3a55] px-2 py-1 text-xs text-white hover:bg-[#33486b] disabled:opacity-40"
         disabled={!name.trim()}
-        onClick={() => onCreate(useApp.getState().addPipType(name.trim(), color, layers))}
+        onClick={() => onCreate(name.trim(), color, hints)}
       >
-        Add type
+        Add {kind}
       </button>
-      <div className="flex w-full items-center gap-1 text-[10px] text-[#7a7d92]">
-        Usual on
-        {DRAWABLE_LAYERS.map((l) => (
+      <div className="flex w-full flex-wrap items-center gap-1 text-[10px] text-[#7a7d92]">
+        {kind === "transport" ? "Usual on" : "Usual with"}
+        {hintOptions.map((o) => (
           <button
-            key={l}
-            onClick={() => toggle(l)}
+            key={o.id}
+            onClick={() => toggle(o.id)}
             className={`rounded border px-1.5 py-0.5 ${
-              layers.includes(l)
+              hints.includes(o.id)
                 ? "border-[#4c9aff] bg-[#2b3a55] text-white"
                 : "border-[#3a3d52] text-[#8a8ea6]"
             }`}
           >
-            {LAYER_LABELS[l]}
+            {o.label}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+/** A small two-part swatch: transport ring, style center ("any": no center). */
+function ConnSwatch({ transport, style }: { transport?: string; style?: string }) {
+  return (
+    <span
+      className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full"
+      style={{ background: transport ?? "#555" }}
+    >
+      {style && <span className="h-1.5 w-1.5 rounded-full" style={{ background: style }} />}
+    </span>
   );
 }
 
@@ -94,7 +111,8 @@ interface Props {
 }
 
 export default function DefinitionWizard({ editing, base = null, onClose }: Props) {
-  const pipTypes = useApp((s) => s.pipTypes);
+  const transports = useApp((s) => s.transports);
+  const styles = useApp((s) => s.styles);
   const definitions = useApp((s) => s.definitions);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
 
@@ -104,14 +122,16 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
   const [layers, setLayers] = useState<Layer[]>(
     source?.layers?.length ? [...source.layers] : [activeLayer]
   );
-  const [pips, setPips] = useState<PipDef[]>(() => source?.pips.map((p) => ({ ...p })) ?? []);
+  const [pips, setPips] = useState<PipDef[]>(
+    () => source?.pips.filter((p) => !p.removed).map((p) => ({ ...p })) ?? []
+  );
 
   const toggleLayer = (l: Layer) =>
     setLayers((ls) =>
       ls.includes(l) ? ls.filter((x) => x !== l) : [...LAYERS].filter((x) => ls.includes(x) || x === l)
     );
   const [iconSearch, setIconSearch] = useState("");
-  const [newTypeForPip, setNewTypeForPip] = useState<string | null>(null);
+  const [creating, setCreating] = useState<{ pipId: string; kind: "transport" | "style" } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const customIcons = useApp((s) => s.customIcons);
 
@@ -128,7 +148,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
     return hits.slice(0, 60);
   }, [iconSearch]);
 
-  const typeGroups = useMemo(() => groupPipTypes(pipTypes, layers), [pipTypes, layers]);
+  const transportGroups = useMemo(() => groupTransports(transports, layers), [transports, layers]);
 
   const updatePip = (id: string, patch: Partial<PipDef>) =>
     setPips((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -139,7 +159,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
       name: trimmed,
       icon,
       layers,
-      pips: pips.filter((p) => p.label.trim() && p.typeId),
+      pips: pips.filter((p) => p.label.trim() && p.transportId && p.styleId),
       canvasId: editing?.canvasId ?? null,
       ...(editing?.expandable ? { expandable: editing.expandable, pipMap: editing.pipMap, sourceSize: editing.sourceSize } : {}),
     };
@@ -161,7 +181,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="flex max-h-[85vh] w-[560px] flex-col rounded-lg border border-[#3a3d52] bg-[#22242e] shadow-2xl">
+      <div className="flex max-h-[85vh] w-[680px] flex-col rounded-lg border border-[#3a3d52] bg-[#22242e] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#2e3040] px-4 py-3">
           <span className="text-sm font-semibold text-[#e2e4ee]">
             {editing
@@ -302,7 +322,7 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                     {
                       id: `pip-${uid()}`,
                       label: "",
-                      typeId: defaultPipType(pipTypes, layers),
+                      ...defaultConnType(transports, styles, layers),
                       direction: "inbound",
                       side: "left",
                     },
@@ -329,34 +349,76 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                       onChange={(e) => updatePip(p.id, { label: e.target.value })}
                     />
                     <select
-                      className={inputCls}
-                      value={p.typeId}
+                      className={inputCls + " w-32"}
+                      title="Transport — how it travels"
+                      value={p.transportId}
                       onChange={(e) => {
-                        if (e.target.value === "__new") setNewTypeForPip(p.id);
-                        else updatePip(p.id, { typeId: e.target.value });
+                        const transportId = e.target.value;
+                        if (transportId === "__new") return setCreating({ pipId: p.id, kind: "transport" });
+                        // Keep the style if it still fits; otherwise the new transport's default
+                        const keep = styles[p.styleId] && styleUsualWith(styles[p.styleId], transportId);
+                        const fallback = transports[transportId]?.defaultStyle;
+                        updatePip(p.id, {
+                          transportId,
+                          styleId: keep ? p.styleId : fallback && styles[fallback] ? fallback : "s-any",
+                        });
                       }}
                     >
-                      <optgroup label={`Usual for ${layers.map((l) => LAYER_LABELS[l]).join(" / ")}`}>
-                        {typeGroups.usual.map((t) => (
+                      <optgroup label={`Usual on ${layers.map((l) => LAYER_LABELS[l]).join(" / ")}`}>
+                        {transportGroups.usual.map((t) => (
                           <option key={t.id} value={t.id}>
                             {t.name}
                           </option>
                         ))}
                       </optgroup>
-                      {typeGroups.other.length > 0 && (
-                        <optgroup label="Other types">
-                          {typeGroups.other.map((t) => (
+                      {transportGroups.other.length > 0 && (
+                        <optgroup label="Other transports">
+                          {transportGroups.other.map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.name}
                             </option>
                           ))}
                         </optgroup>
                       )}
-                      <option value="__new">+ New type…</option>
+                      <option value="__new">+ New transport…</option>
                     </select>
-                    <span
-                      className="h-3 w-3 shrink-0 rounded-full"
-                      style={{ background: pipTypes[p.typeId]?.color ?? "#555" }}
+                    <select
+                      className={inputCls + " w-32"}
+                      title="API style — what it means ('any' = passes anything through)"
+                      value={p.styleId}
+                      onChange={(e) => {
+                        if (e.target.value === "__new") return setCreating({ pipId: p.id, kind: "style" });
+                        updatePip(p.id, { styleId: e.target.value });
+                      }}
+                    >
+                      {(() => {
+                        const g = groupStyles(styles, p.transportId);
+                        return (
+                          <>
+                            <optgroup label={`Usual with ${transports[p.transportId]?.name ?? "this transport"}`}>
+                              {g.usual.map((st) => (
+                                <option key={st.id} value={st.id}>
+                                  {st.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                            {g.other.length > 0 && (
+                              <optgroup label="Other styles">
+                                {g.other.map((st) => (
+                                  <option key={st.id} value={st.id}>
+                                    {st.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <option value="__new">+ New style…</option>
+                    </select>
+                    <ConnSwatch
+                      transport={transports[p.transportId]?.color}
+                      style={isAnyStyle(p.styleId) ? undefined : styles[p.styleId]?.color}
                     />
                     <select
                       className={inputCls}
@@ -391,12 +453,27 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                       <Trash2 size={14} />
                     </button>
                   </div>
-                  {newTypeForPip === p.id && (
-                    <NewTypeForm
-                      initialLayer={activeLayer}
-                      onCreate={(typeId) => {
-                        updatePip(p.id, { typeId });
-                        setNewTypeForPip(null);
+                  {creating?.pipId === p.id && creating.kind === "transport" && (
+                    <NewConnPartForm
+                      kind="transport"
+                      hintOptions={DRAWABLE_LAYERS.map((l) => ({ id: l, label: LAYER_LABELS[l] }))}
+                      initialHints={DRAWABLE_LAYERS.includes(activeLayer) ? [activeLayer] : []}
+                      onCreate={(n, c, hints) => {
+                        const transportId = useApp.getState().addTransport(n, c, hints as Layer[]);
+                        updatePip(p.id, { transportId, styleId: "s-any" });
+                        setCreating(null);
+                      }}
+                    />
+                  )}
+                  {creating?.pipId === p.id && creating.kind === "style" && (
+                    <NewConnPartForm
+                      kind="style"
+                      hintOptions={Object.values(transports).map((t) => ({ id: t.id, label: t.name }))}
+                      initialHints={[p.transportId]}
+                      onCreate={(n, c, hints) => {
+                        const styleId = useApp.getState().addStyle(n, c, hints);
+                        updatePip(p.id, { styleId });
+                        setCreating(null);
                       }}
                     />
                   )}

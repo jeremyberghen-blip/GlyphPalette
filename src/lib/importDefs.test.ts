@@ -32,7 +32,12 @@ describe("importCandidates", () => {
 });
 
 describe("planImport", () => {
-  const target = { definitions: { ...STANDARD.definitions }, pipTypes: { ...STANDARD.pipTypes }, customIcons: {} };
+  const target = {
+    definitions: { ...STANDARD.definitions },
+    transports: { ...STANDARD.transports },
+    styles: { ...STANDARD.styles },
+    customIcons: {},
+  };
 
   it("brings nodes across with empty interiors", () => {
     const source = snip();
@@ -47,7 +52,7 @@ describe("planImport", () => {
   it("renames on a name or id clash so both coexist", () => {
     const source: ProjectContent = {
       definitions: { a: def("a", "Links DB"), b: def("b", "Unique") },
-      pipTypes: {},
+      transports: {}, styles: {},
       customIcons: {},
       canvases: {},
     };
@@ -61,27 +66,42 @@ describe("planImport", () => {
   });
 
   it("numbers a clash that is still taken after adding the project name", () => {
-    const source: ProjectContent = { definitions: { a: def("a", "DB") }, pipTypes: {}, customIcons: {}, canvases: {} };
+    const source: ProjectContent = { definitions: { a: def("a", "DB") }, transports: {}, styles: {}, customIcons: {}, canvases: {} };
     const here = { ...target, definitions: { x: def("x", "DB"), y: def("y", "DB (Snip)") } };
     expect(planImport(source, here, ["a"], "Snip", newId).definitions[0].name).toBe("DB (Snip) 2");
   });
 
-  it("brings missing pip types and keeps existing ones", () => {
-    const pip = (typeId: string) => ({ id: typeId, label: "", typeId, direction: "inbound" as const, side: "left" as const });
+  it("brings missing transports and styles, and keeps existing ones", () => {
+    const pip = (transportId: string, styleId: string) => ({
+      id: `${transportId}-${styleId}`,
+      label: "",
+      transportId,
+      styleId,
+      direction: "inbound" as const,
+      side: "left" as const,
+    });
     const source: ProjectContent = {
-      definitions: { a: def("a", "A", { pips: [pip("t-http"), pip("t-custom")] }) },
-      pipTypes: { "t-http": { id: "t-http", name: "HTTP", color: "#000" }, "t-custom": { id: "t-custom", name: "C", color: "#123" } },
+      definitions: { a: def("a", "A", { pips: [pip("tr-http", "s-rest"), pip("tr-mqtt", "s-custom")] }) },
+      transports: {
+        "tr-http": { id: "tr-http", name: "HTTP", color: "#000" },
+        "tr-mqtt": { id: "tr-mqtt", name: "MQTT", color: "#123" },
+      },
+      styles: {
+        "s-rest": { id: "s-rest", name: "REST", color: "#000" },
+        "s-custom": { id: "s-custom", name: "Custom", color: "#456" },
+      },
       customIcons: {},
       canvases: {},
     };
     const plan = planImport(source, target, ["a"], "S", newId);
-    expect(plan.pipTypes.map((t) => t.id)).toEqual(["t-custom"]);
+    expect(plan.transports.map((t) => t.id)).toEqual(["tr-mqtt"]);
+    expect(plan.styles.map((t) => t.id)).toEqual(["s-custom"]);
   });
 
   it("copies custom icons, re-iding one whose id means something else here", () => {
     const source: ProjectContent = {
       definitions: { a: def("a", "A", { icon: "custom:i1" }), b: def("b", "B", { icon: "custom:i2" }) },
-      pipTypes: {},
+      transports: {}, styles: {},
       customIcons: { i1: "data:one", i2: "data:two" },
       canvases: {},
     };

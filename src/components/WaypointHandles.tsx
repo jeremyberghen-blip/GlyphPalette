@@ -19,7 +19,7 @@ export default function WaypointHandles() {
   const selection = useApp((s) => s.selection);
   const selectedWaypoint = useApp((s) => s.selectedWaypoint);
   const scale = useApp((s) => s.viewport.scale);
-  const types = useApp((s) => s.pipTypes);
+  const transports = useApp((s) => s.transports);
   const size = 1 / scale; // keep handles the same size on screen at any zoom
 
   const rels = canvas.relationships.filter((r) => selection.includes(r.id) && r.waypoints?.length);
@@ -27,7 +27,7 @@ export default function WaypointHandles() {
     <>
       {rels.map((r) =>
         r.waypoints!.map((w, i) => {
-          const color = types[r.typeId]?.color ?? "#888";
+          const color = transports[r.transportId]?.color ?? "#888";
           const isSelected = selectedWaypoint?.relId === r.id && selectedWaypoint.index === i;
           const h = handlePosition(w);
           return (

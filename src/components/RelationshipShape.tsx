@@ -4,6 +4,10 @@ import { Relationship } from "../types";
 import { useApp, getPip, useActiveCanvas } from "../store";
 import { pipWorldPos, wireGeometry, sideVector } from "../lib/graph";
 import { traceRounded, wireVertices } from "../lib/waypoints";
+import { isAnyStyle } from "../lib/connections";
+
+/** Outer (transport) line width; the style core is half of it. */
+export const WIRE_WIDTH = 5;
 
 /** Draws a small arrowhead at (x,y) pointing along `dir`. */
 function drawArrow(
@@ -37,7 +41,8 @@ function pointerWorld(e: Konva.KonvaEventObject<MouseEvent>) {
 export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const canvas = useActiveCanvas();
   const s = useApp.getState();
-  const type = useApp((s) => s.pipTypes[rel.typeId]);
+  const transport = useApp((s) => s.transports[rel.transportId]);
+  const style = useApp((s) => s.styles[rel.styleId]);
   const selected = useApp((s) => s.selection.includes(rel.id));
 
   const fromNode = canvas.nodes.find((n) => n.id === rel.from.nodeId);
@@ -52,7 +57,8 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const fromPip = getPip(s, rel.from.nodeId, rel.from.pipId);
   const directional = fromPip?.direction === "outbound";
   const bidirectional = fromPip?.direction === "bidirectional";
-  const color = type?.color ?? "#888";
+  const color = transport?.color ?? "#888";
+  const core = !isAnyStyle(rel.styleId) ? style?.color : undefined;
 
   // Plain wires are one curve; wires with bend points are straight runs with rounded corners
   const bent = !!rel.waypoints?.length;
@@ -76,7 +82,9 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
       strokeWidth={14}
       sceneFunc={(ctx) => {
         tracePath(ctx);
-        ctx.setAttr("lineWidth", selected ? 3 : 2);
+        ctx.setAttr("lineCap", "round");
+        ctx.setAttr("lineJoin", "round");
+        ctx.setAttr("lineWidth", selected ? WIRE_WIDTH + 1 : WIRE_WIDTH);
         ctx.setAttr("strokeStyle", color);
         if (selected) {
           ctx.setAttr("shadowColor", color);
@@ -84,6 +92,12 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
         }
         ctx.stroke();
         ctx.setAttr("shadowBlur", 0);
+        if (core) {
+          tracePath(ctx);
+          ctx.setAttr("lineWidth", WIRE_WIDTH / 2);
+          ctx.setAttr("strokeStyle", core);
+          ctx.stroke();
+        }
         // Arrowheads point into the pip they terminate at (reverse of its outward normal)
         if (directional || bidirectional) {
           const inTo = sideVector(p2.side);
