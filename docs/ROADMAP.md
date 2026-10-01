@@ -37,17 +37,22 @@ v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
 
-## v1.3 — planned: Hephaestus Tier 1
+## v1.3 — planned: Hephaestus groundwork
 
-From `HEPHAESTUS-INTEGRATION.md`'s tiered plan, the changes required before
-GP can export anything Hephaestus can consume:
+Adapted from `HEPHAESTUS-INTEGRATION.md` Tier 1; full detail in
+[`DECISIONS.md`](DECISIONS.md) § "Hephaestus groundwork (v1.3)".
 
-- `slug` on `NodeDefinition` (filesystem-safe name, editable, defaults from
-  `name`).
-- `external: boolean` on `NodeDefinition` (drawn for context, never built).
-- Node `kind` (`external` / `dir` / `file`), mostly derived; `language` on
-  file-kind definitions; per-node `path` override for non-1:1 node↔file
-  mappings.
+- **Definition facts:** slug (snake_case, derived from the name unless
+  typed), External flag (managed by someone else / outsourced; drawn in a
+  muted stone color), Kind (Folder by default — an undrawn folder's
+  contents are the AI's to decide — or File), Language (inherited by
+  default; names follow each language's conventions).
+- **Paths:** a named project folder (New asks for the name), one
+  top-level system adds no folder, per-node path overrides.
+- **Hover cards:** a rich card on palette cards (definition facts) and on
+  placed nodes (plus actual path, effective language, clash warnings).
+- **Right-click menus** on placed nodes (incl. Override path…) and palette
+  cards.
 
 ## v1.4 — planned: Hephaestus Tier 2
 
@@ -92,8 +97,6 @@ Real ideas, not currently slated to a version:
 - **Connection attributes** — facts about a wire that its transport and
   style don't imply: TLS, auth, ports/hosts. Only if the v2.0 export shows
   Hephaestus needs them.
-- **Right-click menus** — deliberately deferred until use reveals where
-  they're wanted.
 - **Installable release build** (`npm run tauri build` → Windows installers).
   Already configured and cheap; deliberately not before v2.0.
 - Whether the Context-layer seeds (`System`, `Person`) should ship with

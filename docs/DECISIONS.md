@@ -72,7 +72,7 @@ Flattening pockets in the `architecture.json` export, so their contents
 belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
 shipped in v1.2, ADR 0010.)
 
-### Hephaestus groundwork (v1.3) — planning
+### Hephaestus groundwork (v1.3) — fully planned 2026-10-01
 
 Planning started 2026-10-01, adapting `HEPHAESTUS-INTEGRATION.md`'s Tier 1 to
 GP as it now is (Code layer retired, two-part connections, ports, pockets).
@@ -166,6 +166,33 @@ hovering a placed node).
 
   Limitation: React component files (`LinkService.tsx`) can't be told apart
   from other TypeScript; type a custom slug for those.
+
+**Paths** (settled 2026-10-01):
+- Walking down from the top canvas, each buildable folder adds its name (in
+  its language's convention); a file ends the path with name + extension.
+  Externals get no path; pockets and port nodes add nothing.
+- **Project folder:** projects get a name. New asks for it (stored in the
+  `.glyph`; nothing is saved until the user saves); the first save suggests
+  `<name>.glyph` without assigning it. The top bar shows the project name
+  (click to rename, hover for the file location). Older files take their
+  name from the file name until renamed. Every path starts with the project
+  folder.
+- **One top-level system adds no folder** (option b): when the top canvas
+  has exactly one buildable node, the project folder plays its role; with
+  several, each gets a subfolder. (The earlier "source folder" setting is
+  dropped — a path override on a top-level folder does the same.)
+- **Override:** per placed node, a full path from the project folder; a
+  folder's children build on its overridden path.
+- **Seeing paths:** the palette hover card also appears on hovering a placed
+  node, adding that node's actual path and effective language; it absorbs
+  the old full-name tooltip. Path clashes and definitions placed twice (one
+  interior under two paths) show as a warning line there; full lint stays on
+  the Backlog.
+- **Right-click menus** (first ones, prompted by real need): on a placed
+  node — Override path… (dialog: computed path + override field), Reset to
+  automatic path, Open inside, Expand (collapsed groups), Edit definition…,
+  Duplicate, Delete. On a palette card — Edit, Duplicate, Permute, Delete;
+  thin for now, to grow.
 
 ### Installable release build — deferred until after v2.0
 
