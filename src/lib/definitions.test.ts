@@ -90,3 +90,18 @@ describe("copyDefinition", () => {
     expect(src.pips[0].label).toBe("In");
   });
 });
+
+describe("copyDefinition and the v1.3 definition facts", () => {
+  const src: NodeDefinition = {
+    id: "a", name: "Link Service", icon: "Cog", layers: ["component"], pips: [], canvasId: null,
+    slug: "links", external: true, kind: "file", language: "python",
+  };
+
+  it("keeps external, kind, and language", () => {
+    expect(copyDefinition(src, "b", "Link Service 2")).toMatchObject({ external: true, kind: "file", language: "python" });
+  });
+
+  it("drops a typed slug, so the copy's slug follows its own name", () => {
+    expect(copyDefinition(src, "b", "Link Service 2").slug).toBeUndefined();
+  });
+});

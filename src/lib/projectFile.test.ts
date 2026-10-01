@@ -138,6 +138,25 @@ describe("Snip.glyph (real project fixture, saved by v1.0)", () => {
     expect(nodes.every((n) => content.definitions[n.definitionId])).toBe(true);
   });
 
+  it("gives re-id'd seeds the standard node's building facts (v1.0 had none)", () => {
+    const old = {
+      app: "glyph-palette",
+      version: 1,
+      pipTypes: {},
+      definitions: {
+        "def-queue": { id: "def-queue", name: "Click Queue", icon: "Layers", layers: ["container"], canvasId: null, pips: [] },
+        "def-file": { id: "def-file", name: "Config", icon: "File", layers: ["component"], canvasId: null, pips: [] },
+      },
+      canvases: { "canvas-root": { id: "canvas-root", nodes: [], relationships: [], boundaries: [] } },
+    };
+    const content = load(JSON.stringify(old));
+    const [queue] = byName(content, "Click Queue");
+    const [config] = byName(content, "Config");
+    expect(queue.external).toBe(true);
+    expect(config.kind).toBe("file");
+    expect(config.external).toBeUndefined();
+  });
+
   it("keeps interiors with the re-id'd definitions", () => {
     const content = load(snipJson);
     const [snipApi] = byName(content, "Snip API");

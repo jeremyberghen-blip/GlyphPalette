@@ -12,6 +12,7 @@ import {
 } from "../types";
 import { useApp, uid, nameTaken } from "../store";
 import { defaultConnType, groupStyles, groupTransports, isAnyStyle, styleUsualWith } from "../lib/connections";
+import { LANGUAGES, LANGUAGE_IDS, LanguageId, slugify } from "../lib/naming";
 
 const DIRECTIONS: { value: PipDirection; label: string }[] = [
   { value: "inbound", label: "Inbound" },
@@ -119,6 +120,11 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
   const source = editing ?? base;
   const [name, setName] = useState(editing?.name ?? "");
   const [icon, setIcon] = useState(source?.icon ?? "Box");
+  // A typed slug is kept only when editing (a Permute's slug follows its new name)
+  const [slug, setSlug] = useState(editing?.slug ?? "");
+  const [external, setExternal] = useState(!!source?.external);
+  const [kind, setKind] = useState<"folder" | "file">(source?.kind ?? "folder");
+  const [language, setLanguage] = useState<LanguageId | "">(source?.language ?? "");
   const [layers, setLayers] = useState<Layer[]>(
     source?.layers?.length ? [...source.layers] : [activeLayer]
   );
@@ -161,6 +167,11 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
       layers,
       pips: pips.filter((p) => p.label.trim() && p.transportId && p.styleId),
       canvasId: editing?.canvasId ?? null,
+      // Facts for building (v1.3): stored only when they differ from the defaults
+      ...(slug.trim() ? { slug: slugify(slug) } : {}),
+      ...(external ? { external: true } : {}),
+      ...(kind === "file" ? { kind: "file" as const } : {}),
+      ...(language ? { language } : {}),
       ...(editing?.expandable ? { expandable: editing.expandable, pipMap: editing.pipMap, sourceSize: editing.sourceSize } : {}),
     };
     useApp.getState().saveDefinition(def);
@@ -211,6 +222,66 @@ export default function DefinitionWizard({ editing, base = null, onClose }: Prop
                 A definition named "{trimmed}" already exists.
               </div>
             )}
+          </div>
+
+          {/* Slug: the file-safe name, derived from the name unless typed */}
+          <div>
+            <label className="mb-1 block text-xs text-[#7a7d92]">
+              Slug — its file/folder name, before each language's naming style is applied
+            </label>
+            <input
+              className={inputCls + " w-full font-mono"}
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder={slugify(trimmed || "node")}
+            />
+            {slug.trim() && slugify(slug) !== slug.trim() && (
+              <div className="mt-1 text-xs text-[#7a7d92]">
+                Saved as <span className="font-mono text-[#c9cbd8]">{slugify(slug)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Building: kind, external, language */}
+          <div>
+            <label className="mb-1 block text-xs text-[#7a7d92]">Builds as</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex overflow-hidden rounded border border-[#3a3d52]">
+                {(["folder", "file"] as const).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setKind(k)}
+                    className={`px-3 py-1 text-xs ${
+                      kind === k ? "bg-[#2b3a55] text-white" : "bg-[#191a21] text-[#8a8ea6] hover:text-white"
+                    }`}
+                    title={
+                      k === "folder"
+                        ? "A folder. If you don't draw its inside, the AI decides what goes in it."
+                        : "Always a single file"
+                    }
+                  >
+                    {k === "folder" ? "Folder" : "File"}
+                  </button>
+                ))}
+              </div>
+              <select
+                className={inputCls}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as LanguageId | "")}
+                title="Language — Inherit uses the language of whatever it's placed inside"
+              >
+                <option value="">Language: inherit</option>
+                {LANGUAGE_IDS.map((id) => (
+                  <option key={id} value={id}>
+                    {LANGUAGES[id].name}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-1.5 text-xs text-[#c9cbd8]">
+                <input type="checkbox" checked={external} onChange={(e) => setExternal(e.target.checked)} />
+                External — managed by someone else, never built
+              </label>
+            </div>
           </div>
 
           {/* Layers */}

@@ -1,4 +1,6 @@
 // Core data model for Glyph Palette.
+
+import type { LanguageId } from "./lib/naming";
 // Definitions live in the Library; instances live on Canvases and refer back
 // to a definition by id. (Library and pips arrive in later stages — the shapes
 // are declared now so the store doesn't churn.)
@@ -93,6 +95,20 @@ export interface NodeDefinition {
   pips: PipDef[];
   /** Canvas depicting this component's internals, if any. Shared by reference. */
   canvasId: string | null;
+  /**
+   * File-safe name (snake_case), only stored once typed in the node dialog;
+   * otherwise derived from `name` (lib/naming.ts `slugOf`).
+   */
+  slug?: string;
+  /** Managed by someone else or outsourced: drawn for context, never built. */
+  external?: boolean;
+  /**
+   * What it builds as. Folder (the default) — if its interior isn't drawn,
+   * the AI decides its contents; File — always a single file.
+   */
+  kind?: "folder" | "file";
+  /** Language, or absent to inherit the nearest ancestor's. */
+  language?: LanguageId;
   /**
    * True when this definition came from collapsing a boundary. Its canvas is
    * a *pocket*: a same-layer fold, not a deeper level (see lib/layers.ts).

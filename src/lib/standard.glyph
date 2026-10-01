@@ -177,7 +177,8 @@
         "container"
       ],
       "pips": [],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-external": {
       "id": "def-external",
@@ -206,7 +207,8 @@
           "side": "right"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-internet": {
       "id": "def-internet",
@@ -225,7 +227,8 @@
           "side": "right"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-firewall": {
       "id": "def-firewall",
@@ -252,7 +255,8 @@
           "side": "right"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-webapp": {
       "id": "def-webapp",
@@ -425,7 +429,8 @@
           "side": "left"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-queue": {
       "id": "def-queue",
@@ -452,7 +457,8 @@
           "side": "right"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-blobstore": {
       "id": "def-blobstore",
@@ -471,7 +477,8 @@
           "side": "left"
         }
       ],
-      "canvasId": null
+      "canvasId": null,
+      "external": true
     },
     "def-worker": {
       "id": "def-worker",
@@ -500,7 +507,8 @@
         "component"
       ],
       "pips": [],
-      "canvasId": null
+      "canvasId": null,
+      "kind": "file"
     },
     "def-module": {
       "id": "def-module",

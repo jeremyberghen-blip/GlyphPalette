@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { NodeInstance, NodeDefinition, NODE_WIDTH, NODE_HEIGHT } from "../types";
 import { useApp, useNodeDef } from "../store";
 import { wiresAt } from "../lib/broken";
+import { canvasOwner } from "../lib/layers";
 import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
@@ -11,25 +12,35 @@ import { useNodeHover } from "./NodeNameTooltip";
 
 const ICON_SIZE = 40;
 
+/** Internal nodes: cool slate. External (managed elsewhere, never built): warm stone. */
+const NODE_COLORS = {
+  internal: { fill: "#22242e", stroke: "#4a4e63", label: "#c9cbd8" },
+  external: { fill: "#2a2621", stroke: "#73695a", label: "#cfc6b8" },
+};
+
 /** Presentational node body — shared by real nodes and the placement ghost. */
 export function NodeVisual({
   def,
   selected = false,
   ghost = false,
+  external = !!def.external,
 }: {
   def: NodeDefinition;
   selected?: boolean;
   ghost?: boolean;
+  /** Drawn as external: the definition is, or it sits inside something external. */
+  external?: boolean;
 }) {
   const icon = useIcon(def.icon || "CircleQuestionMark");
+  const colors = external ? NODE_COLORS.external : NODE_COLORS.internal;
   return (
     <>
       <Rect
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         cornerRadius={10}
-        fill="#22242e"
-        stroke={selected || ghost ? "#4c9aff" : "#4a4e63"}
+        fill={colors.fill}
+        stroke={selected || ghost ? "#4c9aff" : colors.stroke}
         strokeWidth={selected ? 2.5 : 1.5}
         dash={ghost ? [6, 4] : undefined}
         shadowColor={selected ? "#4c9aff" : "black"}
@@ -55,7 +66,7 @@ export function NodeVisual({
         align="center"
         fontSize={14}
         fontFamily="Segoe UI, sans-serif"
-        fill="#c9cbd8"
+        fill={colors.label}
         listening={false}
         wrap="none"
         ellipsis
@@ -85,6 +96,8 @@ export default function NodeShape({ node }: Props) {
     [storedDef, wiredGhosts]
   );
   const selected = useApp((s) => s.selection.includes(node.id));
+  // Everything inside an external node is external too
+  const insideExternal = useApp((s) => s.trail.some((cid) => !!canvasOwner(s.definitions, cid)?.external));
   // Positions of every selected node at drag start, so multi-drag moves the group.
   const dragOrigin = useRef<{ startX: number; startY: number; peers: { id: string; x: number; y: number }[] } | null>(null);
 
@@ -146,7 +159,7 @@ export default function NodeShape({ node }: Props) {
         useApp.getState().enterDefinition(node.definitionId);
       }}
     >
-      <NodeVisual def={def} selected={selected} />
+      <NodeVisual def={def} selected={selected} external={!!def.external || insideExternal} />
       {selected && def.expandable && (
         <Group
           x={NODE_WIDTH - 4}

@@ -189,7 +189,9 @@ export function loadProjectFile(
     }
     const id = newId();
     renamed.set(d.id, id);
-    definitions[id] = { ...d, id, name: uniqueName(d.name, taken) };
+    // v1.0 predates the building facts, so the fork takes the seed's (an edited Cache stays external)
+    const facts = { ...(std.external ? { external: true } : {}), ...(std.kind ? { kind: std.kind } : {}) };
+    definitions[id] = { ...facts, ...d, id, name: uniqueName(d.name, taken) };
   }
   for (const d of ownDefs) {
     if (!(d.id in standard.definitions)) definitions[d.id] = d;

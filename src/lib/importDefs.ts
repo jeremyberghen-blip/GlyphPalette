@@ -63,6 +63,10 @@ export function planImport(
       layers: [...src.layers],
       pips: src.pips.filter((p) => !p.removed).map((p) => ({ ...p })),
       canvasId: null,
+      ...(src.slug ? { slug: src.slug } : {}),
+      ...(src.external ? { external: true } : {}),
+      ...(src.kind ? { kind: src.kind } : {}),
+      ...(src.language ? { language: src.language } : {}),
     };
     if (takenIds.has(def.id) || taken(def.name)) {
       def.id = newId();

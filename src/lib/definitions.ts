@@ -56,7 +56,9 @@ export function sameDefinition(
 
 /**
  * An independent copy of a definition under a new id and name. It starts with
- * an empty interior and none of a collapsed boundary's pocket metadata.
+ * an empty interior and none of a collapsed boundary's pocket metadata. It
+ * keeps external / kind / language, but not a typed slug — the copy's slug
+ * follows its own name, so two copies don't claim the same file.
  */
 export function copyDefinition(def: NodeDefinition, id: string, name: string): NodeDefinition {
   return {
@@ -64,8 +66,11 @@ export function copyDefinition(def: NodeDefinition, id: string, name: string): N
     name,
     icon: def.icon,
     layers: [...def.layers],
-    pips: def.pips.map((p) => ({ ...p })),
+    pips: def.pips.filter((p) => !p.removed).map((p) => ({ ...p })),
     canvasId: null,
+    ...(def.external ? { external: true } : {}),
+    ...(def.kind ? { kind: def.kind } : {}),
+    ...(def.language ? { language: def.language } : {}),
   };
 }
 
