@@ -57,171 +57,20 @@ These left this file when v1.1.0 shipped; their reasoning now lives in:
   warning, name tooltips, drag-to-place, layer display, and the seed pip
   relabel → [`CHANGELOG.md`](CHANGELOG.md) § 1.1.0.
 
-### Pockets — remaining pieces (v1.2, v1.4)
+### Built in v1.2.0 (2026-09-30)
 
-The v1.1 slice is built ([ADR 0007](decisions/0007-retire-code-layer-and-pockets.md)).
-Still to do: a **pocket variant of the port-node rules** (v1.2) — a pocket's
-ports derive bottom-up from the wires that crossed the boundary, not
-top-down from a parent definition — and **flattening pockets** in the
-`architecture.json` export (v1.4), so their contents belong to the pocket's
-parent.
+Port nodes (including the pocket variant), broken-but-kept links, and
+two-part connection types left this file when v1.2.0 shipped; their
+reasoning now lives in [ADR 0009](decisions/0009-two-part-connection-types.md)
+and [ADR 0010](decisions/0010-port-nodes-and-broken-links.md). The
+superseded HTTP ↔ REST/JSON compatibility idea is recorded in ADR 0009's
+Context.
 
-### Inbound / Outbound port nodes (v1.2)
+### Pockets — remaining piece (v1.4)
 
-Raised 2026-09-29 by the user during the Snip test run. Every inner canvas
-gets an **Inbound** node and an **Outbound** node that stand for "the edge
-of the thing we're inside". Their pips mirror the parent definition's pips
-with direction flipped: each inbound pip on the parent (e.g. Snip API's
-`API`, REST/JSON in) appears as an *outbound* pip on the Inbound node,
-ready to wire to whichever inner component handles it; each outbound parent
-pip appears as an *inbound* pip on the Outbound node. Where those
-connections lead beyond the parent is deliberately not shown.
-
-Why it fits GP:
-- **It's the only coherent answer given shared canvases.** A definition's
-  inner canvas is shared by every instance of it, so "where does this edge
-  go outside?" has no single answer. The ports only describe the
-  definition's own interface, which *is* shared.
-- **It mirrors collapse.** Boundary collapse already derives outer pips
-  from inner wires and records the mapping in `pipMap`; ports are the same
-  mapping seen from the inside, and could plausibly back both.
-- **It enables lint.** An unwired port pip means "this interface isn't
-  implemented inside" — exactly the interface information Hephaestus needs.
-- It removes most reasons to allow container-layer nodes on component
-  canvases just for context.
-
-Rules set by the user (2026-09-29; placement revised 2026-09-30):
-- **Ports belong to the parent node's definition.** Inside any node with an
-  interior (Container, Component, or a Context-layer System like Snip), the
-  Inbound and Outbound nodes take their pips from that definition.
-  Read-only from the inside: to change a port, go up a level and edit the
-  parent definition; the ports inherit the change.
-- **Placed from the palette, not generated** (2026-09-30, replacing
-  "generated automatically"). Not every interior needs ports, so they're
-  optional: the palette always offers Inbound and Outbound on an inner
-  canvas, just in case, and the user places them when wanted. They delete
-  like any node.
-- **Contextual, not shared.** The palette's port entries always point at
-  the node the user is currently inside: inside Snip API they carry Snip
-  API's pips; inside Links DB, Links DB's. They are not one shared "Port"
-  definition per layer.
-- **One Inbound and one Outbound**, each the sum of all connections in that
-  direction (see open questions below on enforcing "at most one").
-- **Never merge directions.** Inbound and outbound pips stay separate, even
-  if redundant; redundant pips are fine.
-- **Bidirectional (and `none`) parent pips appear on both port nodes.**
-- **Deleting a parent pip never silently destroys inner work.** The pip
-  stays on the port node, marked broken (red or similar), and any wire
-  attached to it stays in place, marked problematic, so it can be found and
-  fixed by hand.
-- **Retyping a parent pip is treated the same way** (confirmed 2026-09-29):
-  if the inner wire no longer matches the new type, the port pip remains,
-  marked broken, and its wire stays in place, marked problematic.
-- ~~Older `.glyph` files get ports generated on load.~~ Dropped 2026-09-30:
-  with ports optional, nothing is generated.
-
-Settled 2026-09-30 after the palette change:
-- **At most one Inbound and one Outbound per canvas**; the palette card is
-  disabled once that port is placed.
-- **Hidden on the top-level canvas**, which has nothing above it.
-- **Deleting a port node removes its wires**, like any node (undoable). The
-  broken-but-kept rule is for parent changes, not deliberate deletion.
-- **Pockets:** a pocket's port cards carry the collapsed node's inherited
-  pips (same mechanism). Because the collapse recorded which inner node/pip
-  each crossing wire attached to, placing a port in a pocket draws those
-  connections automatically, **locked** (a record of the collapse; expand
-  to rewire). Port pips in a pocket can't be wired by hand.
-- **Guards:** a port node is never swept into a boundary collapse (it stays
-  on its canvas), and expanding a pocket never copies its port nodes onto
-  the parent canvas.
-
-### Two-part connection types: transport + API style (v1.2)
-
-Raised and decided 2026-09-30 (user), while discussing HTTP ↔ REST/JSON.
-Every pip and wire carries **both a transport and an API style**, drawn as
-a line in the transport's color with a core in the style's color (e.g. a
-green HTTP line with a blue REST/JSON core). Ships in v1.2 with port nodes,
-so the wire model changes once ("ports and connections").
-
-Why: HTTP is a transport; REST/JSON is an API style + payload riding on it
-(as are GraphQL, SOAP/XML, web pages, gRPC). The old flat list mixed the two
-layers, so "can HTTP connect to REST/JSON?" had no clean answer. This models
-real protocol layering, and carries what Hephaestus needs: transport →
-which client/server plumbing, style → what to generate. It may subsume
-v1.4's planned edge `kind` (network vs. in-process transport).
-
-Settled:
-- **Connection rule:** transports must match exactly; styles must match,
-  **or either side is "any"** (pass-through infrastructure: firewall, load
-  balancer, proxy). The wire shows the specific style's core; "any"–"any"
-  shows no core.
-- **Two layers only.** Lower layers (TCP under HTTP, HTTP/2 under gRPC)
-  are implied, and generated code works at the library level, so recording
-  them would tell Hephaestus nothing. Facts that *aren't* implied — TLS,
-  auth, ports/hosts — are connection attributes, not layers; on the Backlog
-  until the v2.0 export shows they're needed.
-- **Starting mapping** of today's ten types (upgrade path for files and the
-  standard library): HTTP → HTTP/any; REST/JSON → HTTP/REST-JSON;
-  gRPC → HTTP/2/gRPC; TCP/IP → TCP/any; SQL → TCP/SQL; Queue → Message
-  queue/any; Event → Message queue/Event; File I/O → Filesystem/any;
-  Call → In-process/Call; Import → In-process/Import.
-
-**Starting lists** (Claude's call, delegated by the user 2026-09-30). Red is
-reserved for broken links, so neither list uses it. "Any" draws no core.
-
-| Transport (line) | Color |   | Style (core) | Color |
-|---|---|---|---|---|
-| HTTP | green `#4ade80` | | any | — (no core) |
-| HTTP/2 | indigo `#818cf8` | | REST/JSON | blue `#3b82f6` |
-| WebSocket | teal `#2dd4bf` | | GraphQL | magenta `#e879f9` |
-| TCP | sky `#4c9aff` | | SOAP/XML | tan `#d4a373` |
-| Message queue | orange `#fb923c` | | Web pages (HTML) | white `#f1f5f9` |
-| Filesystem | pink `#f472b6` | | gRPC | violet `#a78bfa` |
-| In-process | slate `#64748b` | | SQL | amber `#f59e0b` |
-| | | | Key-value | lime `#a3e635` |
-| | | | Event | yellow `#facc15` |
-| | | | Call | light slate `#cbd5e1` |
-| | | | Import | cyan `#67e8f9` |
-
-The standard library's pips are upgraded to specific styles where the node
-implies one (API Service's API → HTTP/REST-JSON, its DB → TCP/SQL, Cache →
-TCP/Key-value, Database events → Message queue/Event); generic
-infrastructure (Firewall, Internet, Load-balancer-like nodes) stays "any".
-
-**Rendering** (user, 2026-09-30):
-- **Pip:** a larger circle in the transport color with a smaller circle in
-  the style color at its center ("any": no inner circle).
-- **Wire:** the transport color as the outer line, about twice as thick as
-  the style-colored core.
-
-**Broken links** (user, 2026-09-30): a broken pip is drawn red, its tooltip
-says the link is broken (and why), and every wire attached to it is red end
-to end. Once no wire uses it any more, the pip either disappears (its
-parent pip was deleted) or shows its new transport/style (its parent pip
-was retyped).
-
-**Node dialog** (settled 2026-09-30): each pip row has a Transport and a
-Style dropdown. Transports keep the soft layer affinity (network transports
-first on Containers, In-process first on Components). Styles are ordered by
-the chosen transport — the styles usual with it first (with HTTP: any,
-REST/JSON, GraphQL, SOAP/XML, Web pages), everything else after; nothing is
-hidden. A new pip defaults to the layer's usual transport plus that
-transport's most common style (HTTP + REST/JSON on a Container, In-process +
-Call on a Component). "+ New transport…" / "+ New style…" end each list; a
-new style records which transports it usually goes with. Presets (named
-pairs) were considered and not chosen.
-
-**Direction mark:** the dark in/out arrow stays at the pip's center, drawn
-on top of the style core — sized so the core color stays readable.
-
-**Broken-but-kept everywhere** (user, 2026-09-30): the broken-link rule
-applies to every node, not just port nodes. Deleting or retyping a pip on
-any definition keeps its wires, drawn red, until the user removes them —
-replacing today's silent wire deletion (ARCHITECTURE § Known rough edges).
-
-Superseded the same day, never built: **HTTP ↔ REST/JSON compatibility** —
-one-way subtype matching (REST/JSON is-a HTTP), or leaving matching strict.
-Both were patches on a flat type list the two-part model removes.
+Flattening pockets in the `architecture.json` export, so their contents
+belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
+shipped in v1.2, ADR 0010.)
 
 ### Installable release build — deferred until after v2.0
 

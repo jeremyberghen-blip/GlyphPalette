@@ -45,3 +45,5 @@ it in place with an updated `Status` line so history stays readable.
 | [0006](0006-versioning-and-git.md) | Start versioning at v1.0.0; adopt git | Accepted |
 | [0007](0007-retire-code-layer-and-pockets.md) | Retire the Code layer; collapsed boundaries are same-layer pockets | Accepted |
 | [0008](0008-project-owned-library.md) | The library belongs to the project; a read-only standard library | Accepted |
+| [0009](0009-two-part-connection-types.md) | Two-part connection types (transport + API style) | Accepted |
+| [0010](0010-port-nodes-and-broken-links.md) | Port nodes, and broken-but-kept links | Accepted |

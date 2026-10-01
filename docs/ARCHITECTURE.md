@@ -1,6 +1,6 @@
 # Architecture
 
-What Glyph Palette is made of, as of v1.1.0. For *why* things are shaped this
+What Glyph Palette is made of, as of v1.2.0. For *why* things are shaped this
 way, see [`decisions/`](decisions/); for what's next, see [`ROADMAP.md`](ROADMAP.md).
 
 ## Stack
@@ -18,17 +18,26 @@ Tests: Vitest (`npm test`).
   and `pips`. A node's display name is its definition's name, so two
   distinct things on a canvas need two definitions (Duplicate / Permute /
   Ctrl+D make that cheap).
-- **Pip** ([`PipDef`](../src/types.ts)) — a labeled, color-coded, typed,
-  directional attachment point on a definition. Direction is
-  `inbound | outbound | bidirectional | none`. Two pips can connect only if
-  their `PipType` matches and their directions pair up
-  (`outbound`↔`inbound`, `bidirectional`↔`bidirectional`, `none`↔`none`) —
-  see `canConnect` in [`src/lib/graph.ts`](../src/lib/graph.ts). A
-  `PipType` may carry a `layers` hint: the layers it's usual on, used only
-  to order the wizard's type list ([`src/lib/pipTypes.ts`](../src/lib/pipTypes.ts)).
+- **Pip** ([`PipDef`](../src/types.ts)) — a labeled, directional attachment
+  point on a definition with a two-part connection type: a **transport**
+  ([`Transport`](../src/types.ts): HTTP, TCP, message queue…) and an **API
+  style** ([`ApiStyle`](../src/types.ts): REST/JSON, SQL, event…, or "any"
+  for pass-through). Direction is `inbound | outbound | bidirectional |
+  none`. Two pips connect when transports match, styles match or either is
+  "any", and directions pair up (`outbound`↔`inbound`,
+  `bidirectional`↔`bidirectional`, `none`↔`none`) — `canConnect` in
+  [`src/lib/graph.ts`](../src/lib/graph.ts), rules in
+  [`src/lib/connections.ts`](../src/lib/connections.ts). Transports carry a
+  `layers` hint and styles a `transports` hint, used only to order the
+  wizard's pickers. See [ADR 0009](decisions/0009-two-part-connection-types.md).
+  A pip deleted while wired stays as `removed` until its last wire goes.
 - **Relationship** ([`Relationship`](../src/types.ts)) — a wire between two
   pips, `from`/`to` normalized so `from` is the outbound side when
-  directional. Optional `waypoints`: bend points, each a short straight
+  directional. It records the connection type it was drawn with
+  (`transportId`/`styleId`, the more specific style); if an end pip is
+  deleted or retyped so it no longer matches, the wire is **broken** — drawn
+  red, kept until removed ([`src/lib/broken.ts`](../src/lib/broken.ts),
+  [ADR 0010](decisions/0010-port-nodes-and-broken-links.md)). Optional `waypoints`: bend points, each a short straight
   section pivoting on its center (`angle`, `half`-length). With waypoints a
   wire is drawn as straight runs with rounded corners
   ([`src/lib/waypoints.ts`](../src/lib/waypoints.ts)). Bend points inside a
@@ -54,6 +63,13 @@ Tests: Vitest (`npm test`).
 - **Pocket** — the inside of a collapsed boundary: a same-layer fold, not a
   deeper level. Identified by its owning definition's `expandable` flag
   ([`src/lib/layers.ts`](../src/lib/layers.ts)); hidden from the palette.
+- **Port node** — Inbound / Outbound, placed from the palette on an inner
+  canvas (one of each, never the top level). Stored as a node with a reserved
+  definition id (`@port-in` / `@port-out`); its pips are the parent's,
+  flipped, worked out live ([`src/lib/ports.ts`](../src/lib/ports.ts)). Every
+  lookup of a node's definition goes through `resolveDef` / `useNodeDef`. In a
+  pocket, ports also show the collapse's recorded connections, dashed and
+  locked. See [ADR 0010](decisions/0010-port-nodes-and-broken-links.md).
 - **Standard library vs. project definitions** — the store's `definitions`
   map holds both. Standard ones ([`src/lib/standard.glyph`](../src/lib/standard.glyph),
   loaded by [`src/lib/standardLibrary.ts`](../src/lib/standardLibrary.ts))
@@ -64,14 +80,17 @@ Tests: Vitest (`npm test`).
 
 | Path | Role |
 |---|---|
-| `src/types.ts` | The data model. Every shape above, plus `Layer`, `DRAWABLE_LAYERS`, `nextLayer`. |
+| `src/types.ts` | The data model. Every shape above, plus `Layer`, `DRAWABLE_LAYERS`, `nextLayer`, `ANY_STYLE`. |
 | `src/store.ts` | Zustand store: all project state + every mutation (place, wire, collapse/expand, duplicate, import, waypoints, undo) and save state (`filePath`, `savedRefs`). The single source of truth. |
 | `src/lib/graph.ts` | Pure geometry/validation: pip placement, wire bezier curves, `canConnect`, group centering. |
 | `src/lib/waypoints.ts` | Pure waypoint geometry: routing, insertion order, the rotation/length handle. |
 | `src/lib/layers.ts` | Canvas ↔ layer rules: owners, pockets, child layers, pocket-layer repair. |
 | `src/lib/layerStyle.ts` | Layer colors and labels used across the UI. |
 | `src/lib/definitions.ts` | Definition helpers: numbered names, copying, "same definition" comparison. |
-| `src/lib/pipTypes.ts` | Soft pip-type affinity: grouping and default type for a definition's layers. |
+| `src/lib/connections.ts` | Two-part connection rules: compatibility, a wire's type, labels, and the wizard's picker ordering/defaults. |
+| `src/lib/legacyTypes.ts` | Upgrading v1 files' flat pip types to transport + style. |
+| `src/lib/broken.ts` | Broken links: when pips/wires are broken and why; keeping and pruning deleted-but-wired pips. |
+| `src/lib/ports.ts` | Port nodes: their pips, resolving node definitions on a canvas, placement rules, a pocket's locked wires. |
 | `src/lib/standard.glyph`, `standardLibrary.ts` | The read-only standard library. |
 | `src/lib/projectFile.ts` | The `.glyph` format: build, parse, and upgrade older files (pure). |
 | `src/lib/importDefs.ts` | Importing definitions from another project: candidates and conflict handling (pure). |
@@ -83,7 +102,7 @@ Tests: Vitest (`npm test`).
 | `src/lib/icons.ts` | Lucide icon lookup + custom-uploaded-icon resolution. |
 | `src/components/CanvasStage.tsx` | The Konva stage: pan/zoom, marquee select, wire-drag, boundary drawing, placement ghost, drag-to-place drop target. |
 | `src/components/NodeShape.tsx`, `BoundaryShape.tsx`, `PipShape.tsx`, `RelationshipShape.tsx`, `WaypointHandles.tsx`, `NodeNameTooltip.tsx` | Konva render + drag/click handlers for each primitive. |
-| `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Duplicate/Permute/import, pip-type legend. |
+| `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, transport and style legends. |
 | `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, layers, icon, pips. |
 | `src/components/ImportDialog.tsx` | Choose definitions to import from another project. |
 | `src/components/NavTree.tsx`, `Breadcrumbs.tsx` | Canvas navigation — Explorer-style tree and the trail-of-crumbs + back button, both showing layers. |
@@ -93,12 +112,15 @@ Tests: Vitest (`npm test`).
 ## Persistence
 
 1. **`.glyph`** (`ProjectFile` in `projectFile.ts`) — one project. UI-shaped:
-   layout coordinates, the project's own definitions and pip types, custom
-   icons, and `standardInteriors` (interiors drawn inside standard nodes).
+   format version 2: layout coordinates, the project's own definitions,
+   transports, and styles, custom icons, and `standardInteriors` (interiors
+   drawn inside standard nodes).
    Standard-library content is never written; it's merged back in on load.
    Loading also upgrades older files: the `containers`→`boundaries` rename,
-   missing `layer`/`layers`, pocket layers, and v1.0's copied seeds (folded
-   back into the standard nodes, or re-id'd if edited).
+   missing `layer`/`layers`, pocket layers, v1.0's copied seeds (folded
+   back into the standard nodes, or re-id'd if edited), and version 1's flat
+   pip types (→ transport + style, ADR 0009). Upgrading is one-way: v1.1
+   can't read version 2 files.
 2. **Settings** (`settings.ts`) — per machine:
    `%APPDATA%\com.heroo.glyph-palette\glyph-palette\settings.json` in Tauri,
    `localStorage` in the browser preview.
@@ -124,5 +146,3 @@ interaction are tested by hand.
   `drawImage ... width or height of 0` console error on first paint (a
   canvas-sizing timing artifact); it doesn't affect the real Tauri window.
   On the Backlog.
-- Deleting or retyping a pip still drops the wires attached to it, silently.
-  The v1.2 port-node design replaces this with broken-but-kept wires.

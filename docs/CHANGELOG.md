@@ -4,6 +4,40 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.2.0] — 2026-09-30
+
+Ports and connections.
+
+### Added
+- **Two-part connection types** ([ADR 0009](decisions/0009-two-part-connection-types.md)):
+  every pip and wire has a transport (HTTP, HTTP/2, WebSocket, TCP, message
+  queue, filesystem, in-process) and an API style (REST/JSON, GraphQL,
+  SOAP/XML, web pages, gRPC, SQL, key-value, event, call, import, or "any"
+  for pass-through). Transports must match; styles match or either is "any".
+- Pips draw as a transport ring with a style center; wires as a transport
+  line with a style core half as thick. Two legends: transports and styles.
+- The node dialog has Transport and Style pickers per pip, ordered by the
+  node's layers and the chosen transport; "+ New transport" / "+ New style".
+- **Port nodes** ([ADR 0010](decisions/0010-port-nodes-and-broken-links.md)):
+  Inbound and Outbound in a new Ports section of the palette on any inner
+  canvas, carrying the pips of the node you're inside. One of each per
+  canvas. Inside a collapsed group, they show the collapse's connections
+  automatically (dashed, locked).
+- **Broken-but-kept links:** deleting or retyping a pip keeps its wires,
+  drawn red with an explanation on hover, until you remove them.
+
+### Changed
+- The standard library's pips use specific styles where the node implies
+  one (Cache → TCP / Key-value, Web App's input → HTTP / Web pages).
+- Project files are format version 2. Older files upgrade automatically;
+  files saved by 1.2 can't be read by 1.1.
+- Wires are slightly thicker so their core shows.
+- Wires redraw when either end's definition changes (editing a pip's side
+  updates its wires).
+
+### Removed
+- Deleting a pip no longer deletes its wires silently.
+
 ## [1.1.1] — 2026-09-30
 
 Fixes from hand-testing 1.1.0.

@@ -1,6 +1,6 @@
 # Roadmap
 
-What v1.1.0 is, and where things go from here. Nothing below is a commitment
+What v1.2.0 is, and where things go from here. Nothing below is a commitment
 to build it, let alone on the version it's slated to — it's a place to put
 plans so they don't only live in conversation. Move items between versions,
 into Backlog, or out entirely as things change; that's the point of writing
@@ -12,7 +12,14 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.1 — current: 1.1.1 (2026-09-30)
+## v1.2.0 — current (2026-09-30)
+
+Ports and connections: two-part connection types (transport + API style,
+drawn as line + core; ADR 0009), broken-but-kept links everywhere, and
+Inbound / Outbound port nodes including the pocket variant (ADR 0010). Full
+list in [`CHANGELOG.md`](CHANGELOG.md) § 1.2.0.
+
+## v1.1 — 1.1.1 (2026-09-30)
 
 Foundation, polish, and library, built from the Snip test run: a Vitest
 suite with a real-project regression fixture; the Code layer retired
@@ -29,18 +36,6 @@ bend points inside collapsed boxes, and drag-to-place in the desktop app.
 v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
-
-## v1.2 — planned: ports and connections
-
-- **Inbound / Outbound port nodes**, placed from the palette on any inner
-  canvas (never the top level), one of each, carrying the pips of the node
-  you're inside; broken-but-kept pips and wires when that parent changes.
-  Pocket variant: a pocket's ports derive from the wires that crossed the
-  boundary.
-- **Two-part connection types:** every pip and wire has a transport and an
-  API style (line color + core color); transports must match, styles match
-  or either is "any". Existing pip types, files, and the standard library
-  upgrade to the new model.
 
 ## v1.3 — planned: Hephaestus Tier 1
 
