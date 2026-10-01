@@ -17,7 +17,19 @@ Tests: Vitest (`npm test`).
   ([`NodeDefinition`](../src/types.ts)): name, icon, `layers` (see below),
   and `pips`. A node's display name is its definition's name, so two
   distinct things on a canvas need two definitions (Duplicate / Permute /
-  Ctrl+D make that cheap).
+  Ctrl+D make that cheap). A node may carry a `pathOverride` (below).
+- **Build facts** — every definition also has a `slug` (snake_case,
+  derived from the name unless typed), `external`, `kind` (folder or file)
+  and `language` (inherited when absent); naming rules in
+  [`src/lib/naming.ts`](../src/lib/naming.ts). See
+  [ADR 0011](decisions/0011-build-facts-and-paths.md).
+- **Build plan** — where each placed node builds, derived on demand by
+  `buildPlan` in [`src/lib/paths.ts`](../src/lib/paths.ts) and never stored:
+  one *placement* per route from the top canvas (a node inside a shared
+  interior has several), each with its status (external, folder drawn /
+  decided by the AI, file, sketch), effective language, and path under the
+  project folder. A node's `pathOverride` replaces its derived path, and its
+  children build on it.
 - **Pip** ([`PipDef`](../src/types.ts)) — a labeled, directional attachment
   point on a definition with a two-part connection type: a **transport**
   ([`Transport`](../src/types.ts): HTTP, TCP, message queue…) and an **API
@@ -86,6 +98,8 @@ Tests: Vitest (`npm test`).
 | `src/lib/waypoints.ts` | Pure waypoint geometry: routing, insertion order, the rotation/length handle. |
 | `src/lib/layers.ts` | Canvas ↔ layer rules: owners, pockets, child layers, pocket-layer repair. |
 | `src/lib/layerStyle.ts` | Layer colors and labels used across the UI. |
+| `src/lib/naming.ts` | Slugs and per-language file/folder naming conventions (pure). |
+| `src/lib/paths.ts` | The build plan: every placement's status, language, and path; overrides, clashes, reuse (pure). |
 | `src/lib/definitions.ts` | Definition helpers: numbered names, copying, "same definition" comparison. |
 | `src/lib/connections.ts` | Two-part connection rules: compatibility, a wire's type, labels, and the wizard's picker ordering/defaults. |
 | `src/lib/legacyTypes.ts` | Upgrading v1 files' flat pip types to transport + style. |
@@ -96,14 +110,18 @@ Tests: Vitest (`npm test`).
 | `src/lib/importDefs.ts` | Importing definitions from another project: candidates and conflict handling (pure). |
 | `src/lib/persist.ts` | Filesystem side of projects: dialogs, reading/writing `.glyph`, PNG export. |
 | `src/lib/fileActions.ts` | File operations as the UI runs them: pop-ups, Save / Don't save / Cancel. |
-| `src/lib/session.ts` | Save-state logic: dirty check, autosave timing, titles (pure). |
+| `src/lib/session.ts` | Save-state logic: dirty check (project name included), autosave timing, window title, suggested file name (pure). |
 | `src/lib/settings.ts` | Per-machine settings (autosave interval). |
 | `src/lib/toast.ts` | Pop-up message store. |
 | `src/lib/icons.ts` | Lucide icon lookup + custom-uploaded-icon resolution. |
 | `src/components/CanvasStage.tsx` | The Konva stage: pan/zoom, marquee select, wire-drag, boundary drawing, placement ghost, drag-to-place drop target. |
-| `src/components/NodeShape.tsx`, `BoundaryShape.tsx`, `PipShape.tsx`, `RelationshipShape.tsx`, `WaypointHandles.tsx`, `NodeNameTooltip.tsx` | Konva render + drag/click handlers for each primitive. |
+| `src/components/NodeShape.tsx`, `BoundaryShape.tsx`, `PipShape.tsx`, `RelationshipShape.tsx`, `WaypointHandles.tsx` | Konva render + drag/click handlers for each primitive. |
+| `src/components/InfoCard.tsx` | The hover cards on palette cards and placed nodes (HTML over the canvas). |
+| `src/components/ContextMenu.tsx`, `nodeMenu.ts` | The right-click menu, and what a placed node's menu offers. |
+| `src/components/PathOverrideDialog.tsx` | Override path…: the automatic path, the typed one, and a preview. |
+| `src/components/ProjectTitle.tsx`, `ProjectNamePrompt.tsx` | The project name in the top bar (click to rename) and New's name prompt. |
 | `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, transport and style legends. |
-| `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, layers, icon, pips. |
+| `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, slug, builds-as facts, layers, icon, pips. Its open state is a small store so palette cards and canvas menus can open it. |
 | `src/components/ImportDialog.tsx` | Choose definitions to import from another project. |
 | `src/components/NavTree.tsx`, `Breadcrumbs.tsx` | Canvas navigation — Explorer-style tree and the trail-of-crumbs + back button, both showing layers. |
 | `src/components/Toasts.tsx`, `UnsavedPrompt.tsx`, `SettingsDialog.tsx`, `BoundaryModal.tsx` | Pop-ups and dialogs. |
@@ -112,15 +130,16 @@ Tests: Vitest (`npm test`).
 ## Persistence
 
 1. **`.glyph`** (`ProjectFile` in `projectFile.ts`) — one project. UI-shaped:
-   format version 2: layout coordinates, the project's own definitions,
-   transports, and styles, custom icons, and `standardInteriors` (interiors
-   drawn inside standard nodes).
+   format version 2: the project's `name`, layout coordinates, the project's
+   own definitions, transports, and styles, custom icons, and
+   `standardInteriors` (interiors drawn inside standard nodes).
    Standard-library content is never written; it's merged back in on load.
    Loading also upgrades older files: the `containers`→`boundaries` rename,
    missing `layer`/`layers`, pocket layers, v1.0's copied seeds (folded
    back into the standard nodes, or re-id'd if edited), and version 1's flat
    pip types (→ transport + style, ADR 0009). Upgrading is one-way: v1.1
-   can't read version 2 files.
+   can't read version 2 files. Files from before v1.3 have no `name`; they
+   take it from the file name.
 2. **Settings** (`settings.ts`) — per machine:
    `%APPDATA%\com.heroo.glyph-palette\glyph-palette\settings.json` in Tauri,
    `localStorage` in the browser preview.

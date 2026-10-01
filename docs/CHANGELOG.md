@@ -4,6 +4,43 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.3.0] — 2026-10-01
+
+Hephaestus groundwork: what each node builds as, and where.
+
+### Added
+- **Definition facts** ([ADR 0011](decisions/0011-build-facts-and-paths.md)),
+  in the node dialog under Name: **Slug** (its snake_case file name, derived
+  from the name unless typed), **Builds as** Folder or File, **Language**
+  (inherited by default), and **External** (managed by someone else, never
+  built). External nodes draw in a muted stone color. Standard nodes that
+  are usually hosted services are external; File builds as a file.
+- **Build paths:** every placed node has a path, worked out from where it
+  sits — folders named in their language's conventions, files with their
+  extension, externals and pockets adding nothing, one top-level system
+  being the project folder itself.
+- **Project names:** New asks for a name, which names the project's build
+  folder. The top bar shows it (click to rename; hover for where it's saved
+  and its build folder), and the window title follows it. A first save
+  suggests `<name>.glyph`. Older files are named after their file.
+- **Hover cards:** pausing on a palette card shows a large card over the
+  canvas — slug, what it builds as, language, layers, pips with their
+  colors. On a placed node it adds that node's path, its effective
+  language, and warnings for path clashes and one design built in several
+  places.
+- **Right-click menus.** On a placed node: Override path…, Reset to
+  automatic path, Open inside, Edit definition…, Duplicate, Delete (a
+  collapsed group offers Open inside, Expand, Delete). On a palette card:
+  Edit…, Duplicate, Permute…, Delete.
+- **Override path…:** shows the automatic path and takes a full path from
+  the project folder; what's inside follows it.
+
+### Changed
+- The canvas's full-name tooltip and the palette's plain tooltips are
+  replaced by the hover cards.
+- Project files store the project's name; 1.2 opens them fine and ignores
+  it.
+
 ## [1.2.1] — 2026-09-30
 
 Fixes from hand-testing 1.2.0.

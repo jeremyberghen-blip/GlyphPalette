@@ -72,127 +72,18 @@ Flattening pockets in the `architecture.json` export, so their contents
 belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
 shipped in v1.2, ADR 0010.)
 
-### Hephaestus groundwork (v1.3) — fully planned 2026-10-01
+### Built in v1.3.0 (2026-10-01)
 
-Planning started 2026-10-01, adapting `HEPHAESTUS-INTEGRATION.md`'s Tier 1 to
-GP as it now is (Code layer retired, two-part connections, ports, pockets).
-Five items: slug, external flag, kind, language, paths (derivation, per-node
-override, and somewhere to see them).
-
-**Slug** (settled 2026-10-01):
-- Every definition has a slug: a filesystem-safe name, derived from the name
-  by default (so renames follow) and stored only once the user types their
-  own. Edited in the node dialog under Name.
-- Format **snake_case**: lowercase, symbols dropped, spaces/separators →
-  `_`, a leading digit gets a `_` prefix (`Safe Browsing API (Snip)` →
-  `safe_browsing_api_snip`). Valid as a Python module name and fine in
-  Rust/Go/Ruby/TypeScript.
-- Languages that tie file names to contents (Java requires `LinkService.java`;
-  C#/Kotlin/Swift/React-component conventions) are handled when the export
-  builds the actual file name, by a per-language convention — the slug stays
-  snake_case as the canonical form. To settle with language (item 4) and the
-  export (v1.4).
-- Standard nodes are read-only, so their slugs are always derived; the user
-  expects to Permute standard nodes before building anything from them.
-
-**External flag** (settled 2026-10-01):
-- `external` on every definition, set by a checkbox in the node dialog;
-  copied by Duplicate, Permute, and Import. Everything inside an external
-  node is external too.
-- **The rule (user's):** external means handled or managed by someone else,
-  or outsourced — never built here. A database you design (schema,
-  migrations) is yours, so **Database is buildable**; the database *engine*
-  (Postgres itself) is just what it runs on.
-- Standard defaults — external: Person, External System, Internet, Firewall,
-  Cache, Message Queue, Object Store. Buildable: everything else, Database
-  included. (Cache and Message Queue are external on the assumption they're
-  hosted services; Permute them to buildable when you configure your own.)
-- **Look:** external nodes keep a solid border but use a different muted,
-  neutral color from internal nodes — a warm stone tone against the usual
-  cool slate. Never red (reserved for broken links).
-
-**Kind** (settled 2026-10-01): stopping early means handing the contents to
-the AI, not "make it one file". Each definition has a **Kind** setting,
-**Folder** (default) or **File** (the standard File node is File). What a
-node is, for building:
-
-| Shown as | When |
-|---|---|
-| External — never built | marked external, or inside something external |
-| Folder — contents drawn by you | buildable, interior drawn |
-| Folder — contents decided by the AI | buildable, interior not drawn (the default) |
-| File | Kind set to File |
-
-An interior holding only port nodes counts as not drawn. A File with a drawn
-interior keeps it as a reference sketch that isn't built. Pockets are folds
-(their contents belong to the canvas around them) and port nodes are never
-built.
-
-**Palette hover card** (settled 2026-10-01): kind and the other definition
-facts are shown in a large hover card on palette cards, not on the canvas.
-It floats to the right of the card, out over the canvas; appears after
-~0.4s and hides on drag; shows name/icon, slug, layers, kind line,
-external, language, pips with their transport/style colors (long lists
-truncated), later the v1.4 description; replaces the native tooltip, with
-the placement hint in its footer. Paths are per placed node, not per
-definition, so item 5 needs an instance-level view (likely the same card on
-hovering a placed node).
-
-**Language** (settled 2026-10-01):
-- A Language setting on every definition (folders too — an AI-decided
-  folder needs one), defaulting to **Inherit**: a node uses the nearest
-  ancestor's language. The effective language can differ per placement; the
-  palette card shows "inherited" or the explicit value, the placed-node view
-  shows the real one. Nothing set anywhere up the tree → unspecified, which
-  the export flags rather than guesses.
-- List: Python, TypeScript, JavaScript, Go, Rust, Ruby, Java, C#, Kotlin,
-  Swift, SQL (for buildable databases). Additions and an "Other…" option wait
-  for a later version.
-- **Names follow each language's conventions** in the output — because
-  that's what correct code in the language looks like (tooling, imports, the
-  AI's own habits), not as a hint. GP keeps one canonical snake_case slug;
-  the export converts it. A folder is named by its own language.
-
-| Language | Files | Folders |
-|---|---|---|
-| Python | `link_service.py` | `link_service` |
-| TypeScript, JavaScript | `link-service.ts` | `link-service` |
-| Go | `link_service.go` | `linkservice` |
-| Rust | `link_service.rs` | `link_service` |
-| Ruby | `link_service.rb` | `link_service` |
-| Java, Kotlin | `LinkService.java` | `linkservice` |
-| C#, Swift | `LinkService.cs` | `LinkService` |
-| SQL | `link_service.sql` | `link_service` |
-
-  Limitation: React component files (`LinkService.tsx`) can't be told apart
-  from other TypeScript; type a custom slug for those.
-
-**Paths** (settled 2026-10-01):
-- Walking down from the top canvas, each buildable folder adds its name (in
-  its language's convention); a file ends the path with name + extension.
-  Externals get no path; pockets and port nodes add nothing.
-- **Project folder:** projects get a name. New asks for it (stored in the
-  `.glyph`; nothing is saved until the user saves); the first save suggests
-  `<name>.glyph` without assigning it. The top bar shows the project name
-  (click to rename, hover for the file location). Older files take their
-  name from the file name until renamed. Every path starts with the project
-  folder.
-- **One top-level system adds no folder** (option b): when the top canvas
-  has exactly one buildable node, the project folder plays its role; with
-  several, each gets a subfolder. (The earlier "source folder" setting is
-  dropped — a path override on a top-level folder does the same.)
-- **Override:** per placed node, a full path from the project folder; a
-  folder's children build on its overridden path.
-- **Seeing paths:** the palette hover card also appears on hovering a placed
-  node, adding that node's actual path and effective language; it absorbs
-  the old full-name tooltip. Path clashes and definitions placed twice (one
-  interior under two paths) show as a warning line there; full lint stays on
-  the Backlog.
-- **Right-click menus** (first ones, prompted by real need): on a placed
-  node — Override path… (dialog: computed path + override field), Reset to
-  automatic path, Open inside, Expand (collapsed groups), Edit definition…,
-  Duplicate, Delete. On a palette card — Edit, Duplicate, Permute, Delete;
-  thin for now, to grow.
+Hephaestus groundwork — slug, External, Kind, Language, build paths, the
+project name, per-node path overrides — left this file when v1.3.0 shipped;
+its reasoning now lives in [ADR 0011](decisions/0011-build-facts-and-paths.md).
+The hover cards and right-click menus are in [`CHANGELOG.md`](CHANGELOG.md)
+§ 1.3.0. Calls made during the build (recorded in the ADR): the project
+folder is the kebab-case slug of the project name; typing the automatic
+path back in is no override; an override inside a shared interior applies
+to every placement (the dialog warns); collapsed groups get no path
+override or Edit (their pips come from the wires they fold); v1.0 forks of
+standard nodes take the standard node's facts on load.
 
 ### Installable release build — deferred until after v2.0
 

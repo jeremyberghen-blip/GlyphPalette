@@ -1,6 +1,6 @@
 # Roadmap
 
-What v1.2.0 is, and where things go from here. Nothing below is a commitment
+What v1.3.0 is, and where things go from here. Nothing below is a commitment
 to build it, let alone on the version it's slated to — it's a place to put
 plans so they don't only live in conversation. Move items between versions,
 into Backlog, or out entirely as things change; that's the point of writing
@@ -12,7 +12,15 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.2 — current: 1.2.1 (2026-09-30)
+## v1.3 — current: 1.3.0 (2026-10-01)
+
+Hephaestus groundwork ([ADR 0011](decisions/0011-build-facts-and-paths.md)):
+definition facts (slug, External, Folder/File, inherited Language with
+per-language naming), derived build paths with a named project folder and
+per-node overrides, hover cards on palette cards and placed nodes, and the
+first right-click menus. Full list in [`CHANGELOG.md`](CHANGELOG.md) § 1.3.0.
+
+## v1.2 — 1.2.1 (2026-09-30)
 
 Ports and connections: two-part connection types (transport + API style,
 drawn as line + core; ADR 0009), broken-but-kept links everywhere, and
@@ -36,23 +44,6 @@ bend points inside collapsed boxes, and drag-to-place in the desktop app.
 v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
-
-## v1.3 — planned: Hephaestus groundwork
-
-Adapted from `HEPHAESTUS-INTEGRATION.md` Tier 1; full detail in
-[`DECISIONS.md`](DECISIONS.md) § "Hephaestus groundwork (v1.3)".
-
-- **Definition facts:** slug (snake_case, derived from the name unless
-  typed), External flag (managed by someone else / outsourced; drawn in a
-  muted stone color), Kind (Folder by default — an undrawn folder's
-  contents are the AI's to decide — or File), Language (inherited by
-  default; names follow each language's conventions).
-- **Paths:** a named project folder (New asks for the name), one
-  top-level system adds no folder, per-node path overrides.
-- **Hover cards:** a rich card on palette cards (definition facts) and on
-  placed nodes (plus actual path, effective language, clash warnings).
-- **Right-click menus** on placed nodes (incl. Override path…) and palette
-  cards.
 
 ## v1.4 — planned: Hephaestus Tier 2
 
