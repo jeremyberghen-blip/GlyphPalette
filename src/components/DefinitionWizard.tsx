@@ -94,7 +94,7 @@ function ConnSwatch({ transport, style }: { transport?: string; style?: string }
       className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full"
       style={{ background: transport ?? "#555" }}
     >
-      {style && <span className="h-1.5 w-1.5 rounded-full" style={{ background: style }} />}
+      {style && <span className="h-1.5 w-1.5 rounded-full ring-1 ring-black" style={{ background: style }} />}
     </span>
   );
 }

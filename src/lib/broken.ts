@@ -98,3 +98,15 @@ export function pruneRemovedPips(
   }
   return out;
 }
+
+/**
+ * A definition as one node draws it: a deleted pip appears only on nodes that
+ * still have a wire on it, so it vanishes from a node as soon as that node's
+ * wire is removed (even while another copy elsewhere keeps it alive). Returns
+ * `def` itself when nothing is hidden, so it's safe to memoize on.
+ */
+export function instanceDef(def: NodeDefinition, canvas: CanvasData, nodeId: string): NodeDefinition {
+  if (!def.pips.some((p) => p.removed)) return def;
+  const pips = def.pips.filter((p) => !p.removed || wiresAt(canvas, nodeId, p.id).length > 0);
+  return pips.length === def.pips.length ? def : { ...def, pips };
+}

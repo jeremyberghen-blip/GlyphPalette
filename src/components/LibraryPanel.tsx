@@ -156,7 +156,7 @@ function Legend({
           >
             {core ? (
               <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-[#3a3d52]">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.color }} />
+                <span className="h-1.5 w-1.5 rounded-full ring-1 ring-black" style={{ background: t.color }} />
               </span>
             ) : (
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />

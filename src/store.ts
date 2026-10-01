@@ -17,7 +17,7 @@ import {
 } from "./types";
 import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
 import { wireType } from "./lib/connections";
-import { keepWiredPips, pruneRemovedPips } from "./lib/broken";
+import { instanceDef, keepWiredPips, pruneRemovedPips } from "./lib/broken";
 import { canPlacePort, isPortDefId, portDefinition, resolveDef } from "./lib/ports";
 import { canvasOwner, childLayer, isPocket } from "./lib/layers";
 import { useMemo } from "react";
@@ -433,7 +433,7 @@ export const useApp = create<AppState>((set, get) => ({
       const end = (e: RelEnd) => {
         const node = canvas.nodes.find((n) => n.id === e.nodeId);
         const def = node && resolveDef(s.definitions, canvas.id, node.definitionId);
-        return node && def ? pipWorldPos(node, def, e.pipId) : null;
+        return node && def ? pipWorldPos(node, instanceDef(def, canvas, node.id), e.pipId) : null;
       };
       const p1 = end(rel.from);
       const p2 = end(rel.to);

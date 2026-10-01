@@ -17,7 +17,7 @@ interface Props {
 }
 
 /** Size of the in/out mark, small enough that the style core shows around it. */
-const DIR_MARK = 2.2;
+const DIR_MARK = 3.3;
 
 /** Angle (deg) so a triangle points along the given vector. */
 function angleFor(v: { x: number; y: number }): number {
@@ -105,7 +105,10 @@ export default function PipShape({ nodeId, ownerName, pip, x, y }: Props) {
         }}
       />
       {/* Style core; drawn under the direction mark, which stays small so the color reads */}
-      {core && <Circle radius={PIP_RADIUS * 0.55} fill={core} listening={false} />}
+      {/* Black outline keeps the style color distinct from the transport ring */}
+      {core && (
+        <Circle radius={PIP_RADIUS * 0.55} fill={core} stroke="#000000" strokeWidth={1.25} listening={false} />
+      )}
       {/* Direction marker: triangle out = outbound, in = inbound, diamond = bidirectional */}
       {pip.direction === "outbound" && (
         <RegularPolygon
@@ -135,8 +138,8 @@ export default function PipShape({ nodeId, ownerName, pip, x, y }: Props) {
       )}
       {(hover || snapped) && transport && (
         <Label
-          x={outward.x * 14}
-          y={outward.y * 14 - 10}
+          x={outward.x * (PIP_RADIUS + 8)}
+          y={outward.y * (PIP_RADIUS + 8) - 10}
           // A long broken-link note on a left-side pip opens leftward, off the node
           offsetX={broken && outward.x < 0 ? 240 : 0}
           listening={false}

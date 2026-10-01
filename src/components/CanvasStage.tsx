@@ -3,6 +3,7 @@ import Konva from "konva";
 import { useMemo, useRef, useState } from "react";
 import { useApp, useActiveCanvas, getPip, setPointerWorld, useNodeDef, isLockedPort } from "../store";
 import { lockedPortWires, resolveDef } from "../lib/ports";
+import { instanceDef } from "../lib/broken";
 import { canvasOwner } from "../lib/layers";
 import { NODE_WIDTH, NODE_HEIGHT } from "../types";
 import NodeShape, { NodeVisual } from "./NodeShape";
@@ -33,7 +34,8 @@ function WirePreview() {
   if (!wireDrag) return null;
   const fromNode = canvas.nodes.find((n) => n.id === wireDrag.fromNodeId);
   if (!fromNode) return null;
-  const def = resolveDef(s.definitions, canvas.id, fromNode.definitionId);
+  const stored = resolveDef(s.definitions, canvas.id, fromNode.definitionId);
+  const def = stored && instanceDef(stored, canvas, fromNode.id);
   const fromPip = getPip(s, wireDrag.fromNodeId, wireDrag.fromPipId);
   const p1 = def && pipWorldPos(fromNode, def, wireDrag.fromPipId);
   if (!p1 || !fromPip) return null;
@@ -44,7 +46,8 @@ function WirePreview() {
   if (wireDrag.snap) {
     const sn = canvas.nodes.find((n) => n.id === wireDrag.snap!.nodeId);
     if (sn) {
-      const snDef = resolveDef(s.definitions, canvas.id, sn.definitionId);
+      const snStored = resolveDef(s.definitions, canvas.id, sn.definitionId);
+      const snDef = snStored && instanceDef(snStored, canvas, sn.id);
       const pos = snDef && pipWorldPos(sn, snDef, wireDrag.snap.pipId);
       if (pos) {
         end = pos;
@@ -60,7 +63,7 @@ function WirePreview() {
         ctx.beginPath();
         ctx.moveTo(g.x1, g.y1);
         ctx.bezierCurveTo(g.c1x, g.c1y, g.c2x, g.c2y, g.x2, g.y2);
-        ctx.setAttr("lineWidth", 3);
+        ctx.setAttr("lineWidth", 4.5);
         ctx.setAttr("strokeStyle", color);
         if (!wireDrag.snap) ctx.setAttr("lineDashOffset", 0);
         ctx.setLineDash(wireDrag.snap ? [] : [7, 5]);
@@ -140,8 +143,9 @@ export default function CanvasStage({ width, height }: { width: number; height: 
     let best: { nodeId: string; pipId: string } | null = null;
     let bestDist = SNAP_RANGE;
     for (const n of canvas.nodes) {
-      const def = resolveDef(s.definitions, canvas.id, n.definitionId);
-      if (!def || isLockedPort(s, n.id)) continue;
+      const stored = resolveDef(s.definitions, canvas.id, n.definitionId);
+      if (!stored || isLockedPort(s, n.id)) continue;
+      const def = instanceDef(stored, canvas, n.id);
       for (const pip of def.pips) {
         if (n.id === wd.fromNodeId && pip.id === wd.fromPipId) continue;
         if (!canConnect(fromPip, pip)) continue;

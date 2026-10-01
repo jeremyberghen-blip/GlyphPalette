@@ -1,8 +1,9 @@
 import { Group, Rect, Text, Image as KImage, Circle, Line } from "react-konva";
 import Konva from "konva";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { NodeInstance, NodeDefinition, NODE_WIDTH, NODE_HEIGHT } from "../types";
 import { useApp, useNodeDef } from "../store";
+import { wiresAt } from "../lib/broken";
 import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
@@ -69,7 +70,20 @@ interface Props {
 
 export default function NodeShape({ node }: Props) {
   const canvasId = useApp((s) => s.activeCanvasId);
-  const def = useNodeDef(canvasId, node.definitionId);
+  const storedDef = useNodeDef(canvasId, node.definitionId);
+  // Deleted pips show only where this node still has a wire on them
+  const wiredGhosts = useApp((s) =>
+    storedDef?.pips.some((p) => p.removed)
+      ? storedDef.pips
+          .filter((p) => p.removed && wiresAt(s.canvases[s.activeCanvasId], node.id, p.id).length > 0)
+          .map((p) => p.id)
+          .join(",")
+      : ""
+  );
+  const def = useMemo(
+    () => storedDef && { ...storedDef, pips: storedDef.pips.filter((p) => !p.removed || wiredGhosts.split(",").includes(p.id)) },
+    [storedDef, wiredGhosts]
+  );
   const selected = useApp((s) => s.selection.includes(node.id));
   // Positions of every selected node at drag start, so multi-drag moves the group.
   const dragOrigin = useRef<{ startX: number; startY: number; peers: { id: string; x: number; y: number }[] } | null>(null);

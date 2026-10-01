@@ -5,10 +5,13 @@ import { useApp, useActiveCanvas, useNodeDef } from "../store";
 import { pipWorldPos, wireGeometry, sideVector } from "../lib/graph";
 import { traceRounded, wireVertices } from "../lib/waypoints";
 import { isAnyStyle } from "../lib/connections";
-import { BROKEN_COLOR, wireBroken } from "../lib/broken";
+import { BROKEN_COLOR, instanceDef, wireBroken } from "../lib/broken";
 
-/** Outer (transport) line width; the style core is half of it. */
-export const WIRE_WIDTH = 5;
+/** Outer (transport) line width. */
+export const WIRE_WIDTH = 7.5;
+/** The style core, inside a thin black outline that separates it from the transport color. */
+const CORE_WIDTH = 3;
+const CORE_OUTLINE = 0.75;
 
 /** Draws a small arrowhead at (x,y) pointing along `dir`. */
 function drawArrow(
@@ -21,7 +24,7 @@ function drawArrow(
   const len = Math.hypot(dir.x, dir.y) || 1;
   const ux = dir.x / len;
   const uy = dir.y / len;
-  const size = 9;
+  const size = 13;
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.lineTo(x - ux * size - uy * (size * 0.55), y - uy * size + ux * (size * 0.55));
@@ -55,9 +58,11 @@ export default function RelationshipShape({
   const toNode = canvas.nodes.find((n) => n.id === rel.to.nodeId);
   // Subscribe to both ends' definitions, so editing a pip (side, type, deletion)
   // redraws the wire even though the canvas itself didn't change
-  const fromDef = useNodeDef(canvas.id, fromNode?.definitionId);
-  const toDef = useNodeDef(canvas.id, toNode?.definitionId);
-  if (!fromNode || !toNode || !fromDef || !toDef) return null;
+  const fromStored = useNodeDef(canvas.id, fromNode?.definitionId);
+  const toStored = useNodeDef(canvas.id, toNode?.definitionId);
+  if (!fromNode || !toNode || !fromStored || !toStored) return null;
+  const fromDef = instanceDef(fromStored, canvas, fromNode.id);
+  const toDef = instanceDef(toStored, canvas, toNode.id);
   const p1 = pipWorldPos(fromNode, fromDef, rel.from.pipId);
   const p2 = pipWorldPos(toNode, toDef, rel.to.pipId);
   if (!p1 || !p2) return null;
@@ -107,7 +112,10 @@ export default function RelationshipShape({
         ctx.setAttr("shadowBlur", 0);
         if (core) {
           tracePath(ctx);
-          ctx.setAttr("lineWidth", WIRE_WIDTH / 2);
+          ctx.setAttr("lineWidth", CORE_WIDTH + 2 * CORE_OUTLINE);
+          ctx.setAttr("strokeStyle", "#000000");
+          ctx.stroke();
+          ctx.setAttr("lineWidth", CORE_WIDTH);
           ctx.setAttr("strokeStyle", core);
           ctx.stroke();
         }

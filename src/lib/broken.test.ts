@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokenReason, endBroken, keepWiredPips, pipInUse, pruneRemovedPips, wireBroken } from "./broken";
+import { brokenReason, endBroken, instanceDef, keepWiredPips, pipInUse, pruneRemovedPips, wireBroken } from "./broken";
 import { CanvasData, NodeDefinition, PipDef, Relationship } from "../types";
 import { STANDARD } from "./standardLibrary";
 
@@ -54,5 +54,23 @@ describe("keeping and pruning deleted pips", () => {
     expect(pruneRemovedPips(defs, canvas([rel("a")]))).toBe(defs);
     expect(pruneRemovedPips(defs, canvas([])).d.pips.map((p) => p.id)).toEqual(["b"]);
     expect(pipInUse({ id: "d", canvasId: null }, "a", canvas([rel("a")]))).toBe(true);
+  });
+});
+
+describe("instanceDef (what one node draws)", () => {
+  const ghost = def([pip("b"), pip("a", "tr-http", "s-rest", { removed: true })]);
+
+  it("shows a deleted pip on a node that still has a wire on it", () => {
+    expect(instanceDef(ghost, canvas([rel("a")]).c, "n1").pips.map((p) => p.id)).toEqual(["b", "a"]);
+  });
+
+  it("hides it on a node whose own wire is gone, even if another copy keeps it alive", () => {
+    // n1's wire is on another canvas only; on this one, n1 has none
+    expect(instanceDef(ghost, canvas([]).c, "n1").pips.map((p) => p.id)).toEqual(["b"]);
+  });
+
+  it("returns the definition untouched when nothing is hidden", () => {
+    const plain = def([pip("b")]);
+    expect(instanceDef(plain, canvas([]).c, "n1")).toBe(plain);
   });
 });

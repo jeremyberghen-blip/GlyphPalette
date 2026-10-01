@@ -9,7 +9,7 @@ import {
 } from "../types";
 import { compatible } from "./connections";
 
-export const PIP_RADIUS = 7;
+export const PIP_RADIUS = 10.5;
 
 export interface PipPlacement {
   x: number; // offset within the node
