@@ -4,6 +4,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.2.1] — 2026-09-30
+
+Fixes from hand-testing 1.2.0.
+
+### Fixed
+- A deleted pip stayed (red) on a node after that node's wire was removed,
+  when another copy of the node elsewhere still had a wire on it. A deleted
+  pip is now drawn only on the copies that still have a wire on it; it
+  leaves the definition once the last wire anywhere is gone.
+
+### Changed
+- Pips and wires are 50% wider, and the style color has a black outline so
+  it reads clearly against the transport color.
+
 ## [1.2.0] — 2026-09-30
 
 Ports and connections.

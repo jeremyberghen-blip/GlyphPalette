@@ -12,7 +12,7 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.2.0 — current (2026-09-30)
+## v1.2 — current: 1.2.1 (2026-09-30)
 
 Ports and connections: two-part connection types (transport + API style,
 drawn as line + core; ADR 0009), broken-but-kept links everywhere, and
