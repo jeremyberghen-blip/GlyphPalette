@@ -33,7 +33,8 @@ import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 import { copyDefinition, incrementName, nameTaken, uniqueName } from "./lib/definitions";
 import { ImportPlan } from "./lib/importDefs";
 import { uid } from "./lib/ids";
-import { ContentRefs, contentRefs } from "./lib/session";
+import { ContentRefs, DEFAULT_PROJECT_NAME, contentRefs } from "./lib/session";
+import { normalizeOverride } from "./lib/paths";
 
 export { nameTaken } from "./lib/definitions";
 export { uid } from "./lib/ids";
@@ -156,6 +157,8 @@ export interface WireDrag {
 }
 
 interface AppState {
+  /** The project's name, saved in the file; its build folder is named after it (lib/paths.ts). */
+  projectName: string;
   /** Connection transports (standard + the project's own). See lib/connections.ts. */
   transports: Record<string, Transport>;
   /** Connection API styles (standard + the project's own). */
@@ -200,7 +203,14 @@ interface AppState {
   copySelection: () => void;
   paste: () => void;
   /** Resets to a fresh, untitled project. */
-  newProject: () => void;
+  /** Starts over with a fresh project called `name`. */
+  newProject: (name?: string) => void;
+  setProjectName: (name: string) => void;
+  /**
+   * Sets where a node on the active canvas builds — a full path from the
+   * project folder — or clears it (null or blank) back to the derived path.
+   */
+  setPathOverride: (nodeId: string, path: string | null) => void;
   /** Records the current content as saved (at `filePath`). */
   markSaved: (filePath: string | null) => void;
 
@@ -311,8 +321,9 @@ const initial = freshProject();
 
 export const useApp = create<AppState>((set, get) => ({
   ...initial,
+  projectName: DEFAULT_PROJECT_NAME,
   filePath: null,
-  savedRefs: contentRefs(initial),
+  savedRefs: contentRefs({ ...initial, projectName: DEFAULT_PROJECT_NAME }),
   savedAt: Date.now(),
   selectedWaypoint: null,
   activeCanvasId: "canvas-root",
@@ -372,7 +383,10 @@ export const useApp = create<AppState>((set, get) => ({
       const nodes: NodeInstance[] = clipboard.nodes.map((n) => {
         const id = uid();
         idMap.set(n.id, id);
-        return { ...n, id, x: n.x + off, y: n.y + off };
+        // A copy builds at its own derived path: a copied override would clash at once
+        const copy: NodeInstance = { ...n, id, x: n.x + off, y: n.y + off };
+        delete copy.pathOverride;
+        return copy;
       });
       const boundaries: Boundary[] = clipboard.boundaries.map((c) => {
         const id = uid();
@@ -402,9 +416,9 @@ export const useApp = create<AppState>((set, get) => ({
       };
     }),
 
-  newProject: () =>
+  newProject: (name = DEFAULT_PROJECT_NAME) =>
     set(() => {
-      const fresh = freshProject();
+      const fresh = { ...freshProject(), projectName: name.trim() || DEFAULT_PROJECT_NAME };
       return {
         ...fresh,
         // Forget the last file, so the next save asks where (it used to
@@ -469,6 +483,30 @@ export const useApp = create<AppState>((set, get) => ({
           return { ...r, waypoints: waypoints.length ? waypoints : undefined };
         }),
         selectedWaypoint: null,
+      };
+    }),
+
+  setProjectName: (name) =>
+    set((s) => {
+      const projectName = name.trim();
+      return projectName && projectName !== s.projectName ? { projectName } : {};
+    }),
+
+  setPathOverride: (nodeId, path) =>
+    set((s) => {
+      const canvas = s.canvases[s.activeCanvasId];
+      const node = canvas.nodes.find((n) => n.id === nodeId);
+      if (!node) return {};
+      const pathOverride = path ? normalizeOverride(path) : "";
+      if ((node.pathOverride ?? "") === pathOverride) return {};
+      const updated: NodeInstance = { ...node, pathOverride };
+      if (!pathOverride) delete updated.pathOverride;
+      return {
+        undoStack: pushSnap(s),
+        canvases: {
+          ...s.canvases,
+          [canvas.id]: { ...canvas, nodes: canvas.nodes.map((n) => (n.id === nodeId ? updated : n)) },
+        },
       };
     }),
 

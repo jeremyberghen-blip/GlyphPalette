@@ -121,6 +121,19 @@ describe("upgrading version 1 files to two-part connection types", () => {
   });
 });
 
+describe("project name", () => {
+  it("is saved in the file and read back", () => {
+    const content = { ...load(snipJson), projectName: "Snip" };
+    const file = buildProjectFile(content, STANDARD);
+    expect(file.name).toBe("Snip");
+    expect(load(JSON.stringify(file)).projectName).toBe("Snip");
+  });
+
+  it("is absent for files from before v1.3, so the caller uses the file name", () => {
+    expect(load(snipJson).projectName).toBeUndefined();
+  });
+});
+
 describe("Snip.glyph (real project fixture, saved by v1.0)", () => {
   it("drops unedited seed copies in favor of the standard nodes", () => {
     const content = load(snipJson);

@@ -33,6 +33,29 @@ function askUnsaved(question: string): Promise<UnsavedChoice> {
   });
 }
 
+interface NamePromptState {
+  /** Open with this starting text, or null when closed. */
+  initial: string | null;
+  resolve: ((name: string | null) => void) | null;
+}
+
+/** The project-name dialog shown by New (rendered by ProjectNamePrompt). */
+export const useNamePrompt = create<NamePromptState>(() => ({ initial: null, resolve: null }));
+
+/** Asks for a project name. Resolves null if cancelled. */
+function askProjectName(initial = ""): Promise<string | null> {
+  useNamePrompt.getState().resolve?.(null);
+  return new Promise((resolve) => {
+    useNamePrompt.setState({
+      initial,
+      resolve: (name) => {
+        useNamePrompt.setState({ initial: null, resolve: null });
+        resolve(name);
+      },
+    });
+  });
+}
+
 export const projectIsDirty = (): boolean => {
   const s = useApp.getState();
   return isDirty(s, s.savedRefs);
@@ -68,8 +91,11 @@ export async function confirmDiscardIfDirty(action: string): Promise<boolean> {
   return saveNow();
 }
 
+/** New: asks about unsaved work, then for the new project's name. Nothing is saved until the user saves. */
 export async function newProjectFlow(): Promise<void> {
-  if (await confirmDiscardIfDirty("starting a new project")) useApp.getState().newProject();
+  if (!(await confirmDiscardIfDirty("starting a new project"))) return;
+  const name = await askProjectName();
+  if (name) useApp.getState().newProject(name);
 }
 
 export async function openProjectFlow(): Promise<void> {

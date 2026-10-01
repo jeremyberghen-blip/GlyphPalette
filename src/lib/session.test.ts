@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { autosaveDue, contentRefs, isDirty, projectLabel, windowTitle } from "./session";
+import { autosaveDue, contentRefs, glyphFileName, isDirty, projectLabel, windowTitle } from "./session";
 
 describe("isDirty", () => {
-  const state = { canvases: {}, definitions: {}, transports: {}, styles: {}, customIcons: {} };
+  const state = { projectName: "Snip", canvases: {}, definitions: {}, transports: {}, styles: {}, customIcons: {} };
 
   it("is clean right after a save", () => {
     expect(isDirty(state, contentRefs(state))).toBe(false);
@@ -15,6 +15,12 @@ describe("isDirty", () => {
     expect(isDirty({ ...state, transports: {} }, saved)).toBe(true);
     expect(isDirty({ ...state, styles: {} }, saved)).toBe(true);
     expect(isDirty({ ...state, customIcons: {} }, saved)).toBe(true);
+  });
+
+  it("counts renaming the project as a change", () => {
+    const saved = contentRefs(state);
+    expect(isDirty({ ...state, projectName: "Snip" }, saved)).toBe(false);
+    expect(isDirty({ ...state, projectName: "Snip 2" }, saved)).toBe(true);
   });
 
   it("ignores non-content state like the viewport", () => {
@@ -39,14 +45,20 @@ describe("autosaveDue", () => {
 });
 
 describe("labels", () => {
-  it("names the project after its file, or Untitled", () => {
+  it("names the file, or Untitled", () => {
     expect(projectLabel("C:\\Users\\me\\Desktop\\Snip.glyph")).toBe("Snip.glyph");
     expect(projectLabel("/home/me/Snip.glyph")).toBe("Snip.glyph");
     expect(projectLabel(null)).toBe("Untitled");
   });
 
-  it("marks unsaved changes in the window title", () => {
-    expect(windowTitle("C:\\x\\Snip.glyph", true)).toBe("Snip.glyph • — Glyph Palette");
-    expect(windowTitle(null, false)).toBe("Untitled — Glyph Palette");
+  it("titles the window with the project name, marking unsaved changes", () => {
+    expect(windowTitle("Snip", true)).toBe("Snip • — Glyph Palette");
+    expect(windowTitle("Untitled", false)).toBe("Untitled — Glyph Palette");
+  });
+
+  it("suggests a safe file name from the project name", () => {
+    expect(glyphFileName("Snip")).toBe("Snip.glyph");
+    expect(glyphFileName("Snip: v2 / beta")).toBe("Snip v2 beta.glyph");
+    expect(glyphFileName("  ...  ")).toBe("project.glyph");
   });
 });

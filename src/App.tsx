@@ -7,6 +7,8 @@ import BoundaryModal from "./components/BoundaryModal";
 import Toasts from "./components/Toasts";
 import UnsavedPrompt from "./components/UnsavedPrompt";
 import SettingsDialog from "./components/SettingsDialog";
+import ProjectNamePrompt from "./components/ProjectNamePrompt";
+import ProjectTitle from "./components/ProjectTitle";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
 import { isTauri } from "./lib/persist";
 import {
@@ -16,7 +18,7 @@ import {
   openProjectFlow,
   saveNow,
 } from "./lib/fileActions";
-import { autosaveDue, isDirty, projectLabel, windowTitle } from "./lib/session";
+import { autosaveDue, isDirty, windowTitle } from "./lib/session";
 import { loadSettings, useSettings } from "./lib/settings";
 import Konva from "konva";
 import { useApp, getPointerWorld } from "./store";
@@ -35,7 +37,7 @@ export default function App() {
   const boundaryDrawing = useApp((s) => s.boundaryDrawing);
   const pendingBoundaryRect = useApp((s) => s.pendingBoundaryRect);
   const activeCanvasId = useApp((s) => s.activeCanvasId);
-  const filePath = useApp((s) => s.filePath);
+  const projectName = useApp((s) => s.projectName);
   const dirty = useApp((s) => isDirty(s, s.savedRefs));
   const autosaveMinutes = useSettings((s) => s.autosaveMinutes);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -46,14 +48,14 @@ export default function App() {
 
   // Window title: project name, with a dot while there are unsaved changes
   useEffect(() => {
-    const title = windowTitle(filePath, dirty);
+    const title = windowTitle(projectName, dirty);
     document.title = title;
     if (isTauri()) {
       void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
         getCurrentWindow().setTitle(title)
       );
     }
-  }, [filePath, dirty]);
+  }, [projectName, dirty]);
 
   // Autosave: into the project's file, only when there are unsaved changes
   useEffect(() => {
@@ -182,16 +184,10 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#191a21] text-[#c9cbd8]">
       <header className="flex h-11 shrink-0 items-center gap-3 border-b border-[#2e3040] bg-[#1e1f28] px-4 select-none">
-        <span className="text-sm font-semibold tracking-wide text-[#e2e4ee]">
+        <span className="shrink-0 whitespace-nowrap text-sm font-semibold tracking-wide text-[#e2e4ee]">
           Glyph Palette
         </span>
-        <span
-          className="max-w-[16rem] truncate text-sm text-[#8a8ea6]"
-          title={filePath ?? "Not saved yet"}
-        >
-          {projectLabel(filePath)}
-          {dirty && <span className="ml-1 text-[#4c9aff]" title="Unsaved changes">•</span>}
-        </span>
+        <ProjectTitle dirty={dirty} />
         <div className="mx-1 h-5 w-px bg-[#2e3040]" />
         <button
           onClick={() => void newProjectFlow()}
@@ -261,6 +257,7 @@ export default function App() {
       {pendingBoundaryRect && <BoundaryModal />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <UnsavedPrompt />
+      <ProjectNamePrompt />
       <Toasts />
     </div>
   );

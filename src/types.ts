@@ -140,6 +140,11 @@ export interface NodeInstance {
   definitionId: string;
   x: number;
   y: number;
+  /**
+   * Where this node builds, typed by the user: a full path from the project
+   * folder (lib/paths.ts). Its children build on it. Absent: derived.
+   */
+  pathOverride?: string;
 }
 
 export interface RelEnd {

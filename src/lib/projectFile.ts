@@ -25,6 +25,8 @@ export interface ProjectFile {
   app: "glyph-palette";
   /** 1: v1.0–v1.1 (flat pip types). 2: v1.2+ (transport + style). */
   version: 2;
+  /** The project's name (v1.3+); its folder is named after it. Older files take it from the file name. */
+  name?: string;
   /** The project's own transports (standard ones are merged in on load). */
   transports: Record<string, Transport>;
   /** The project's own API styles (standard ones are merged in on load). */
@@ -41,6 +43,8 @@ export interface ProjectFile {
 
 /** The project content a file is built from / loaded into. */
 export interface ProjectContent {
+  /** Absent for files saved before v1.3 (the caller falls back to the file name). */
+  projectName?: string;
   transports: Record<string, Transport>;
   styles: Record<string, ApiStyle>;
   /** Standard and project definitions together. */
@@ -62,6 +66,7 @@ export function buildProjectFile(content: ProjectContent, standard: Library): Pr
   return {
     app: "glyph-palette",
     version: 2,
+    ...(content.projectName ? { name: content.projectName } : {}),
     transports: own(content.transports, standard.transports),
     styles: own(content.styles, standard.styles),
     definitions,
@@ -209,6 +214,7 @@ export function loadProjectFile(
   backfillLayers(file.canvases, definitions);
   repairPocketLayers(file.canvases, definitions);
   return {
+    ...(typeof file.name === "string" && file.name.trim() ? { projectName: file.name.trim() } : {}),
     transports: { ...file.transports, ...standard.transports },
     styles: { ...file.styles, ...standard.styles },
     definitions,

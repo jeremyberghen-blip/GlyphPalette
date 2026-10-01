@@ -70,6 +70,68 @@ describe("save state", () => {
   });
 });
 
+describe("project name", () => {
+  const dirty = () => isDirty(s(), s().savedRefs);
+
+  it("New names the project, without saving it", () => {
+    s().newProject("Snip");
+    expect(s().projectName).toBe("Snip");
+    expect(s().filePath).toBeNull();
+    expect(dirty()).toBe(false);
+  });
+
+  it("renaming counts as an unsaved change; a blank name is ignored", () => {
+    s().newProject("Snip");
+    s().setProjectName("   ");
+    expect(s().projectName).toBe("Snip");
+    s().setProjectName(" Snip 2 ");
+    expect(s().projectName).toBe("Snip 2");
+    expect(dirty()).toBe(true);
+  });
+
+  it("is saved with the project", () => {
+    s().newProject("Snip");
+    const content = loadProjectFile(parseProjectFile(JSON.stringify(buildProjectFile(s(), STANDARD))), STANDARD);
+    expect(content.projectName).toBe("Snip");
+  });
+});
+
+describe("path overrides", () => {
+  const node = (id: string) => root().nodes.find((n) => n.id === id)!;
+
+  it("stores a cleaned-up path, and clears it when blank", () => {
+    const db = place("def-database", 600, 0);
+    s().setPathOverride(db, " \\data\\links_db/ ");
+    expect(node(db).pathOverride).toBe("data/links_db");
+    s().setPathOverride(db, "  ");
+    expect(node(db).pathOverride).toBeUndefined();
+    s().undo();
+    expect(node(db).pathOverride).toBe("data/links_db");
+  });
+
+  it("isn't copied by paste (the copy would clash)", () => {
+    const db = place("def-database", 600, 0);
+    s().setPathOverride(db, "data");
+    s().setSelection([db]);
+    s().copySelection();
+    s().paste();
+    const pasted = node(s().selection[0]);
+    expect(pasted.id).not.toBe(db);
+    expect(pasted.pathOverride).toBeUndefined();
+  });
+
+  it("survives collapsing and expanding a group", () => {
+    const db = place("def-database", 600, 0);
+    s().setPathOverride(db, "data");
+    s().addBoundary("Storage", "Box", { x: 580, y: -20, width: 200, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const pocket = root().nodes.find((n) => s().definitions[n.definitionId].expandable)!;
+    s().expandNode(pocket.id);
+    const restored = root().nodes.find((n) => n.definitionId === "def-database")!;
+    expect(restored.pathOverride).toBe("data");
+  });
+});
+
 describe("wiring", () => {
   it("connects compatible pips, normalized outbound → inbound", () => {
     const web = place("def-webapp");

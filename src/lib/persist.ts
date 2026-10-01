@@ -5,6 +5,7 @@
 import { useApp } from "../store";
 import { buildProjectFile, loadProjectFile, parseProjectFile, ProjectContent } from "./projectFile";
 import { STANDARD } from "./standardLibrary";
+import { glyphFileName } from "./session";
 
 export type { ProjectFile } from "./projectFile";
 
@@ -21,9 +22,12 @@ export function readProjectContent(json: string): ProjectContent {
   return loadProjectFile(parseProjectFile(json), STANDARD);
 }
 
-export function loadProjectData(json: string): void {
+/** Loads a project; files from before v1.3 have no name stored, so they're named `fallbackName`. */
+export function loadProjectData(json: string, fallbackName: string): void {
+  const content = readProjectContent(json);
   useApp.setState({
-    ...readProjectContent(json),
+    ...content,
+    projectName: content.projectName ?? fallbackName,
     activeCanvasId: "canvas-root",
     trail: ["canvas-root"],
     viewports: {},
@@ -90,7 +94,8 @@ export async function saveProject(saveAs = false): Promise<"saved" | "cancelled"
     if (!path || saveAs) {
       path = await save({
         title: "Save Project",
-        defaultPath: path ?? "project.glyph",
+        // A first save suggests the project's name; it's only a suggestion
+        defaultPath: path ?? glyphFileName(useApp.getState().projectName),
         filters: [{ name: "Glyph Palette Project", extensions: ["glyph"] }],
       });
       if (!path) return "cancelled";
@@ -103,7 +108,7 @@ export async function saveProject(saveAs = false): Promise<"saved" | "cancelled"
   const blob = new Blob([json], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "project.glyph";
+  a.download = glyphFileName(useApp.getState().projectName);
   a.click();
   URL.revokeObjectURL(a.href);
   useApp.getState().markSaved(null);
@@ -114,7 +119,7 @@ export async function saveProject(saveAs = false): Promise<"saved" | "cancelled"
 export async function openProject(): Promise<boolean> {
   const picked = await pickGlyphFile("Open Project");
   if (!picked) return false;
-  loadProjectData(picked.text);
+  loadProjectData(picked.text, picked.name);
   useApp.getState().markSaved(picked.path);
   return true;
 }

@@ -3,6 +3,7 @@
 
 /** The content slices a save captures. Compared by reference: the store never mutates them. */
 export interface ContentRefs {
+  projectName: unknown;
   canvases: unknown;
   definitions: unknown;
   transports: unknown;
@@ -11,6 +12,7 @@ export interface ContentRefs {
 }
 
 export const contentRefs = (s: ContentRefs): ContentRefs => ({
+  projectName: s.projectName,
   canvases: s.canvases,
   definitions: s.definitions,
   transports: s.transports,
@@ -21,6 +23,7 @@ export const contentRefs = (s: ContentRefs): ContentRefs => ({
 /** True when content has changed since `saved`. Pan, zoom, and selection don't count. */
 export function isDirty(current: ContentRefs, saved: ContentRefs): boolean {
   return (
+    current.projectName !== saved.projectName ||
     current.canvases !== saved.canvases ||
     current.definitions !== saved.definitions ||
     current.transports !== saved.transports ||
@@ -53,10 +56,23 @@ export function autosaveDue(o: {
   );
 }
 
-/** Display name for the open project: its file name, or "Untitled". */
+/** The name a project gets when it isn't asked for (the app's first launch). */
+export const DEFAULT_PROJECT_NAME = "Untitled";
+
+/** The open project's file name, for save/open notes: "Snip.glyph", or "Untitled". */
 export const projectLabel = (path: string | null): string =>
   path ? path.split(/[\\/]/).pop()! : "Untitled";
 
-/** Window title, e.g. "Snip.glyph • — Glyph Palette". */
-export const windowTitle = (path: string | null, dirty: boolean): string =>
-  `${projectLabel(path)}${dirty ? " •" : ""} — Glyph Palette`;
+/** Window title, e.g. "Snip • — Glyph Palette". */
+export const windowTitle = (projectName: string, dirty: boolean): string =>
+  `${projectName}${dirty ? " •" : ""} — Glyph Palette`;
+
+/** The file name a first save suggests: the project name, made safe ("Snip: v2" → "Snip v2.glyph"). */
+export function glyphFileName(projectName: string): string {
+  const safe = projectName
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/, "");
+  return `${safe || "project"}.glyph`;
+}
