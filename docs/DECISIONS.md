@@ -95,6 +95,22 @@ override, and somewhere to see them).
 - Standard nodes are read-only, so their slugs are always derived; the user
   expects to Permute standard nodes before building anything from them.
 
+**External flag** (settled 2026-10-01):
+- `external` on every definition, set by a checkbox in the node dialog;
+  copied by Duplicate, Permute, and Import. Everything inside an external
+  node is external too.
+- **The rule (user's):** external means handled or managed by someone else,
+  or outsourced — never built here. A database you design (schema,
+  migrations) is yours, so **Database is buildable**; the database *engine*
+  (Postgres itself) is just what it runs on.
+- Standard defaults — external: Person, External System, Internet, Firewall,
+  Cache, Message Queue, Object Store. Buildable: everything else, Database
+  included. (Cache and Message Queue are external on the assumption they're
+  hosted services; Permute them to buildable when you configure your own.)
+- **Look:** external nodes keep a solid border but use a different muted,
+  neutral color from internal nodes — a warm stone tone against the usual
+  cool slate. Never red (reserved for broken links).
+
 ### Installable release build — deferred until after v2.0
 
 Raised 2026-09-29; the user decided the same day not to pursue it before
