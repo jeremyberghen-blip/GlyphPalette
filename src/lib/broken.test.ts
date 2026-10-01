@@ -53,6 +53,6 @@ describe("keeping and pruning deleted pips", () => {
     const defs = { d: def([pip("b"), pip("a", "tr-http", "s-rest", { removed: true })]) };
     expect(pruneRemovedPips(defs, canvas([rel("a")]))).toBe(defs);
     expect(pruneRemovedPips(defs, canvas([])).d.pips.map((p) => p.id)).toEqual(["b"]);
-    expect(pipInUse("d", "a", canvas([rel("a")]))).toBe(true);
+    expect(pipInUse({ id: "d", canvasId: null }, "a", canvas([rel("a")]))).toBe(true);
   });
 });

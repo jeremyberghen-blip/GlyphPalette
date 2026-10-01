@@ -100,6 +100,11 @@ export interface NodeDefinition {
   expandable?: boolean;
   /** For collapsed boundaries: which inner node/pip each inherited pip maps to. */
   pipMap?: Record<string, RelEnd>;
+  /**
+   * Virtual port definitions only (lib/ports.ts, never stored): the name of
+   * the node whose interior this port stands for.
+   */
+  portOf?: string;
   /** Original container size, restored on expansion. */
   sourceSize?: { width: number; height: number };
 }

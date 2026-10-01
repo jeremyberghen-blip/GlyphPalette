@@ -3,7 +3,7 @@ import Konva from "konva";
 import { useState } from "react";
 import { PipDef } from "../types";
 import { PIP_RADIUS, sideVector, canConnect } from "../lib/graph";
-import { useApp, getPip } from "../store";
+import { useApp, getPip, isLockedPort } from "../store";
 import { connLabel, isAnyStyle } from "../lib/connections";
 import { BROKEN_COLOR, brokenReason, wiresAt } from "../lib/broken";
 
@@ -59,6 +59,7 @@ export default function PipShape({ nodeId, ownerName, pip, x, y }: Props) {
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (e.evt.button !== 0) return;
     e.cancelBubble = true; // keep the node from starting a drag
+    if (isLockedPort(useApp.getState(), nodeId)) return; // a pocket's ports aren't rewired by hand
     const stage = e.target.getStage();
     if (!stage) return;
     const p = stage.getPointerPosition();

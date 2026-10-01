@@ -1,7 +1,7 @@
 import { Shape } from "react-konva";
 import Konva from "konva";
 import { Relationship } from "../types";
-import { useApp, useActiveCanvas } from "../store";
+import { useApp, useActiveCanvas, useNodeDef } from "../store";
 import { pipWorldPos, wireGeometry, sideVector } from "../lib/graph";
 import { traceRounded, wireVertices } from "../lib/waypoints";
 import { isAnyStyle } from "../lib/connections";
@@ -39,7 +39,14 @@ function pointerWorld(e: Konva.KonvaEventObject<MouseEvent>) {
   return { x: (p.x - stage.x()) / stage.scaleX(), y: (p.y - stage.y()) / stage.scaleY() };
 }
 
-export default function RelationshipShape({ rel }: { rel: Relationship }) {
+export default function RelationshipShape({
+  rel,
+  locked = false,
+}: {
+  rel: Relationship;
+  /** Drawn automatically (a pocket's port connections): dashed, not selectable or editable. */
+  locked?: boolean;
+}) {
   const canvas = useActiveCanvas();
   const transport = useApp((s) => s.transports[rel.transportId]);
   const style = useApp((s) => s.styles[rel.styleId]);
@@ -48,8 +55,8 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const toNode = canvas.nodes.find((n) => n.id === rel.to.nodeId);
   // Subscribe to both ends' definitions, so editing a pip (side, type, deletion)
   // redraws the wire even though the canvas itself didn't change
-  const fromDef = useApp((s) => (fromNode ? s.definitions[fromNode.definitionId] : undefined));
-  const toDef = useApp((s) => (toNode ? s.definitions[toNode.definitionId] : undefined));
+  const fromDef = useNodeDef(canvas.id, fromNode?.definitionId);
+  const toDef = useNodeDef(canvas.id, toNode?.definitionId);
   if (!fromNode || !toNode || !fromDef || !toDef) return null;
   const p1 = pipWorldPos(fromNode, fromDef, rel.from.pipId);
   const p2 = pipWorldPos(toNode, toDef, rel.to.pipId);
@@ -84,11 +91,13 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
       // sceneFunc draws the visible wire manually
       stroke={color}
       strokeWidth={14}
+      listening={!locked}
       sceneFunc={(ctx) => {
         tracePath(ctx);
         ctx.setAttr("lineCap", "round");
         ctx.setAttr("lineJoin", "round");
         ctx.setAttr("lineWidth", selected ? WIRE_WIDTH + 1 : WIRE_WIDTH);
+        if (locked) ctx.setLineDash([10, 6]);
         ctx.setAttr("strokeStyle", color);
         if (selected) {
           ctx.setAttr("shadowColor", color);
@@ -102,6 +111,7 @@ export default function RelationshipShape({ rel }: { rel: Relationship }) {
           ctx.setAttr("strokeStyle", core);
           ctx.stroke();
         }
+        ctx.setLineDash([]);
         // Arrowheads point into the pip they terminate at (reverse of its outward normal)
         if (directional || bidirectional) {
           const inTo = sideVector(p2.side);

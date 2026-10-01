@@ -2,7 +2,7 @@ import { Group, Rect, Text, Image as KImage, Circle, Line } from "react-konva";
 import Konva from "konva";
 import { useRef } from "react";
 import { NodeInstance, NodeDefinition, NODE_WIDTH, NODE_HEIGHT } from "../types";
-import { useApp } from "../store";
+import { useApp, useNodeDef } from "../store";
 import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
@@ -68,7 +68,8 @@ interface Props {
 }
 
 export default function NodeShape({ node }: Props) {
-  const def = useApp((s) => s.definitions[node.definitionId]);
+  const canvasId = useApp((s) => s.activeCanvasId);
+  const def = useNodeDef(canvasId, node.definitionId);
   const selected = useApp((s) => s.selection.includes(node.id));
   // Positions of every selected node at drag start, so multi-drag moves the group.
   const dragOrigin = useRef<{ startX: number; startY: number; peers: { id: string; x: number; y: number }[] } | null>(null);
@@ -158,7 +159,7 @@ export default function NodeShape({ node }: Props) {
       {[...pipOffsets(def).entries()].map(([pipId, off]) => {
         const pip = def.pips.find((p) => p.id === pipId)!;
         return (
-          <PipShape key={pipId} nodeId={node.id} ownerName={def.name} pip={pip} x={off.x} y={off.y} />
+          <PipShape key={pipId} nodeId={node.id} ownerName={def.portOf ?? def.name} pip={pip} x={off.x} y={off.y} />
         );
       })}
     </Group>

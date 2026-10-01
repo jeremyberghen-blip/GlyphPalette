@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { icons, Plus, Pencil, Trash2, Search, Library, Import, Copy, Shuffle } from "lucide-react";
+import { icons, Plus, Pencil, Trash2, Search, Library, Import, Copy, Shuffle, LogIn, LogOut } from "lucide-react";
+import { PORT_IN, PORT_OUT, portDefinition, portsOn } from "../lib/ports";
 import { LAYER_LABELS, NodeDefinition } from "../types";
 import { LAYER_COLORS, layerLabel } from "../lib/layerStyle";
 import { livePips } from "../lib/definitions";
@@ -168,6 +169,53 @@ function Legend({
   );
 }
 
+/**
+ * A port card: Inbound or Outbound for the node you're inside. Places like any
+ * card (click or drag); disabled once that port is on the canvas.
+ */
+function PortCard({ def, placed }: { def: NodeDefinition; placed: boolean }) {
+  const placing = useApp((s) => s.placingDefId === def.id);
+  const Icon = def.id === PORT_IN ? LogIn : LogOut;
+  const live = livePips(def);
+  return (
+    <div
+      onClick={() => !placed && useApp.getState().setPlacing(placing ? null : def.id)}
+      draggable={!placed}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DEF_DRAG_TYPE, def.id);
+        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setDragImage(BLANK_DRAG_IMAGE, 0, 0);
+        useApp.getState().setPlacing(def.id);
+      }}
+      onDragEnd={() => {
+        if (useApp.getState().placingDefId === def.id) useApp.getState().setPlacing(null);
+      }}
+      className={`flex items-center gap-2.5 rounded border px-2.5 py-2 select-none ${
+        placed
+          ? "cursor-not-allowed border-[#2e3040] bg-[#1e1f28] opacity-50"
+          : placing
+            ? "cursor-pointer border-[#4c9aff] bg-[#2b3a55]"
+            : "cursor-pointer border-dashed border-[#3a3d52] bg-[#22242e] hover:border-[#4a4e63]"
+      }`}
+      title={
+        placed
+          ? `${def.name} is already on this canvas (one of each)`
+          : `${def.name}: ${def.portOf}'s ${def.id === PORT_IN ? "inbound" : "outbound"} connections, seen from inside`
+      }
+    >
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
+        <Icon size={18} color="#c9cbd8" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm text-[#e2e4ee]">{def.name}</div>
+        <div className="truncate text-[10px] text-[#565a72]">
+          {placed ? "Placed" : `${def.portOf} · ${live} pip${live === 1 ? "" : "s"}`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <div className="px-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">
@@ -186,6 +234,13 @@ export default function LibraryPanel() {
     const owner = canvasOwner(s.definitions, s.activeCanvasId);
     return owner?.expandable ? owner.name : null;
   });
+  const activeCanvas = useApp((s) => s.canvases[s.activeCanvasId]);
+  const owner = useApp((s) => canvasOwner(s.definitions, s.activeCanvasId));
+  const ports = useMemo(
+    () => (owner ? [portDefinition(owner, PORT_IN), portDefinition(owner, PORT_OUT)] : []),
+    [owner]
+  );
+  const placedPorts = useMemo(() => portsOn(activeCanvas), [activeCanvas]);
   const [search, setSearch] = useState("");
   const [wizard, setWizard] = useState<{
     open: boolean;
@@ -271,6 +326,15 @@ export default function LibraryPanel() {
       </div>
 
       <div className="flex-1 space-y-1.5 overflow-y-auto p-2.5">
+        {/* Ports: only inside a node (never the top level) */}
+        {ports.length > 0 && !search && (
+          <>
+            <SectionHeader>Ports</SectionHeader>
+            {ports.map((p) => (
+              <PortCard key={p.id} def={p} placed={placedPorts.has(p.id as typeof PORT_IN)} />
+            ))}
+          </>
+        )}
         {projectDefs.length > 0 && (
           <>
             <SectionHeader>This project</SectionHeader>

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { useApp, getPip } from "./store";
+import { useApp, getPip, isLockedPort } from "./store";
 import { wireBroken } from "./lib/broken";
+import { PORT_IN, PORT_OUT } from "./lib/ports";
 import { NODE_WIDTH } from "./types";
 import { isDirty } from "./lib/session";
 import { buildProjectFile, loadProjectFile, parseProjectFile } from "./lib/projectFile";
@@ -182,6 +183,108 @@ describe("broken-but-kept", () => {
     s().deleteSelection(); // removes the wire → pip pruned
     wire(client, "out", api, "p-srv-http");
     expect(root().relationships).toHaveLength(0);
+  });
+});
+
+describe("port nodes", () => {
+  /** Snip API: a project node with an API pip in and a DB pip out, opened up. */
+  function insideSnipApi() {
+    s().saveDefinition({
+      id: "def-snip-api", name: "Snip API", icon: "Server", layers: ["container"], canvasId: null,
+      pips: [
+        { id: "api", label: "API", transportId: "tr-http", styleId: "s-rest", direction: "inbound", side: "left" },
+        { id: "db", label: "DB", transportId: "tr-tcp", styleId: "s-sql", direction: "outbound", side: "right" },
+      ],
+    });
+    place("def-snip-api");
+    s().enterDefinition("def-snip-api");
+    return s().activeCanvasId;
+  }
+  const here = () => s().canvases[s().activeCanvasId];
+
+  it("can't be placed on the top-level canvas", () => {
+    s().addNode(PORT_IN, 0, 0);
+    expect(root().nodes.some((n) => n.definitionId === PORT_IN)).toBe(false);
+  });
+
+  it("allows one Inbound and one Outbound per inner canvas", () => {
+    insideSnipApi();
+    s().addNode(PORT_IN, 0, 0);
+    s().addNode(PORT_IN, 50, 0);
+    s().addNode(PORT_OUT, 400, 0);
+    expect(here().nodes.map((n) => n.definitionId).sort()).toEqual([PORT_IN, PORT_OUT]);
+  });
+
+  it("wires the parent's pips through to inner nodes", () => {
+    insideSnipApi();
+    s().addNode(PORT_IN, 0, 0);
+    const pin = s().selection[0];
+    s().addNode("def-service", 300, 0);
+    s().saveDefinition({
+      id: "def-handler", name: "Handler", icon: "Cog", layers: ["component"], canvasId: null,
+      pips: [{ id: "h", label: "In", transportId: "tr-http", styleId: "s-rest", direction: "inbound", side: "left" }],
+    });
+    const handler = place("def-handler", 300, 100);
+    wire(pin, "api", handler, "h");
+    expect(here().relationships).toHaveLength(1);
+  });
+
+  it("keeps a parent pip that's only wired through a port, as broken, when it's deleted", () => {
+    insideSnipApi();
+    s().addNode(PORT_OUT, 400, 0);
+    const pout = s().selection[0];
+    s().saveDefinition({
+      id: "def-repo", name: "Repo", icon: "Database", layers: ["component"], canvasId: null,
+      pips: [{ id: "q", label: "SQL", transportId: "tr-tcp", styleId: "s-sql", direction: "outbound", side: "right" }],
+    });
+    const repo = place("def-repo", 0, 0);
+    wire(repo, "q", pout, "db");
+    const parent = s().definitions["def-snip-api"];
+    s().saveDefinition({ ...parent, pips: parent.pips.filter((p) => p.id !== "db") });
+    expect(s().definitions["def-snip-api"].pips.find((p) => p.id === "db")?.removed).toBe(true);
+    expect(here().relationships).toHaveLength(1);
+  });
+
+  it("is never swept into a collapse, never copied, and never expanded onto the parent", () => {
+    insideSnipApi();
+    s().addNode(PORT_IN, 0, 0);
+    const pin = s().selection[0];
+    place("def-service", 50, 0);
+    s().addBoundary("B", "Box", { x: -20, y: -20, width: 300, height: 200 });
+    s().collapseBoundary(s().selection[0]);
+    expect(here().nodes.some((n) => n.id === pin)).toBe(true); // the port stayed out
+
+    s().setSelection([pin]);
+    s().copySelection();
+    s().paste();
+    expect(here().nodes.filter((n) => n.definitionId === PORT_IN)).toHaveLength(1);
+  });
+});
+
+describe("port nodes in pockets", () => {
+  it("are locked inside a pocket, and never come out when it expands", () => {
+    const web = place("def-webapp", 0, 0);
+    const api = place("def-server", 400, 0);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    s().addBoundary("Backend", "Box", { x: 380, y: -20, width: 200, height: 150 });
+    s().collapseBoundary(s().selection[0]);
+    const collapsed = root().nodes.find((n) => s().definitions[n.definitionId].expandable)!;
+    const def = s().definitions[collapsed.definitionId];
+    const inheritedPip = def.pips[0].id;
+
+    s().enterDefinition(def.id);
+    s().addNode(PORT_IN, -200, 0);
+    const pin = s().selection[0];
+    const inner = s().canvases[s().activeCanvasId];
+    const apiInside = inner.nodes.find((n) => n.definitionId === "def-server")!;
+    expect(isLockedPort(s(), pin)).toBe(true);
+    wire(pin, inheritedPip, apiInside.id, "p-srv-http"); // refused: drawn automatically instead
+    expect(s().canvases[s().activeCanvasId].relationships).toHaveLength(0);
+
+    s().goBack();
+    s().expandNode(collapsed.id);
+    expect(root().nodes.some((n) => n.definitionId === PORT_IN)).toBe(false);
+    expect(root().relationships).toHaveLength(1); // the original wire, rewired back
   });
 });
 

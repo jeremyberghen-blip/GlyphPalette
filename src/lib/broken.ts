@@ -6,6 +6,7 @@
 
 import { ApiStyle, CanvasData, NodeDefinition, PipDef, Relationship, Transport } from "../types";
 import { compatible, connLabel } from "./connections";
+import { isPortDefId } from "./ports";
 
 /** The red used for anything broken. Nothing else in GP uses red. */
 export const BROKEN_COLOR = "#ef4444";
@@ -39,20 +40,26 @@ export const wiresAt = (canvas: CanvasData, nodeId: string, pipId: string): Rela
     (r) => (r.from.nodeId === nodeId && r.from.pipId === pipId) || (r.to.nodeId === nodeId && r.to.pipId === pipId)
   );
 
-/** True if any wire, on any canvas, is attached to `pipId` on an instance of `defId`. */
+/**
+ * True if any wire uses `pipId` of `def`: attached to an instance of it on any
+ * canvas, or — inside its own interior — to the port nodes that mirror its pips.
+ */
 export function pipInUse(
-  defId: string,
+  def: Pick<NodeDefinition, "id" | "canvasId">,
   pipId: string,
   canvases: Record<string, CanvasData>
 ): boolean {
-  return Object.values(canvases).some((c) => {
-    const instances = new Set(c.nodes.filter((n) => n.definitionId === defId).map((n) => n.id));
+  const attached = (c: CanvasData, isMine: (defId: string) => boolean) => {
+    const nodes = new Set(c.nodes.filter((n) => isMine(n.definitionId)).map((n) => n.id));
     return c.relationships.some(
-      (r) =>
-        (instances.has(r.from.nodeId) && r.from.pipId === pipId) ||
-        (instances.has(r.to.nodeId) && r.to.pipId === pipId)
+      (r) => (nodes.has(r.from.nodeId) && r.from.pipId === pipId) || (nodes.has(r.to.nodeId) && r.to.pipId === pipId)
     );
-  });
+  };
+  const interior = def.canvasId ? canvases[def.canvasId] : undefined;
+  return (
+    Object.values(canvases).some((c) => attached(c, (id) => id === def.id)) ||
+    (!!interior && attached(interior, isPortDefId))
+  );
 }
 
 /**
@@ -67,7 +74,7 @@ export function keepWiredPips(
   if (!before) return after;
   const kept = new Set(after.pips.map((p) => p.id));
   const ghosts = before.pips
-    .filter((p) => !kept.has(p.id) && pipInUse(after.id, p.id, canvases))
+    .filter((p) => !kept.has(p.id) && pipInUse(after, p.id, canvases))
     .map((p) => ({ ...p, removed: true }));
   return ghosts.length ? { ...after, pips: [...after.pips, ...ghosts] } : after;
 }
@@ -83,7 +90,7 @@ export function pruneRemovedPips(
   let out = definitions;
   for (const d of Object.values(definitions)) {
     if (!d.pips.some((p) => p.removed)) continue;
-    const pips = d.pips.filter((p) => !p.removed || pipInUse(d.id, p.id, canvases));
+    const pips = d.pips.filter((p) => !p.removed || pipInUse(d, p.id, canvases));
     if (pips.length !== d.pips.length) {
       if (out === definitions) out = { ...definitions };
       out[d.id] = { ...d, pips };

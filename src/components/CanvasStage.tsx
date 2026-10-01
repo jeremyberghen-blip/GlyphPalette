@@ -1,7 +1,9 @@
 import { Stage, Layer, Rect, Circle, Group } from "react-konva";
 import Konva from "konva";
 import { useMemo, useRef, useState } from "react";
-import { useApp, useActiveCanvas, getPip, setPointerWorld } from "../store";
+import { useApp, useActiveCanvas, getPip, setPointerWorld, useNodeDef, isLockedPort } from "../store";
+import { lockedPortWires, resolveDef } from "../lib/ports";
+import { canvasOwner } from "../lib/layers";
 import { NODE_WIDTH, NODE_HEIGHT } from "../types";
 import NodeShape, { NodeVisual } from "./NodeShape";
 import RelationshipShape from "./RelationshipShape";
@@ -31,9 +33,9 @@ function WirePreview() {
   if (!wireDrag) return null;
   const fromNode = canvas.nodes.find((n) => n.id === wireDrag.fromNodeId);
   if (!fromNode) return null;
-  const def = s.definitions[fromNode.definitionId];
+  const def = resolveDef(s.definitions, canvas.id, fromNode.definitionId);
   const fromPip = getPip(s, wireDrag.fromNodeId, wireDrag.fromPipId);
-  const p1 = pipWorldPos(fromNode, def, wireDrag.fromPipId);
+  const p1 = def && pipWorldPos(fromNode, def, wireDrag.fromPipId);
   if (!p1 || !fromPip) return null;
   const color = s.transports[fromPip.transportId]?.color ?? "#888";
 
@@ -42,7 +44,8 @@ function WirePreview() {
   if (wireDrag.snap) {
     const sn = canvas.nodes.find((n) => n.id === wireDrag.snap!.nodeId);
     if (sn) {
-      const pos = pipWorldPos(sn, s.definitions[sn.definitionId], wireDrag.snap.pipId);
+      const snDef = resolveDef(s.definitions, canvas.id, sn.definitionId);
+      const pos = snDef && pipWorldPos(sn, snDef, wireDrag.snap.pipId);
       if (pos) {
         end = pos;
         endSide = pos.side;
@@ -107,7 +110,20 @@ export default function CanvasStage({ width, height }: { width: number; height: 
   const stageRef = useRef<Konva.Stage>(null);
   const panning = useRef(false);
   const placingDefId = useApp((s) => s.placingDefId);
-  const placingDef = useApp((s) => (s.placingDefId ? s.definitions[s.placingDefId] : null));
+  const placingDef = useNodeDef(canvas.id, placingDefId);
+  // Inside a pocket, its port nodes show the collapse's connections: drawn, locked
+  const owner = useApp((s) => canvasOwner(s.definitions, canvas.id));
+  const definitions = useApp((s) => s.definitions);
+  const lockedWires = useMemo(
+    () =>
+      owner
+        ? lockedPortWires(owner, canvas, (nodeId, pipId) => {
+            const n = canvas.nodes.find((x) => x.id === nodeId);
+            return n && resolveDef(definitions, canvas.id, n.definitionId)?.pips.find((p) => p.id === pipId);
+          })
+        : [],
+    [owner, canvas, definitions]
+  );
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
   const wireDrag = useApp((s) => s.wireDrag);
   const boundaryDrawing = useApp((s) => s.boundaryDrawing);
@@ -124,8 +140,8 @@ export default function CanvasStage({ width, height }: { width: number; height: 
     let best: { nodeId: string; pipId: string } | null = null;
     let bestDist = SNAP_RANGE;
     for (const n of canvas.nodes) {
-      const def = s.definitions[n.definitionId];
-      if (!def) continue;
+      const def = resolveDef(s.definitions, canvas.id, n.definitionId);
+      if (!def || isLockedPort(s, n.id)) continue;
       for (const pip of def.pips) {
         if (n.id === wd.fromNodeId && pip.id === wd.fromPipId) continue;
         if (!canConnect(fromPip, pip)) continue;
@@ -340,6 +356,9 @@ export default function CanvasStage({ width, height }: { width: number; height: 
       <Layer>
         {canvas.boundaries.map((c) => (
           <BoundaryShape key={c.id} box={c} />
+        ))}
+        {lockedWires.map((r) => (
+          <RelationshipShape key={r.id} rel={r} locked />
         ))}
         {canvas.relationships.map((r) => (
           <RelationshipShape key={r.id} rel={r} />

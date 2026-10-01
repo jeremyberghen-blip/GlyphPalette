@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { useApp, useActiveCanvas } from "../store";
 import { NODE_WIDTH } from "../types";
 import { isTruncated } from "../lib/text";
+import { resolveDef } from "../lib/ports";
 
 const HOVER_DELAY_MS = 400;
 /** Matches the node label in NodeVisual: 14px Segoe UI in NODE_WIDTH - 8. */
@@ -35,7 +36,7 @@ export default function NodeNameTooltip() {
   }, [nodeId]);
 
   const node = shownId ? canvas.nodes.find((n) => n.id === shownId) : undefined;
-  const name = node ? definitions[node.definitionId]?.name : undefined;
+  const name = node ? resolveDef(definitions, canvas.id, node.definitionId)?.name : undefined;
   if (!node || !name || dragging || !isTruncated(name, LABEL_WIDTH, measure)) return null;
 
   return (

@@ -18,6 +18,9 @@ import {
 import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
 import { wireType } from "./lib/connections";
 import { keepWiredPips, pruneRemovedPips } from "./lib/broken";
+import { canPlacePort, isPortDefId, portDefinition, resolveDef } from "./lib/ports";
+import { canvasOwner, childLayer, isPocket } from "./lib/layers";
+import { useMemo } from "react";
 import {
   addWaypoint,
   applyHandle,
@@ -26,7 +29,6 @@ import {
   translateWaypoints,
   unfoldWaypoints,
 } from "./lib/waypoints";
-import { childLayer } from "./lib/layers";
 import { STANDARD, isStandardDef } from "./lib/standardLibrary";
 import { copyDefinition, incrementName, nameTaken, uniqueName } from "./lib/definitions";
 import { ImportPlan } from "./lib/importDefs";
@@ -279,7 +281,30 @@ export function getPip(
 ): PipDef | null {
   const node = s.canvases[s.activeCanvasId].nodes.find((n) => n.id === nodeId);
   if (!node) return null;
-  return s.definitions[node.definitionId]?.pips.find((p) => p.id === pipId) ?? null;
+  return resolveDef(s.definitions, s.activeCanvasId, node.definitionId)?.pips.find((p) => p.id === pipId) ?? null;
+}
+
+/** True if this node is a port on a pocket canvas, whose pips can't be wired by hand. */
+export function isLockedPort(
+  s: Pick<AppState, "canvases" | "activeCanvasId" | "definitions">,
+  nodeId: string
+): boolean {
+  const node = s.canvases[s.activeCanvasId].nodes.find((n) => n.id === nodeId);
+  return !!node && isPortDefId(node.definitionId) && isPocket(s.definitions, s.activeCanvasId);
+}
+
+/**
+ * The definition a node uses, reactively — stored, or (for a port node) built
+ * from the node whose interior `canvasId` is. Stable between renders.
+ */
+export function useNodeDef(canvasId: string, defId: string | null | undefined): NodeDefinition | undefined {
+  const port = !!defId && isPortDefId(defId);
+  const owner = useApp((s) => (port ? canvasOwner(s.definitions, canvasId) : undefined));
+  const stored = useApp((s) => (!port && defId ? s.definitions[defId] : undefined));
+  return useMemo(
+    () => (port ? (owner ? portDefinition(owner, defId as never) : undefined) : stored),
+    [port, owner, stored, defId]
+  );
 }
 
 const initial = freshProject();
@@ -324,7 +349,8 @@ export const useApp = create<AppState>((set, get) => ({
     set((s) => {
       const canvas = s.canvases[s.activeCanvasId];
       const sel = new Set(s.selection);
-      const nodes = canvas.nodes.filter((n) => sel.has(n.id));
+      // Port nodes belong to their canvas (one of each) and aren't copied
+      const nodes = canvas.nodes.filter((n) => sel.has(n.id) && !isPortDefId(n.definitionId));
       const boundaries = canvas.boundaries.filter((c) => sel.has(c.id));
       if (nodes.length === 0 && boundaries.length === 0) return {};
       const nodeIds = new Set(nodes.map((n) => n.id));
@@ -406,7 +432,7 @@ export const useApp = create<AppState>((set, get) => ({
       if (!rel) return {};
       const end = (e: RelEnd) => {
         const node = canvas.nodes.find((n) => n.id === e.nodeId);
-        const def = node && s.definitions[node.definitionId];
+        const def = node && resolveDef(s.definitions, canvas.id, node.definitionId);
         return node && def ? pipWorldPos(node, def, e.pipId) : null;
       };
       const p1 = end(rel.from);
@@ -494,8 +520,11 @@ export const useApp = create<AppState>((set, get) => ({
       const box = canvas.boundaries.find((c) => c.id === boundaryId);
       if (!box) return {};
 
+      // A port node is never swept into a collapse: it stands for this canvas's edge
       const inside = new Set(
-        canvas.nodes.filter((n) => rectsIntersect(nodeRect(n), box)).map((n) => n.id)
+        canvas.nodes
+          .filter((n) => !isPortDefId(n.definitionId) && rectsIntersect(nodeRect(n), box))
+          .map((n) => n.id)
       );
       const innerRels = canvas.relationships.filter(
         (r) => inside.has(r.from.nodeId) && inside.has(r.to.nodeId)
@@ -614,12 +643,15 @@ export const useApp = create<AppState>((set, get) => ({
       }
       const dx = inner.nodes.length ? cx - (bx0 + bx1) / 2 : 0;
       const dy = inner.nodes.length ? cy - (by0 + by1) / 2 : 0;
-      const clones: NodeInstance[] = inner.nodes.map((n) => {
+      const innerNodes = inner.nodes.filter((n) => !isPortDefId(n.definitionId));
+      const clones: NodeInstance[] = innerNodes.map((n) => {
         const id = uid();
         idMap.set(n.id, id);
         return { ...n, id, x: n.x + dx, y: n.y + dy };
       });
-      const clonedRels: Relationship[] = inner.relationships.map((r) => ({
+      const clonedRels: Relationship[] = inner.relationships
+        .filter((r) => idMap.has(r.from.nodeId) && idMap.has(r.to.nodeId))
+        .map((r) => ({
         ...r,
         id: uid(),
         from: { ...r.from, nodeId: idMap.get(r.from.nodeId) ?? r.from.nodeId },
@@ -796,6 +828,7 @@ export const useApp = create<AppState>((set, get) => ({
   addNode: (definitionId, x, y) =>
     set((s) => {
       const canvas = s.canvases[s.activeCanvasId];
+      if (isPortDefId(definitionId) && !canPlacePort(s.definitions, canvas, definitionId)) return {};
       const node: NodeInstance = { id: uid(), definitionId, x, y };
       return {
         undoStack: pushSnap(s),
@@ -848,6 +881,8 @@ export const useApp = create<AppState>((set, get) => ({
       if (!fromPip || !toPip || !canConnect(fromPip, toPip)) {
         return { wireDrag: null };
       }
+      // A pocket's ports show the collapse's own connections; they can't be rewired here
+      if (isLockedPort(s, wd.fromNodeId) || isLockedPort(s, wd.snap.nodeId)) return { wireDrag: null };
       // Normalize direction: `from` is the outbound side of a directional link
       let from = { nodeId: wd.fromNodeId, pipId: wd.fromPipId };
       let to = { nodeId: wd.snap.nodeId, pipId: wd.snap.pipId };
