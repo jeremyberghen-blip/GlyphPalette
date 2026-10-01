@@ -31,6 +31,11 @@ Notes only — nothing gets built until they've finished exploring.
   changing it moves the pip to the matching section.
   - Open: where Bidirectional and None pips go (a third section, or shown
     in both?).
+- **Add pip… on the node right-click menu.** A small window with the
+  pip's fields (label, transport, style, direction, side) and OK / Cancel;
+  OK adds the pip to the node's definition without opening the full node
+  dialog.
+  - Open: on a standard node (read-only), disable it or offer Permute?
 
 ### In-app AI chat window
 
