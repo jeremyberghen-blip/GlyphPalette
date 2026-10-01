@@ -5,9 +5,12 @@ import { PipDef } from "../types";
 import { PIP_RADIUS, sideVector, canConnect } from "../lib/graph";
 import { useApp, getPip } from "../store";
 import { connLabel, isAnyStyle } from "../lib/connections";
+import { BROKEN_COLOR, brokenReason, wiresAt } from "../lib/broken";
 
 interface Props {
   nodeId: string;
+  /** Name of the node's definition, for broken-link tooltips. */
+  ownerName: string;
   pip: PipDef;
   x: number;
   y: number;
@@ -21,15 +24,21 @@ function angleFor(v: { x: number; y: number }): number {
   return (Math.atan2(v.y, v.x) * 180) / Math.PI + 90;
 }
 
-export default function PipShape({ nodeId, pip, x, y }: Props) {
+export default function PipShape({ nodeId, ownerName, pip, x, y }: Props) {
   const transport = useApp((s) => s.transports[pip.transportId]);
   const style = useApp((s) => s.styles[pip.styleId]);
   const label = useApp((s) => connLabel(pip, s.transports, s.styles));
   const wireDrag = useApp((s) => s.wireDrag);
   const [hover, setHover] = useState(false);
 
-  const color = transport?.color ?? "#888";
-  const core = !isAnyStyle(pip.styleId) ? style?.color : undefined;
+  // Broken: deleted from its definition, or retyped so an attached wire no longer fits
+  const broken = useApp((s) => {
+    const canvas = s.canvases[s.activeCanvasId];
+    return brokenReason(pip, wiresAt(canvas, nodeId, pip.id), ownerName, s.transports, s.styles);
+  });
+
+  const color = broken ? BROKEN_COLOR : transport?.color ?? "#888";
+  const core = !broken && !isAnyStyle(pip.styleId) ? style?.color : undefined;
 
   // While a wire is being dragged, light up compatible pips and dim the rest
   let validTarget = false;
@@ -127,16 +136,13 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
         <Label
           x={outward.x * 14}
           y={outward.y * 14 - 10}
+          // A long broken-link note on a left-side pip opens leftward, off the node
+          offsetX={broken && outward.x < 0 ? 240 : 0}
           listening={false}
         >
-          <Tag
-            fill="#2b2d3a"
-            stroke="#4a4e63"
-            strokeWidth={1}
-            cornerRadius={4}
-          />
+          <Tag fill={broken ? "#2a1618" : "#2b2d3a"} stroke={broken ? "#7f1d1d" : "#4a4e63"} strokeWidth={1} cornerRadius={4} />
           <Text
-            text={` ${pip.label} · ${label} ${
+            text={broken ?? ` ${pip.label} · ${label} ${
               pip.direction === "inbound"
                 ? "(in)"
                 : pip.direction === "outbound"
@@ -145,10 +151,11 @@ export default function PipShape({ nodeId, pip, x, y }: Props) {
                 ? "(bi)"
                 : ""
             } `}
+            width={broken ? 240 : undefined}
             fontSize={11}
             fontFamily="Segoe UI, sans-serif"
-            fill="#e2e4ee"
-            padding={3}
+            fill={broken ? "#fecaca" : "#e2e4ee"}
+            padding={broken ? 5 : 3}
           />
         </Label>
       )}

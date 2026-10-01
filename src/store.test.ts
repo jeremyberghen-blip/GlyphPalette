@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { useApp } from "./store";
+import { useApp, getPip } from "./store";
+import { wireBroken } from "./lib/broken";
 import { NODE_WIDTH } from "./types";
 import { isDirty } from "./lib/session";
 import { buildProjectFile, loadProjectFile, parseProjectFile } from "./lib/projectFile";
@@ -130,6 +131,57 @@ describe("boundaries", () => {
     s().collapseBoundary(s().selection[0]);
     const def = s().definitions[root().nodes.find((n) => n.id === s().selection[0])!.definitionId];
     expect(s().canvases[def.canvasId!].layer).toBe(root().layer);
+  });
+});
+
+describe("broken-but-kept", () => {
+  /** A project definition with one outbound REST pip, wired to a standard API Service. */
+  function setup() {
+    s().saveDefinition({
+      id: "def-my-client", name: "Client", icon: "Box", layers: ["container"], canvasId: null,
+      pips: [{ id: "out", label: "Out", transportId: "tr-http", styleId: "s-rest", direction: "outbound", side: "right" }],
+    });
+    const client = place("def-my-client", 0, 0);
+    const api = place("def-server", 300, 0);
+    wire(client, "out", api, "p-srv-http");
+    return { client, api };
+  }
+  const clientPips = () => s().definitions["def-my-client"].pips;
+
+  it("deleting a wired pip keeps it (removed) and keeps its wire", () => {
+    setup();
+    s().saveDefinition({ ...s().definitions["def-my-client"], pips: [] });
+    expect(clientPips()).toEqual([expect.objectContaining({ id: "out", removed: true })]);
+    expect(root().relationships).toHaveLength(1);
+  });
+
+  it("removing that wire lets the deleted pip go", () => {
+    setup();
+    s().saveDefinition({ ...s().definitions["def-my-client"], pips: [] });
+    s().setSelection([root().relationships[0].id]);
+    s().deleteSelection();
+    expect(clientPips()).toEqual([]);
+  });
+
+  it("retyping keeps the wire (now broken); once it's removed the pip just has its new type", () => {
+    setup();
+    const [p] = clientPips();
+    s().saveDefinition({ ...s().definitions["def-my-client"], pips: [{ ...p, transportId: "tr-tcp", styleId: "s-sql" }] });
+    const [r] = root().relationships;
+    expect(wireBroken(r, getPip(s(), r.from.nodeId, r.from.pipId), getPip(s(), r.to.nodeId, r.to.pipId))).toBe(true);
+    s().setSelection([r.id]);
+    s().deleteSelection();
+    expect(clientPips()).toEqual([expect.objectContaining({ id: "out", transportId: "tr-tcp", styleId: "s-sql" })]);
+    expect(clientPips()[0].removed).toBeUndefined();
+  });
+
+  it("a deleted pip accepts no new wires", () => {
+    const { client, api } = setup();
+    s().setSelection([root().relationships[0].id]);
+    s().saveDefinition({ ...s().definitions["def-my-client"], pips: [] });
+    s().deleteSelection(); // removes the wire → pip pruned
+    wire(client, "out", api, "p-srv-http");
+    expect(root().relationships).toHaveLength(0);
   });
 });
 

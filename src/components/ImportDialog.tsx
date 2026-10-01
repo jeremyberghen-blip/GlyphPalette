@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { icons, X } from "lucide-react";
 import { DRAWABLE_LAYERS, LAYER_LABELS, NodeDefinition } from "../types";
+import { livePips } from "../lib/definitions";
 import { useApp } from "../store";
 import { ProjectContent } from "../lib/projectFile";
 import { importCandidates, planImport } from "../lib/importDefs";
@@ -83,7 +84,7 @@ export default function ImportDialog({ source, sourceName, onClose, onImported }
                     {Lucide ? <Lucide size={14} className="shrink-0 text-[#c9cbd8]" /> : <span className="w-3.5" />}
                     <span className="truncate">{d.name}</span>
                     <span className="ml-auto shrink-0 text-[10px] text-[#565a72]">
-                      {d.pips.length} pip{d.pips.length === 1 ? "" : "s"}
+                      {livePips(d)} pip{livePips(d) === 1 ? "" : "s"}
                     </span>
                   </label>
                 );

@@ -17,6 +17,7 @@ import {
 } from "./types";
 import { canConnect, offsetToCenter, pipWorldPos } from "./lib/graph";
 import { wireType } from "./lib/connections";
+import { keepWiredPips, pruneRemovedPips } from "./lib/broken";
 import {
   addWaypoint,
   applyHandle,
@@ -821,12 +822,12 @@ export const useApp = create<AppState>((set, get) => ({
       );
       const boundaries = canvas.boundaries.filter((c) => !sel.has(c.id));
       if (sel.size === 0) return {};
+      const canvases = { ...s.canvases, [canvas.id]: { ...canvas, nodes, relationships, boundaries } };
       return {
         undoStack: pushSnap(s),
-        canvases: {
-          ...s.canvases,
-          [canvas.id]: { ...canvas, nodes, relationships, boundaries },
-        },
+        canvases,
+        // A deleted pip goes once its last wire does
+        definitions: pruneRemovedPips(s.definitions, canvases),
         selection: [],
       };
     }),
@@ -898,28 +899,15 @@ export const useApp = create<AppState>((set, get) => ({
   saveDefinition: (def) =>
     set((s) => {
       if (isStandardDef(def.id)) return {};
-      // Pips may have been removed on edit — drop relationships that
-      // reference a pip that no longer exists on this definition.
-      const pipIds = new Set(def.pips.map((p) => p.id));
-      const canvases = Object.fromEntries(
-        Object.entries(s.canvases).map(([cid, c]) => {
-          const instanceIds = new Set(
-            c.nodes.filter((n) => n.definitionId === def.id).map((n) => n.id)
-          );
-          const relationships = c.relationships.filter((r) => {
-            const fromGone =
-              instanceIds.has(r.from.nodeId) && !pipIds.has(r.from.pipId);
-            const toGone =
-              instanceIds.has(r.to.nodeId) && !pipIds.has(r.to.pipId);
-            return !fromGone && !toGone;
-          });
-          return [cid, { ...c, relationships }];
-        })
-      );
+      // Deleted or retyped pips never take their wires with them: a deleted pip
+      // stays (marked removed) while wired, and mismatched wires show as broken.
+      const saved = keepWiredPips(s.definitions[def.id], {
+        ...def,
+        layers: def.layers?.length ? def.layers : (["container"] as Layer[]),
+      }, s.canvases);
       return {
         undoStack: pushSnap(s),
-        definitions: { ...s.definitions, [def.id]: { ...def, layers: def.layers?.length ? def.layers : (["container"] as Layer[]) } },
-        canvases,
+        definitions: { ...s.definitions, [def.id]: saved },
       };
     }),
 

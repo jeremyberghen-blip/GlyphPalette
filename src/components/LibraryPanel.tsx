@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { icons, Plus, Pencil, Trash2, Search, Library, Import, Copy, Shuffle } from "lucide-react";
 import { LAYER_LABELS, NodeDefinition } from "../types";
 import { LAYER_COLORS, layerLabel } from "../lib/layerStyle";
+import { livePips } from "../lib/definitions";
 import { useApp } from "../store";
 import { canvasOwner } from "../lib/layers";
 import { isStandardDef } from "../lib/standardLibrary";
@@ -79,7 +80,7 @@ function DefCard({
           )}
         </div>
         <div className="text-[10px] text-[#565a72]">
-          {def.pips.length} pip{def.pips.length === 1 ? "" : "s"}
+          {livePips(def)} pip{livePips(def) === 1 ? "" : "s"}
         </div>
       </div>
       <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">

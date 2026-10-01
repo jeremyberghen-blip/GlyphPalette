@@ -1,10 +1,11 @@
 import { Shape } from "react-konva";
 import Konva from "konva";
 import { Relationship } from "../types";
-import { useApp, getPip, useActiveCanvas } from "../store";
+import { useApp, useActiveCanvas } from "../store";
 import { pipWorldPos, wireGeometry, sideVector } from "../lib/graph";
 import { traceRounded, wireVertices } from "../lib/waypoints";
 import { isAnyStyle } from "../lib/connections";
+import { BROKEN_COLOR, wireBroken } from "../lib/broken";
 
 /** Outer (transport) line width; the style core is half of it. */
 export const WIRE_WIDTH = 5;
@@ -40,25 +41,28 @@ function pointerWorld(e: Konva.KonvaEventObject<MouseEvent>) {
 
 export default function RelationshipShape({ rel }: { rel: Relationship }) {
   const canvas = useActiveCanvas();
-  const s = useApp.getState();
   const transport = useApp((s) => s.transports[rel.transportId]);
   const style = useApp((s) => s.styles[rel.styleId]);
   const selected = useApp((s) => s.selection.includes(rel.id));
-
   const fromNode = canvas.nodes.find((n) => n.id === rel.from.nodeId);
   const toNode = canvas.nodes.find((n) => n.id === rel.to.nodeId);
-  if (!fromNode || !toNode) return null;
-  const fromDef = s.definitions[fromNode.definitionId];
-  const toDef = s.definitions[toNode.definitionId];
+  // Subscribe to both ends' definitions, so editing a pip (side, type, deletion)
+  // redraws the wire even though the canvas itself didn't change
+  const fromDef = useApp((s) => (fromNode ? s.definitions[fromNode.definitionId] : undefined));
+  const toDef = useApp((s) => (toNode ? s.definitions[toNode.definitionId] : undefined));
+  if (!fromNode || !toNode || !fromDef || !toDef) return null;
   const p1 = pipWorldPos(fromNode, fromDef, rel.from.pipId);
   const p2 = pipWorldPos(toNode, toDef, rel.to.pipId);
   if (!p1 || !p2) return null;
 
-  const fromPip = getPip(s, rel.from.nodeId, rel.from.pipId);
+  const fromPip = fromDef.pips.find((p) => p.id === rel.from.pipId);
+  const toPip = toDef.pips.find((p) => p.id === rel.to.pipId);
   const directional = fromPip?.direction === "outbound";
   const bidirectional = fromPip?.direction === "bidirectional";
-  const color = transport?.color ?? "#888";
-  const core = !isAnyStyle(rel.styleId) ? style?.color : undefined;
+  // A wire whose end pip was deleted or retyped out from under it is broken: all red
+  const broken = wireBroken(rel, fromPip, toPip);
+  const color = broken ? BROKEN_COLOR : transport?.color ?? "#888";
+  const core = !broken && !isAnyStyle(rel.styleId) ? style?.color : undefined;
 
   // Plain wires are one curve; wires with bend points are straight runs with rounded corners
   const bent = !!rel.waypoints?.length;

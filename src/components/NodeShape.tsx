@@ -158,7 +158,7 @@ export default function NodeShape({ node }: Props) {
       {[...pipOffsets(def).entries()].map(([pipId, off]) => {
         const pip = def.pips.find((p) => p.id === pipId)!;
         return (
-          <PipShape key={pipId} nodeId={node.id} pip={pip} x={off.x} y={off.y} />
+          <PipShape key={pipId} nodeId={node.id} ownerName={def.name} pip={pip} x={off.x} y={off.y} />
         );
       })}
     </Group>

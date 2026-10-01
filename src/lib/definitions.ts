@@ -68,3 +68,6 @@ export function copyDefinition(def: NodeDefinition, id: string, name: string): N
     canvasId: null,
   };
 }
+
+/** Pips a definition really has: not counting deleted ones kept only for their wires. */
+export const livePips = (d: NodeDefinition): number => d.pips.filter((p) => !p.removed).length;
