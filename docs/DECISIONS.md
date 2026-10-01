@@ -17,6 +17,21 @@ too slight to matter.
 
 ## Open
 
+### Snip v1.3 update — pip UI notes (in progress)
+
+Raised 2026-10-01 while the user updates `Snip.glyph` to v1.3 on their own.
+Notes only — nothing gets built until they've finished exploring.
+
+- **Legend on demand, not always on screen.** The transport and style
+  legends at the bottom of the palette become a small icon there; hovering
+  it pops the legend up, and it goes away when the mouse moves off. Purely
+  for reference — nothing in it is clickable.
+- **Pips grouped by direction in the node dialog.** Two sections, Inbound
+  and Outbound, for readability. Each pip keeps its direction dropdown;
+  changing it moves the pip to the matching section.
+  - Open: where Bidirectional and None pips go (a third section, or shown
+    in both?).
+
 ### In-app AI chat window
 
 Raised 2026-09-02. A chat window inside Glyph Palette for discussing the
