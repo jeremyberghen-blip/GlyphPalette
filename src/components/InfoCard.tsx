@@ -6,6 +6,7 @@ import { RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from
 import { create } from "zustand";
 import { AlertTriangle, LogIn, LogOut, icons } from "lucide-react";
 import { useApp } from "../store";
+import { useContextMenu } from "./ContextMenu";
 import { LAYER_LABELS, NODE_WIDTH, NodeDefinition, PipDef } from "../types";
 import { PORT_IN, isPortDefId, resolveDef } from "../lib/ports";
 import { LANGUAGES, slugOf } from "../lib/naming";
@@ -59,7 +60,8 @@ const STATUS_COLOR: Record<BuildStatus, string> = {
 export default function InfoCardHost({ canvasHost }: { canvasHost: RefObject<HTMLDivElement | null> }) {
   const palette = usePaletteHover();
   const { nodeId, overPip } = useNodeHover();
-  const busy = useApp((s) => !!s.placingDefId || !!s.wireDrag || s.boundaryDrawing);
+  const menuOpen = useContextMenu((s) => !!s.at);
+  const busy = useApp((s) => !!s.placingDefId || !!s.wireDrag || s.boundaryDrawing) || menuOpen;
   const key = palette.id ? `p:${palette.id}` : nodeId && !overPip ? `n:${nodeId}` : null;
   const [shown, setShown] = useState<string | null>(null);
 
@@ -212,7 +214,7 @@ function PocketFacts({ def }: { def: NodeDefinition }) {
         </div>
       </Section>
       <Pips def={def} />
-      <Footer>Double-click to open inside · the corner button expands it</Footer>
+      <Footer>Double-click to open inside · right-click to expand</Footer>
     </>
   );
 }
@@ -296,7 +298,7 @@ function PlacedFacts({ nodeId, def }: { nodeId: string; def: NodeDefinition }) {
         </Section>
       )}
       <Pips def={def} />
-      <Footer>Double-click to open inside</Footer>
+      <Footer>Double-click to open inside · right-click for more</Footer>
     </>
   );
 }

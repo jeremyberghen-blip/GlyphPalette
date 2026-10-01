@@ -5,6 +5,8 @@ import {
   clashesWith,
   definitionStatus,
   placementForTrail,
+  automaticPath,
+  relativeToProject,
   normalizeOverride,
   pathClashes,
   placementsOf,
@@ -229,6 +231,30 @@ describe("clashes and reuse", () => {
       "snip/web-app/snip_api/link_service"
     );
     expect(placementForTrail(plan, "n-links", ["somewhere"])?.path).toBe("snip/web-app/snip_api/link_service");
+  });
+});
+
+describe("automatic path", () => {
+  it("is the derived path, whatever the node's own override", () => {
+    const { defs, canvases } = snip();
+    canvases["c-snip"].nodes[1].pathOverride = "services/api";
+    const trail = ["canvas-root", "c-snip"];
+    expect(automaticPath("Snip", canvases, defs, "c-snip", "n-api", trail)).toBe("snip/snip_api");
+    // Children still see the override above them
+    expect(automaticPath("Snip", canvases, defs, "c-api", "n-links", [...trail, "c-api"])).toBe(
+      "snip/services/api/link_service"
+    );
+  });
+
+  it("is null for nodes that aren't built", () => {
+    const { defs, canvases } = snip();
+    expect(automaticPath("Snip", canvases, defs, "c-snip", "n-cache", ["canvas-root", "c-snip"])).toBeNull();
+  });
+
+  it("drops the project folder for display in the override field", () => {
+    expect(relativeToProject("snip/snip_api/x.py", "snip")).toBe("snip_api/x.py");
+    expect(relativeToProject("snip", "snip")).toBe("");
+    expect(relativeToProject("snipe/x", "snip")).toBe("snipe/x");
   });
 });
 

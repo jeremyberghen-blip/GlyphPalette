@@ -9,6 +9,8 @@ import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
 import { useNodeHover } from "./InfoCard";
+import { openContextMenu } from "./ContextMenu";
+import { nodeMenuItems } from "./nodeMenu";
 
 const ICON_SIZE = 40;
 
@@ -156,6 +158,13 @@ export default function NodeShape({ node }: Props) {
       onClick={handleClick}
       onMouseEnter={() => useNodeHover.setState({ nodeId: node.id })}
       onMouseLeave={() => useNodeHover.setState({ nodeId: null })}
+      onContextMenu={(e) => {
+        e.evt.preventDefault();
+        e.cancelBubble = true;
+        const s = useApp.getState();
+        if (!s.selection.includes(node.id)) s.setSelection([node.id]);
+        openContextMenu(e.evt.clientX, e.evt.clientY, nodeMenuItems(node.id));
+      }}
       onDblClick={(e) => {
         if (e.evt.button !== 0) return;
         e.cancelBubble = true;

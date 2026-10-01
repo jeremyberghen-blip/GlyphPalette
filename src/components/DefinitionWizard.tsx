@@ -13,6 +13,16 @@ import {
 import { useApp, uid, nameTaken } from "../store";
 import { defaultConnType, groupStyles, groupTransports, isAnyStyle, styleUsualWith } from "../lib/connections";
 import { LANGUAGES, LANGUAGE_IDS, LanguageId, slugify } from "../lib/naming";
+import { create } from "zustand";
+
+/** Which node dialog is open (LibraryPanel renders it); palette cards and canvas menus open it. */
+export const useWizard = create<{ open: boolean; editing: NodeDefinition | null; base: NodeDefinition | null }>(
+  () => ({ open: false, editing: null, base: null })
+);
+/** Opens the node dialog: new, editing a definition, or a Permute of `base`. */
+export const openWizard = (opts: { editing?: NodeDefinition | null; base?: NodeDefinition | null } = {}) =>
+  useWizard.setState({ open: true, editing: opts.editing ?? null, base: opts.base ?? null });
+export const closeWizard = () => useWizard.setState({ open: false, editing: null, base: null });
 
 const DIRECTIONS: { value: PipDirection; label: string }[] = [
   { value: "inbound", label: "Inbound" },

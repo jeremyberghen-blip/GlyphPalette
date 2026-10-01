@@ -11,7 +11,8 @@ import { pickGlyphFile, readProjectContent } from "../lib/persist";
 import { ProjectContent } from "../lib/projectFile";
 import { toast } from "../lib/toast";
 import { isAnyStyle } from "../lib/connections";
-import DefinitionWizard from "./DefinitionWizard";
+import DefinitionWizard, { closeWizard, openWizard, useWizard } from "./DefinitionWizard";
+import { openContextMenu } from "./ContextMenu";
 import ImportDialog from "./ImportDialog";
 import { hidePaletteCard, usePaletteHover } from "./InfoCard";
 
@@ -52,6 +53,24 @@ function DefCard({
         usePaletteHover.setState({ id: def.id, rect: e.currentTarget.getBoundingClientRect(), port: undefined })
       }
       onMouseLeave={hidePaletteCard}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        hidePaletteCard();
+        const readOnly = "Standard nodes are read-only — Permute one to change it";
+        openContextMenu(e.clientX, e.clientY, [
+          { label: "Edit…", onClick: onEdit, disabled: standard, title: standard ? readOnly : undefined },
+          { label: "Duplicate", onClick: () => useApp.getState().duplicateDefinition(def.id) },
+          { label: "Permute…", onClick: onPermute, title: "A new node based on this one" },
+          "separator",
+          {
+            label: "Delete",
+            danger: true,
+            onClick: () => useApp.getState().removeDefinition(def.id),
+            disabled: standard || inUse,
+            title: standard ? "Standard nodes can't be deleted" : inUse ? "In use on a canvas — remove its nodes first" : undefined,
+          },
+        ]);
+      }}
       draggable
       onDragStart={(e) => {
         hidePaletteCard();
@@ -253,11 +272,7 @@ export default function LibraryPanel() {
   );
   const placedPorts = useMemo(() => portsOn(activeCanvas), [activeCanvas]);
   const [search, setSearch] = useState("");
-  const [wizard, setWizard] = useState<{
-    open: boolean;
-    editing: NodeDefinition | null;
-    base: NodeDefinition | null;
-  }>({ open: false, editing: null, base: null });
+  const wizard = useWizard();
   const [importing, setImporting] = useState<{ source: ProjectContent; name: string } | null>(null);
 
   const usedDefIds = useMemo(() => {
@@ -294,8 +309,8 @@ export default function LibraryPanel() {
       def={d}
       inUse={usedDefIds.has(d.id)}
       standard={isStandardDef(d.id)}
-      onEdit={() => setWizard({ open: true, editing: d, base: null })}
-      onPermute={() => setWizard({ open: true, editing: null, base: d })}
+      onEdit={() => openWizard({ editing: d })}
+      onPermute={() => openWizard({ base: d })}
     />
   );
 
@@ -320,7 +335,7 @@ export default function LibraryPanel() {
           </button>
         </div>
         <button
-          onClick={() => setWizard({ open: true, editing: null, base: null })}
+          onClick={() => openWizard()}
           className="flex w-full items-center justify-center gap-1.5 rounded bg-[#2b6cb0] px-3 py-1.5 text-sm text-white hover:bg-[#3182ce]"
         >
           <Plus size={15} /> New Node
@@ -377,9 +392,10 @@ export default function LibraryPanel() {
 
       {wizard.open && (
         <DefinitionWizard
+          key={`${wizard.editing?.id ?? ""}|${wizard.base?.id ?? ""}`}
           editing={wizard.editing}
           base={wizard.base}
-          onClose={() => setWizard({ open: false, editing: null, base: null })}
+          onClose={closeWizard}
         />
       )}
       {importing && (

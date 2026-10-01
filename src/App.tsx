@@ -10,6 +10,8 @@ import SettingsDialog from "./components/SettingsDialog";
 import ProjectNamePrompt from "./components/ProjectNamePrompt";
 import ProjectTitle from "./components/ProjectTitle";
 import InfoCardHost from "./components/InfoCard";
+import ContextMenu from "./components/ContextMenu";
+import PathOverrideDialog from "./components/PathOverrideDialog";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
 import { isTauri } from "./lib/persist";
 import {
@@ -260,6 +262,8 @@ export default function App() {
       <UnsavedPrompt />
       <ProjectNamePrompt />
       <InfoCardHost canvasHost={canvasHost} />
+      <PathOverrideDialog />
+      <ContextMenu />
       <Toasts />
     </div>
   );

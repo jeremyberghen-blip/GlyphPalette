@@ -224,6 +224,31 @@ export function placementForTrail(plan: BuildPlan, nodeId: string, trail: string
 }
 
 /**
+ * A node's path as derived — ignoring its own override — through the
+ * current trail: what "Reset to automatic path" gives. Null when not built.
+ */
+export function automaticPath(
+  projectName: string,
+  canvases: Record<string, CanvasData>,
+  defs: Record<string, NodeDefinition>,
+  canvasId: string,
+  nodeId: string,
+  trail: string[]
+): string | null {
+  const canvas = canvases[canvasId];
+  if (!canvas) return null;
+  const stripped = {
+    ...canvases,
+    [canvasId]: { ...canvas, nodes: canvas.nodes.map((n) => (n.id === nodeId ? { ...n, pathOverride: undefined } : n)) },
+  };
+  return placementForTrail(buildPlan(projectName, stripped, defs, trail[0]), nodeId, trail)?.path ?? null;
+}
+
+/** A path without the project folder in front ("snip/api/x" → "api/x"; the folder itself → ""). */
+export const relativeToProject = (path: string, projectFolder: string): string =>
+  path === projectFolder ? "" : path.startsWith(projectFolder + "/") ? path.slice(projectFolder.length + 1) : path;
+
+/**
  * Paths claimed by more than one placement, compared case-insensitively
  * (Windows and macOS folders are). Keyed by the lowercased path.
  */
