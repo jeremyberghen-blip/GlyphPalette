@@ -9,6 +9,7 @@ import UnsavedPrompt from "./components/UnsavedPrompt";
 import SettingsDialog from "./components/SettingsDialog";
 import ProjectNamePrompt from "./components/ProjectNamePrompt";
 import ProjectTitle from "./components/ProjectTitle";
+import InfoCardHost from "./components/InfoCard";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
 import { isTauri } from "./lib/persist";
 import {
@@ -258,6 +259,7 @@ export default function App() {
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <UnsavedPrompt />
       <ProjectNamePrompt />
+      <InfoCardHost canvasHost={canvasHost} />
       <Toasts />
     </div>
   );

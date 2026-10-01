@@ -29,6 +29,8 @@ export interface Placement {
   definitionId: string;
   /** Node ids from the top canvas down, ending with this node (pockets included). */
   chain: string[];
+  /** Canvas ids from the top canvas to the one holding the node: the breadcrumb trail that shows it. */
+  route: string[];
   status: BuildStatus;
   /** Effective language: its own, else the nearest ancestor's; undefined when none is set. */
   language?: LanguageId;
@@ -93,6 +95,7 @@ interface WalkCtx {
   external: boolean;
   sketch: boolean;
   chain: string[];
+  route: string[];
   /** On the top canvas (or in a pocket folded there). */
   top: boolean;
   /** Canvases already entered on this branch (guards against cycles). */
@@ -125,7 +128,7 @@ export function buildPlan(
 
       // A pocket is a fold: its contents belong to this canvas
       if (def.expandable) {
-        if (def.canvasId) walk(def.canvasId, { ...ctx, chain, seen });
+        if (def.canvasId) walk(def.canvasId, { ...ctx, chain, route: [...ctx.route, def.canvasId], seen });
         continue;
       }
 
@@ -164,6 +167,7 @@ export function buildPlan(
         canvasId,
         definitionId: def.id,
         chain,
+        route: ctx.route,
         status,
         language,
         path: segs ? segs.join("/") : null,
@@ -178,6 +182,7 @@ export function buildPlan(
           external,
           sketch: ctx.sketch || status === "file",
           chain,
+          route: [...ctx.route, def.canvasId],
           top: false,
           seen,
         });
@@ -185,13 +190,38 @@ export function buildPlan(
     }
   };
 
-  walk(rootId, { parentPath: [projectFolder], external: false, sketch: false, chain: [], top: true, seen: new Set() });
+  walk(rootId, { parentPath: [projectFolder], external: false, sketch: false, chain: [], route: [rootId], top: true, seen: new Set() });
   return { projectFolder, placements };
+}
+
+/** The kind line for each status, as the hover cards show it. */
+export const STATUS_TEXT: Record<BuildStatus, string> = {
+  external: "External — never built",
+  drawn: "Folder — contents drawn by you",
+  ai: "Folder — contents decided by the AI",
+  file: "File",
+  sketch: "Inside a file — a reference sketch, not built",
+};
+
+/** What a definition builds as, before it's placed anywhere (the palette card's kind line). */
+export function definitionStatus(def: NodeDefinition, canvases: Record<string, CanvasData>): BuildStatus {
+  if (def.external) return "external";
+  if (def.kind === "file") return "file";
+  return hasDrawnContents(def.canvasId ? canvases[def.canvasId] : undefined) ? "drawn" : "ai";
 }
 
 /** Every placement of one node (more than one when an ancestor is placed more than once). */
 export const placementsOf = (plan: BuildPlan, nodeId: string): Placement[] =>
   plan.placements.filter((p) => p.nodeId === nodeId);
+
+/**
+ * The placement the user is looking at: the one reached through the current
+ * breadcrumb trail (falls back to the first, e.g. for a trail the plan can't see).
+ */
+export function placementForTrail(plan: BuildPlan, nodeId: string, trail: string[]): Placement | undefined {
+  const ps = placementsOf(plan, nodeId);
+  return ps.find((p) => p.route.length === trail.length && p.route.every((c, i) => c === trail[i])) ?? ps[0];
+}
 
 /**
  * Paths claimed by more than one placement, compared case-insensitively

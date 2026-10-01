@@ -8,7 +8,7 @@ import { canvasOwner } from "../lib/layers";
 import { useIcon } from "../lib/icons";
 import { pipOffsets } from "../lib/graph";
 import PipShape from "./PipShape";
-import { useNodeHover } from "./NodeNameTooltip";
+import { useNodeHover } from "./InfoCard";
 
 const ICON_SIZE = 40;
 
@@ -147,7 +147,10 @@ export default function NodeShape({ node }: Props) {
       x={node.x}
       y={node.y}
       draggable
-      onDragStart={handleDragStart}
+      onDragStart={(e) => {
+        useNodeHover.setState({ nodeId: null }); // no hover card while dragging
+        handleDragStart(e);
+      }}
       onDragMove={handleDragMove}
       onDragEnd={() => (dragOrigin.current = null)}
       onClick={handleClick}

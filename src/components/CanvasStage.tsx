@@ -9,7 +9,6 @@ import { NODE_WIDTH, NODE_HEIGHT } from "../types";
 import NodeShape, { NodeVisual } from "./NodeShape";
 import RelationshipShape from "./RelationshipShape";
 import BoundaryShape from "./BoundaryShape";
-import NodeNameTooltip from "./NodeNameTooltip";
 import WaypointHandles from "./WaypointHandles";
 import { DEF_DRAG_TYPE } from "./LibraryPanel";
 import { Shape } from "react-konva";
@@ -372,7 +371,6 @@ export default function CanvasStage({ width, height }: { width: number; height: 
           <NodeShape key={n.id} node={n} />
         ))}
         <WaypointHandles />
-        <NodeNameTooltip />
         {placingDef && ghostPos && (
           <Group x={ghostPos.x} y={ghostPos.y} opacity={0.55} listening={false}>
             <NodeVisual def={placingDef} ghost />

@@ -13,6 +13,7 @@ import { toast } from "../lib/toast";
 import { isAnyStyle } from "../lib/connections";
 import DefinitionWizard from "./DefinitionWizard";
 import ImportDialog from "./ImportDialog";
+import { hidePaletteCard, usePaletteHover } from "./InfoCard";
 
 /** MIME type carrying a definition id when a palette card is dragged onto the canvas. */
 export const DEF_DRAG_TYPE = "application/x-glyph-def";
@@ -43,9 +44,17 @@ function DefCard({
 
   return (
     <div
-      onClick={() => useApp.getState().setPlacing(placing ? null : def.id)}
+      onClick={() => {
+        hidePaletteCard();
+        useApp.getState().setPlacing(placing ? null : def.id);
+      }}
+      onMouseEnter={(e) =>
+        usePaletteHover.setState({ id: def.id, rect: e.currentTarget.getBoundingClientRect(), port: undefined })
+      }
+      onMouseLeave={hidePaletteCard}
       draggable
       onDragStart={(e) => {
+        hidePaletteCard();
         e.dataTransfer.setData(DEF_DRAG_TYPE, def.id);
         e.dataTransfer.effectAllowed = "copy";
         e.dataTransfer.setDragImage(BLANK_DRAG_IMAGE, 0, 0);
@@ -60,7 +69,6 @@ function DefCard({
           ? "border-[#4c9aff] bg-[#2b3a55]"
           : "border-[#2e3040] bg-[#22242e] hover:border-[#4a4e63]"
       }`}
-      title={`${def.name}\nClick then click the canvas, or drag onto it, to place`}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
         {Lucide ? (
@@ -179,9 +187,17 @@ function PortCard({ def, placed }: { def: NodeDefinition; placed: boolean }) {
   const live = livePips(def);
   return (
     <div
-      onClick={() => !placed && useApp.getState().setPlacing(placing ? null : def.id)}
+      onClick={() => {
+        hidePaletteCard();
+        if (!placed) useApp.getState().setPlacing(placing ? null : def.id);
+      }}
+      onMouseEnter={(e) =>
+        usePaletteHover.setState({ id: def.id, rect: e.currentTarget.getBoundingClientRect(), port: def, portPlaced: placed })
+      }
+      onMouseLeave={hidePaletteCard}
       draggable={!placed}
       onDragStart={(e) => {
+        hidePaletteCard();
         e.dataTransfer.setData(DEF_DRAG_TYPE, def.id);
         e.dataTransfer.effectAllowed = "copy";
         e.dataTransfer.setDragImage(BLANK_DRAG_IMAGE, 0, 0);
@@ -197,11 +213,6 @@ function PortCard({ def, placed }: { def: NodeDefinition; placed: boolean }) {
             ? "cursor-pointer border-[#4c9aff] bg-[#2b3a55]"
             : "cursor-pointer border-dashed border-[#3a3d52] bg-[#22242e] hover:border-[#4a4e63]"
       }`}
-      title={
-        placed
-          ? `${def.name} is already on this canvas (one of each)`
-          : `${def.name}: ${def.portOf}'s ${def.id === PORT_IN ? "inbound" : "outbound"} connections, seen from inside`
-      }
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#191a21]">
         <Icon size={18} color="#c9cbd8" />

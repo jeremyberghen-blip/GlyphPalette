@@ -1,4 +1,5 @@
 import { Circle, Group, Label, Tag, Text, RegularPolygon } from "react-konva";
+import { useNodeHover } from "./InfoCard";
 import Konva from "konva";
 import { useState } from "react";
 import { PipDef } from "../types";
@@ -95,11 +96,13 @@ export default function PipShape({ nodeId, ownerName, pip, x, y }: Props) {
         onClick={(e) => (e.cancelBubble = true)}
         onMouseEnter={(e) => {
           setHover(true);
+          useNodeHover.setState({ overPip: true }); // the pip's own tooltip, not the node's card
           const stage = e.target.getStage();
           if (stage) stage.container().style.cursor = "pointer";
         }}
         onMouseLeave={(e) => {
           setHover(false);
+          useNodeHover.setState({ overPip: false });
           const stage = e.target.getStage();
           if (stage) stage.container().style.cursor = "";
         }}

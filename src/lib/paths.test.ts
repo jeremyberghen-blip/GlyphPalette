@@ -3,6 +3,8 @@ import { CanvasData, NodeDefinition, NodeInstance } from "../types";
 import {
   buildPlan,
   clashesWith,
+  definitionStatus,
+  placementForTrail,
   normalizeOverride,
   pathClashes,
   placementsOf,
@@ -213,6 +215,30 @@ describe("clashes and reuse", () => {
     expect(links).toEqual(["snip/web-app/snip_api/link_service", "snip/snip_api/link_service"]);
     expect(reusedInterior(plan, at(plan, "n-api")).map((p) => p.nodeId)).toEqual(["n-api-2"]);
     expect(reusedInterior(plan, at(plan, "n-db"))).toEqual([]);
+  });
+
+  it("picks the placement reached through the breadcrumb trail", () => {
+    const { defs, canvases } = snip();
+    defs.web = { ...defs.web, canvasId: "c-web" };
+    canvases["c-web"] = canvas("c-web", [node("n-api-2", "api")]);
+    const plan = buildPlan("Snip", canvases, defs);
+    expect(placementForTrail(plan, "n-links", ["canvas-root", "c-snip", "c-api"])?.path).toBe(
+      "snip/snip_api/link_service"
+    );
+    expect(placementForTrail(plan, "n-links", ["canvas-root", "c-snip", "c-web", "c-api"])?.path).toBe(
+      "snip/web-app/snip_api/link_service"
+    );
+    expect(placementForTrail(plan, "n-links", ["somewhere"])?.path).toBe("snip/web-app/snip_api/link_service");
+  });
+});
+
+describe("definitionStatus", () => {
+  it("gives a definition's kind line before it's placed", () => {
+    const { defs, canvases } = snip();
+    expect(definitionStatus(defs.cache, canvases)).toBe("external");
+    expect(definitionStatus(defs.router, canvases)).toBe("file");
+    expect(definitionStatus(defs.api, canvases)).toBe("drawn");
+    expect(definitionStatus(defs.links, canvases)).toBe("ai");
   });
 });
 
