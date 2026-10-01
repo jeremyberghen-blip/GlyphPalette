@@ -35,7 +35,9 @@ Notes only — nothing gets built until they've finished exploring.
   pip's fields (label, transport, style, direction, side) and OK / Cancel;
   OK adds the pip to the node's definition without opening the full node
   dialog.
-  - Open: on a standard node (read-only), disable it or offer Permute?
+  On a standard node (read-only) it's greyed out, and the menu offers
+  **Permute…** instead: the permuted copy replaces that standard node on
+  the canvas (decided by the user 2026-10-01).
 
 ### In-app AI chat window
 
