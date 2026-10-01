@@ -72,6 +72,29 @@ Flattening pockets in the `architecture.json` export, so their contents
 belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
 shipped in v1.2, ADR 0010.)
 
+### Hephaestus groundwork (v1.3) — planning
+
+Planning started 2026-10-01, adapting `HEPHAESTUS-INTEGRATION.md`'s Tier 1 to
+GP as it now is (Code layer retired, two-part connections, ports, pockets).
+Five items: slug, external flag, kind, language, paths (derivation, per-node
+override, and somewhere to see them).
+
+**Slug** (settled 2026-10-01):
+- Every definition has a slug: a filesystem-safe name, derived from the name
+  by default (so renames follow) and stored only once the user types their
+  own. Edited in the node dialog under Name.
+- Format **snake_case**: lowercase, symbols dropped, spaces/separators →
+  `_`, a leading digit gets a `_` prefix (`Safe Browsing API (Snip)` →
+  `safe_browsing_api_snip`). Valid as a Python module name and fine in
+  Rust/Go/Ruby/TypeScript.
+- Languages that tie file names to contents (Java requires `LinkService.java`;
+  C#/Kotlin/Swift/React-component conventions) are handled when the export
+  builds the actual file name, by a per-language convention — the slug stays
+  snake_case as the canonical form. To settle with language (item 4) and the
+  export (v1.4).
+- Standard nodes are read-only, so their slugs are always derived; the user
+  expects to Permute standard nodes before building anything from them.
+
 ### Installable release build — deferred until after v2.0
 
 Raised 2026-09-29; the user decided the same day not to pursue it before
