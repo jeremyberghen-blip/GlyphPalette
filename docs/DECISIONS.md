@@ -38,6 +38,17 @@ Notes only — nothing gets built until they've finished exploring.
   On a standard node (read-only) it's greyed out, and the menu offers
   **Permute…** instead: the permuted copy replaces that standard node on
   the canvas (decided by the user 2026-10-01).
+- **External nodes: grey out Folder/File.** Something never built has no
+  interior to decide and no file, so the Builds-as toggle doesn't apply
+  once External is ticked (Language likely the same).
+- **GP resets to a blank project when Claude edits the repo.** Seen
+  2026-10-01: each of Claude's turns that touched `docs/` reloaded the
+  user's running GP into a fresh project (nothing lost — saved and
+  autosaved). Likely cause: Tailwind v4 scans every file in the repo for
+  class names, so a doc edit rebuilds the CSS and Vite reloads the page.
+  Fixes to consider: limit Tailwind's scan to `src/`, and reopen the last
+  project on startup so any reload is harmless. Meanwhile Claude keeps all
+  edits, docs included, in the work copy while GP runs.
 
 ### In-app AI chat window
 
