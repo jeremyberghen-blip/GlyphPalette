@@ -111,6 +111,33 @@ override, and somewhere to see them).
   neutral color from internal nodes — a warm stone tone against the usual
   cool slate. Never red (reserved for broken links).
 
+**Kind** (settled 2026-10-01): stopping early means handing the contents to
+the AI, not "make it one file". Each definition has a **Kind** setting,
+**Folder** (default) or **File** (the standard File node is File). What a
+node is, for building:
+
+| Shown as | When |
+|---|---|
+| External — never built | marked external, or inside something external |
+| Folder — contents drawn by you | buildable, interior drawn |
+| Folder — contents decided by the AI | buildable, interior not drawn (the default) |
+| File | Kind set to File |
+
+An interior holding only port nodes counts as not drawn. A File with a drawn
+interior keeps it as a reference sketch that isn't built. Pockets are folds
+(their contents belong to the canvas around them) and port nodes are never
+built.
+
+**Palette hover card** (settled 2026-10-01): kind and the other definition
+facts are shown in a large hover card on palette cards, not on the canvas.
+It floats to the right of the card, out over the canvas; appears after
+~0.4s and hides on drag; shows name/icon, slug, layers, kind line,
+external, language, pips with their transport/style colors (long lists
+truncated), later the v1.4 description; replaces the native tooltip, with
+the placement hint in its footer. Paths are per placed node, not per
+definition, so item 5 needs an instance-level view (likely the same card on
+hovering a placed node).
+
 ### Installable release build — deferred until after v2.0
 
 Raised 2026-09-29; the user decided the same day not to pursue it before
