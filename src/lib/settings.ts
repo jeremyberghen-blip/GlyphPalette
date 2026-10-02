@@ -3,14 +3,16 @@
 
 import { create } from "zustand";
 import { DEFAULT_AUTOSAVE_MINUTES } from "./session";
-import { isTauri } from "./persist";
+import { isTauri } from "./env";
 
 export interface Settings {
   /** Minutes between autosaves; 0 = never. */
   autosaveMinutes: number;
+  /** The project file last opened or saved, reopened on startup; null after New. */
+  lastProjectPath: string | null;
 }
 
-const DEFAULTS: Settings = { autosaveMinutes: DEFAULT_AUTOSAVE_MINUTES };
+const DEFAULTS: Settings = { autosaveMinutes: DEFAULT_AUTOSAVE_MINUTES, lastProjectPath: null };
 const DIR = "glyph-palette";
 const FILE = `${DIR}/settings.json`;
 const LS_KEY = "glyph-palette:settings";

@@ -4,7 +4,8 @@
 
 import { create } from "zustand";
 import { useApp } from "../store";
-import { exportPng, openProject, saveProject } from "./persist";
+import { exportPng, isTauri, openProject, openProjectAt, saveProject } from "./persist";
+import { useSettings } from "./settings";
 import { isDirty, projectLabel } from "./session";
 import { toast } from "./toast";
 
@@ -95,7 +96,31 @@ export async function confirmDiscardIfDirty(action: string): Promise<boolean> {
 export async function newProjectFlow(): Promise<void> {
   if (!(await confirmDiscardIfDirty("starting a new project"))) return;
   const name = await askProjectName();
-  if (name) useApp.getState().newProject(name);
+  if (!name) return;
+  useApp.getState().newProject(name);
+  // A new project isn't saved anywhere yet, so the next startup begins fresh too
+  useSettings.getState().update({ lastProjectPath: null });
+}
+
+let reopened = false;
+
+/**
+ * Startup: reopens the project last opened or saved, quietly. If that file
+ * is gone or unreadable, GP starts fresh and says so. Runs once per page
+ * load (React runs mount effects twice in dev).
+ */
+export async function reopenLastProject(): Promise<void> {
+  if (reopened || !isTauri()) return;
+  reopened = true;
+  const path = useSettings.getState().lastProjectPath;
+  if (!path) return;
+  try {
+    await openProjectAt(path);
+  } catch (e) {
+    useSettings.getState().update({ lastProjectPath: null });
+    console.error(`Couldn't reopen ${path}`, e);
+    toast(`Couldn't reopen ${projectLabel(path)} (moved, deleted, or unreadable) — started a new project`);
+  }
 }
 
 export async function openProjectFlow(): Promise<void> {

@@ -56,6 +56,10 @@ describe("labels", () => {
     expect(windowTitle("Untitled", false)).toBe("Untitled — Glyph Palette");
   });
 
+  it("names the dev copy in its title, so it can't be mistaken for the installed app", () => {
+    expect(windowTitle("Snip", false, "GP Dev Mode")).toBe("Snip — GP Dev Mode");
+  });
+
   it("suggests a safe file name from the project name", () => {
     expect(glyphFileName("Snip")).toBe("Snip.glyph");
     expect(glyphFileName("Snip: v2 / beta")).toBe("Snip v2 beta.glyph");

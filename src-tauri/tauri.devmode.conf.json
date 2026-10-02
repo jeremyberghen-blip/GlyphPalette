@@ -1,6 +1,19 @@
 {
+  "identifier": "com.heroo.glyph-palette.dev",
+  "productName": "GP Dev Mode",
   "build": {
     "beforeDevCommand": "npm run dev -- --port 1440",
     "devUrl": "http://localhost:1440"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "GP Dev Mode",
+        "width": 1400,
+        "height": 900,
+        "center": true,
+        "dragDropEnabled": false
+      }
+    ]
   }
 }

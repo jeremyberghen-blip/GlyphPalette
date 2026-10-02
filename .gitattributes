@@ -1,0 +1,4 @@
+# Tauri's CLI rewrites these with LF line endings; matching that stops
+# them showing as modified after every launch.
+src-tauri/Cargo.toml text eol=lf
+src-tauri/Cargo.lock text eol=lf

@@ -3,15 +3,20 @@
 // (dev preview). The file format itself lives in projectFile.ts.
 
 import { useApp } from "../store";
+import { isTauri } from "./env";
+import { useSettings } from "./settings";
 import { buildProjectFile, loadProjectFile, parseProjectFile, ProjectContent } from "./projectFile";
 import { STANDARD } from "./standardLibrary";
 import { glyphFileName } from "./session";
 
 export type { ProjectFile } from "./projectFile";
 
-export const isTauri = () =>
-  typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
-  "undefined";
+export { isTauri } from "./env";
+
+/** Remembers a project file so the next startup reopens it (Tauri only: the browser has no paths). */
+const rememberProject = (path: string | null) => {
+  if (path) useSettings.getState().update({ lastProjectPath: path });
+};
 
 export function serializeProject(): string {
   return JSON.stringify(buildProjectFile(useApp.getState(), STANDARD), null, 2);
@@ -102,6 +107,7 @@ export async function saveProject(saveAs = false): Promise<"saved" | "cancelled"
     }
     await writeTextFile(path, json);
     useApp.getState().markSaved(path);
+    rememberProject(path);
     return "saved";
   }
   // Browser fallback: download
@@ -121,7 +127,15 @@ export async function openProject(): Promise<boolean> {
   if (!picked) return false;
   loadProjectData(picked.text, picked.name);
   useApp.getState().markSaved(picked.path);
+  rememberProject(picked.path);
   return true;
+}
+
+/** Opens the project at `path` without a dialog (Tauri only). Throws if it can't be read or isn't valid. */
+export async function openProjectAt(path: string): Promise<void> {
+  const { readTextFile } = await import("@tauri-apps/plugin-fs");
+  loadProjectData(await readTextFile(path), baseName(path));
+  useApp.getState().markSaved(path);
 }
 
 export async function exportPng(dataUrl: string): Promise<boolean> {

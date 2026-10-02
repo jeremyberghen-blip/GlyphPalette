@@ -13,12 +13,13 @@ import InfoCardHost from "./components/InfoCard";
 import ContextMenu from "./components/ContextMenu";
 import PathOverrideDialog from "./components/PathOverrideDialog";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
-import { isTauri } from "./lib/persist";
+import { APP_NAME, IS_DEV_BUILD, isTauri } from "./lib/env";
 import {
   closeWindowFlow,
   exportPngFlow,
   newProjectFlow,
   openProjectFlow,
+  reopenLastProject,
   saveNow,
 } from "./lib/fileActions";
 import { autosaveDue, isDirty, windowTitle } from "./lib/session";
@@ -45,13 +46,15 @@ export default function App() {
   const autosaveMinutes = useSettings((s) => s.autosaveMinutes);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Settings first, then the project last worked on (so a restart, or a dev
+  // reload, comes back to it instead of a blank project)
   useEffect(() => {
-    void loadSettings();
+    void loadSettings().then(reopenLastProject);
   }, []);
 
   // Window title: project name, with a dot while there are unsaved changes
   useEffect(() => {
-    const title = windowTitle(projectName, dirty);
+    const title = windowTitle(projectName, dirty, APP_NAME);
     document.title = title;
     if (isTauri()) {
       void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
@@ -190,6 +193,14 @@ export default function App() {
         <span className="shrink-0 whitespace-nowrap text-sm font-semibold tracking-wide text-[#e2e4ee]">
           Glyph Palette
         </span>
+        {IS_DEV_BUILD && (
+          <span
+            className="shrink-0 rounded border border-[#b7791f] bg-[#3b2f17] px-1.5 py-px text-[10px] font-bold tracking-wider text-[#f6c453]"
+            title="Running from a dev server (GP Dev Mode): changes to the code reload it. The installed app has no badge."
+          >
+            DEV
+          </span>
+        )}
         <ProjectTitle dirty={dirty} />
         <div className="mx-1 h-5 w-px bg-[#2e3040]" />
         <button

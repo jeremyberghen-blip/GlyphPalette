@@ -63,9 +63,9 @@ export const DEFAULT_PROJECT_NAME = "Untitled";
 export const projectLabel = (path: string | null): string =>
   path ? path.split(/[\\/]/).pop()! : "Untitled";
 
-/** Window title, e.g. "Snip • — Glyph Palette". */
-export const windowTitle = (projectName: string, dirty: boolean): string =>
-  `${projectName}${dirty ? " •" : ""} — Glyph Palette`;
+/** Window title, e.g. "Snip • — Glyph Palette" (or "… — GP Dev Mode" for the dev copy). */
+export const windowTitle = (projectName: string, dirty: boolean, appName = "Glyph Palette"): string =>
+  `${projectName}${dirty ? " •" : ""} — ${appName}`;
 
 /** The file name a first save suggests: the project name, made safe ("Snip: v2" → "Snip v2.glyph"). */
 export function glyphFileName(projectName: string): string {
