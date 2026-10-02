@@ -48,6 +48,19 @@ balance of deciding shape and architecture yourself while leveraging the
 AI's intelligence, with responsibility for the finished work resting on
 whoever presents it (`HEPHAESTUS-INTEGRATION.md` § Why this exists).
 
+**Description and constraints** (settled 2026-10-02): two optional fields
+on every definition — **Description** (a sentence or two of prose: what
+the part is for) and **Constraints** (short rules it must keep, one per
+line, e.g. "no direct database access"). The spec's terms, used in the
+export too.
+- Per definition, not per placement: a part placed twice is the same part.
+- Edited in a "Purpose" section of the node dialog, under Name; shown in
+  the hover cards (description under the name, constraints as a list);
+  exported with each node.
+- Copied by Duplicate, Permute, and Import.
+- Standard nodes stay without them — generic text tells Hephaestus
+  nothing, and standard nodes get permuted before building anyway.
+
 ### How releases should work on GitHub (to discuss)
 
 Raised 2026-10-01 by the user, who wants to talk it through before anything
