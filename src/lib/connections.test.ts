@@ -5,6 +5,7 @@ import {
   defaultConnType,
   groupStyles,
   groupTransports,
+  styleAfterTransportChange,
   wireType,
 } from "./connections";
 import { STANDARD } from "./standardLibrary";
@@ -56,5 +57,24 @@ describe("node dialog ordering", () => {
   it("defaults a new pip to the layer's usual transport and its most common style", () => {
     expect(defaultConnType(STANDARD.transports, STANDARD.styles, ["container"])).toEqual(c("tr-http", "s-rest"));
     expect(defaultConnType(STANDARD.transports, STANDARD.styles, ["component"])).toEqual(c("tr-inproc", "s-call"));
+  });
+});
+
+describe("styleAfterTransportChange", () => {
+  const { transports, styles } = STANDARD;
+
+  it("keeps a style that still fits the new transport", () => {
+    // Event is usual on both message queues and WebSockets
+    expect(styleAfterTransportChange("s-event", "tr-ws", transports, styles)).toBe("s-event");
+    expect(styleAfterTransportChange("s-any", "tr-tcp", transports, styles)).toBe("s-any");
+  });
+
+  it("otherwise switches to the new transport's default style", () => {
+    // REST/JSON doesn't ride on a message queue; the queue's default is Event
+    expect(styleAfterTransportChange("s-rest", "tr-queue", transports, styles)).toBe("s-event");
+  });
+
+  it("falls back to any when the new transport has no default", () => {
+    expect(styleAfterTransportChange("s-rest", "tr-fs", transports, styles)).toBe("s-any");
   });
 });

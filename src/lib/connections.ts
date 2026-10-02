@@ -59,6 +59,21 @@ export function groupTransports(
 export const styleUsualWith = (s: ApiStyle, transportId: string): boolean =>
   isAnyStyle(s.id) || !s.transports?.length || s.transports.includes(transportId);
 
+/**
+ * A pip's style after its transport changes: kept if it still fits the new
+ * transport, otherwise the transport's default style, otherwise "any".
+ */
+export function styleAfterTransportChange(
+  styleId: string,
+  transportId: string,
+  transports: Record<string, Transport>,
+  styles: Record<string, ApiStyle>
+): string {
+  if (styles[styleId] && styleUsualWith(styles[styleId], transportId)) return styleId;
+  const fallback = transports[transportId]?.defaultStyle;
+  return fallback && styles[fallback] ? fallback : ANY_STYLE;
+}
+
 /** Styles usual with a transport first ("any" leading), the rest after. */
 export function groupStyles(
   styles: Record<string, ApiStyle>,

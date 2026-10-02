@@ -15,7 +15,7 @@ import { nodeMenuItems } from "./nodeMenu";
 const ICON_SIZE = 40;
 
 /** Internal nodes: cool slate. External (managed elsewhere, never built): warm stone. */
-const NODE_COLORS = {
+export const NODE_COLORS = {
   internal: { fill: "#22242e", stroke: "#4a4e63", label: "#c9cbd8" },
   external: { fill: "#2a2621", stroke: "#73695a", label: "#cfc6b8" },
 };

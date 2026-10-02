@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyDefinition, incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
+import { buildFacts, buildsAs, copyDefinition, incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
 import { NodeDefinition } from "../types";
 
 const takenFrom = (names: string[]) => (n: string) =>
@@ -103,5 +103,25 @@ describe("copyDefinition and the v1.3 definition facts", () => {
 
   it("drops a typed slug, so the copy's slug follows its own name", () => {
     expect(copyDefinition(src, "b", "Link Service 2").slug).toBeUndefined();
+  });
+});
+
+describe("Builds as", () => {
+  it("reads one choice from the stored facts, External winning", () => {
+    expect(buildsAs({})).toBe("folder");
+    expect(buildsAs({ kind: "file" })).toBe("file");
+    expect(buildsAs({ external: true })).toBe("external");
+    // Saved by 1.3 with both set (e.g. Snip's Link Creator): it's external
+    expect(buildsAs({ external: true, kind: "file" })).toBe("external");
+  });
+
+  it("stores only what differs from the defaults", () => {
+    expect(buildFacts("folder", "")).toEqual({});
+    expect(buildFacts("folder", "python")).toEqual({ language: "python" });
+    expect(buildFacts("file", "go")).toEqual({ kind: "file", language: "go" });
+  });
+
+  it("keeps no kind or language for External: nothing is built", () => {
+    expect(buildFacts("external", "python")).toEqual({ external: true });
   });
 });

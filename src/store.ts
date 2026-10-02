@@ -281,6 +281,14 @@ interface AppState {
    * layout and the wires between them. Collapsed groups are skipped.
    */
   duplicateSelection: (at: { x: number; y: number } | null) => void;
+  /** Adds one pip to a definition (the canvas's Add pip…). Standard definitions are read-only. */
+  addPip: (defId: string, pip: PipDef) => void;
+  /**
+   * Permute in place: saves `def` (a new definition) and switches the node
+   * on the active canvas to it. Wires stay on pips the copy kept; any whose
+   * pip was dropped stay too, as broken-but-kept links.
+   */
+  permuteNodeInto: (nodeId: string, def: NodeDefinition) => void;
 }
 
 /** Looks up a pip definition from a node instance id. */
@@ -1059,6 +1067,43 @@ export const useApp = create<AppState>((set, get) => ({
           },
         },
         selection: nodes.map((n) => n.id),
+      };
+    }),
+
+  addPip: (defId, pip) =>
+    set((s) => {
+      const def = s.definitions[defId];
+      if (!def || isStandardDef(defId)) return {};
+      return {
+        undoStack: pushSnap(s),
+        definitions: { ...s.definitions, [defId]: { ...def, pips: [...def.pips, pip] } },
+      };
+    }),
+
+  permuteNodeInto: (nodeId, def) =>
+    set((s) => {
+      const canvas = s.canvases[s.activeCanvasId];
+      const node = canvas.nodes.find((n) => n.id === nodeId);
+      const old = node && s.definitions[node.definitionId];
+      if (!node || !old || s.definitions[def.id]) return {};
+      const canvases = {
+        ...s.canvases,
+        [canvas.id]: {
+          ...canvas,
+          nodes: canvas.nodes.map((n) => (n.id === nodeId ? { ...n, definitionId: def.id } : n)),
+        },
+      };
+      // The node's wires were drawn on the old definition's pips (the copy keeps their ids)
+      const saved = keepWiredPips(
+        { ...old, id: def.id, canvasId: def.canvasId },
+        { ...def, layers: def.layers?.length ? def.layers : (["container"] as Layer[]) },
+        canvases
+      );
+      return {
+        undoStack: pushSnap(s),
+        definitions: { ...s.definitions, [def.id]: saved },
+        canvases,
+        selection: [nodeId],
       };
     }),
 

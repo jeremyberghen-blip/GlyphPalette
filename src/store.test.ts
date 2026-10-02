@@ -412,6 +412,72 @@ describe("duplicating", () => {
   });
 });
 
+describe("canvas menu: Add pip and Permute in place", () => {
+  const node = (id: string) => root().nodes.find((n) => n.id === id)!;
+  const pip = (id: string) => ({
+    id,
+    label: "Metrics",
+    transportId: "tr-http",
+    styleId: "s-rest",
+    direction: "outbound" as const,
+    side: "right" as const,
+  });
+
+  it("Add pip adds one pip to the node's definition, undoably", () => {
+    const system = root().nodes[0].definitionId; // the project's own My System
+    s().addPip(system, pip("pip-new"));
+    expect(s().definitions[system].pips.map((p) => p.id)).toEqual(["pip-new"]);
+    s().undo();
+    expect(s().definitions[system].pips).toEqual([]);
+  });
+
+  it("Add pip leaves standard definitions alone (they're read-only)", () => {
+    const before = s().definitions["def-server"];
+    s().addPip("def-server", pip("pip-new"));
+    expect(s().definitions["def-server"]).toBe(before);
+  });
+
+  it("Permute in place switches only that node to the copy, keeping its wires", () => {
+    const web = place("def-webapp");
+    const api = place("def-server", 300, 0);
+    const other = place("def-server", 300, 300);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    const std = s().definitions["def-server"];
+    const copy = { ...structuredClone(std), id: "def-links-api", name: "Links API" };
+
+    s().permuteNodeInto(api, copy);
+    expect(node(api).definitionId).toBe("def-links-api");
+    expect(node(other).definitionId).toBe("def-server");
+    expect(s().definitions["def-server"]).toEqual(std);
+    const [rel] = root().relationships;
+    expect(rel.to).toEqual({ nodeId: api, pipId: "p-srv-http" });
+    expect(wireBroken(rel, getPip(s(), rel.from.nodeId, rel.from.pipId), getPip(s(), rel.to.nodeId, rel.to.pipId))).toBe(false);
+  });
+
+  it("keeps a wired pip the copy dropped, as broken-but-kept", () => {
+    const web = place("def-webapp");
+    const api = place("def-server", 300, 0);
+    wire(web, "p-wa-api", api, "p-srv-http");
+    const std = s().definitions["def-server"];
+    const copy = { ...structuredClone(std), id: "def-links-api", name: "Links API", pips: [] };
+
+    s().permuteNodeInto(api, copy);
+    const kept = s().definitions["def-links-api"].pips;
+    expect(kept.map((p) => [p.id, p.removed])).toEqual([["p-srv-http", true]]);
+    const r = root().relationships[0];
+    expect(wireBroken(r, getPip(s(), r.from.nodeId, r.from.pipId), getPip(s(), r.to.nodeId, r.to.pipId))).toBe(true);
+  });
+
+  it("is one undo step", () => {
+    const api = place("def-server", 300, 0);
+    const copy = { ...structuredClone(s().definitions["def-server"]), id: "def-links-api", name: "Links API" };
+    s().permuteNodeInto(api, copy);
+    s().undo();
+    expect(node(api).definitionId).toBe("def-server");
+    expect(s().definitions["def-links-api"]).toBeUndefined();
+  });
+});
+
 describe("wire bend points", () => {
   /** Two wired nodes; returns their ids and the wire's id. */
   function wired() {

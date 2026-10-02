@@ -10,10 +10,10 @@ import { isStandardDef } from "../lib/standardLibrary";
 import { pickGlyphFile, readProjectContent } from "../lib/persist";
 import { ProjectContent } from "../lib/projectFile";
 import { toast } from "../lib/toast";
-import { isAnyStyle } from "../lib/connections";
 import DefinitionWizard, { closeWizard, openWizard, useWizard } from "./DefinitionWizard";
 import { openContextMenu } from "./ContextMenu";
 import ImportDialog from "./ImportDialog";
+import LegendButton from "./LegendButton";
 import { hidePaletteCard, usePaletteHover } from "./InfoCard";
 
 /** MIME type carrying a definition id when a palette card is dragged onto the canvas. */
@@ -162,40 +162,6 @@ function DefCard({
   );
 }
 
-/** A connection legend: transports (drawn as the line / pip ring) or styles (the core). */
-function Legend({
-  title,
-  items,
-  core = false,
-}: {
-  title: string;
-  items: { id: string; name: string; color: string }[];
-  core?: boolean;
-}) {
-  return (
-    <div className="mb-2 last:mb-0">
-      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#565a72]">{title}</div>
-      <div className="flex flex-wrap gap-1.5">
-        {items.map((t) => (
-          <span
-            key={t.id}
-            className="flex items-center gap-1.5 rounded-full border border-[#2e3040] bg-[#22242e] px-2 py-0.5 text-[11px] text-[#c9cbd8]"
-          >
-            {core ? (
-              <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-[#3a3d52]">
-                <span className="h-1.5 w-1.5 rounded-full ring-1 ring-black" style={{ background: t.color }} />
-              </span>
-            ) : (
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />
-            )}
-            {t.name}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /**
  * A port card: Inbound or Outbound for the node you're inside. Places like any
  * card (click or drag); disabled once that port is on the canvas.
@@ -257,8 +223,6 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 export default function LibraryPanel() {
   const definitions = useApp((s) => s.definitions);
   const canvases = useApp((s) => s.canvases);
-  const transports = useApp((s) => s.transports);
-  const styles = useApp((s) => s.styles);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
   const pocketName = useApp((s) => {
     const owner = canvasOwner(s.definitions, s.activeCanvasId);
@@ -381,20 +345,14 @@ export default function LibraryPanel() {
         )}
       </div>
 
-      <div className="max-h-[40%] overflow-y-auto border-t border-[#2e3040] p-2.5">
-        <Legend title="Transports — the line" items={Object.values(transports)} />
-        <Legend
-          title="Styles — the core"
-          items={Object.values(styles).filter((st) => !isAnyStyle(st.id))}
-          core
-        />
-      </div>
+      <LegendButton />
 
       {wizard.open && (
         <DefinitionWizard
-          key={`${wizard.editing?.id ?? ""}|${wizard.base?.id ?? ""}`}
+          key={`${wizard.editing?.id ?? ""}|${wizard.base?.id ?? ""}|${wizard.replaceNodeId ?? ""}`}
           editing={wizard.editing}
           base={wizard.base}
+          replaceNodeId={wizard.replaceNodeId}
           onClose={closeWizard}
         />
       )}

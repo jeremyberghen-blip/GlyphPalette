@@ -12,6 +12,7 @@ import ProjectTitle from "./components/ProjectTitle";
 import InfoCardHost from "./components/InfoCard";
 import ContextMenu from "./components/ContextMenu";
 import PathOverrideDialog from "./components/PathOverrideDialog";
+import AddPipDialog from "./components/AddPipDialog";
 import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
 import { APP_NAME, IS_DEV_BUILD, isTauri } from "./lib/env";
 import {
@@ -274,6 +275,7 @@ export default function App() {
       <ProjectNamePrompt />
       <InfoCardHost canvasHost={canvasHost} />
       <PathOverrideDialog />
+      <AddPipDialog />
       <ContextMenu />
       <Toasts />
     </div>

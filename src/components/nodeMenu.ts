@@ -8,6 +8,7 @@ import { isStandardDef } from "../lib/standardLibrary";
 import { MenuEntry } from "./ContextMenu";
 import { openWizard } from "./DefinitionWizard";
 import { openPathDialog } from "./PathOverrideDialog";
+import { openAddPipDialog } from "./AddPipDialog";
 
 export function nodeMenuItems(nodeId: string): MenuEntry[] {
   const s = useApp.getState();
@@ -42,6 +43,7 @@ export function nodeMenuItems(nodeId: string): MenuEntry[] {
         ? "Inside a file — a sketch, not built"
         : undefined;
   const standard = isStandardDef(def.id);
+  const readOnly = standard ? "Standard nodes are read-only — Permute… makes this node your own copy" : undefined;
 
   return [
     { label: "Override path…", onClick: () => openPathDialog(nodeId), disabled: !!notBuilt, title: notBuilt },
@@ -50,12 +52,17 @@ export function nodeMenuItems(nodeId: string): MenuEntry[] {
       : []),
     "separator",
     open,
-    {
-      label: "Edit definition…",
-      onClick: () => openWizard({ editing: def }),
-      disabled: standard,
-      title: standard ? "Standard nodes are read-only — Permute one in the palette to change it" : undefined,
-    },
+    { label: "Edit definition…", onClick: () => openWizard({ editing: def }), disabled: standard, title: readOnly },
+    { label: "Add pip…", onClick: () => openAddPipDialog(def.id), disabled: standard, title: readOnly },
+    ...(standard
+      ? [
+          {
+            label: "Permute…",
+            onClick: () => openWizard({ base: def, replaceNodeId: nodeId }),
+            title: "Replace this node with your own copy of the standard node, to edit",
+          },
+        ]
+      : []),
     {
       label: "Duplicate",
       shortcut: "Ctrl+D",

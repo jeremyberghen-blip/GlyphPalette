@@ -1,6 +1,30 @@
 // Pure helpers for node definitions: naming, comparison, and copying.
 
 import { NodeDefinition } from "../types";
+import type { LanguageId } from "./naming";
+
+/**
+ * The node dialog's one "Builds as" choice. External is neither a folder nor
+ * a file: it's never built. Stored as before — `external` and `kind`.
+ */
+export type BuildsAs = "folder" | "file" | "external";
+
+/** A definition's Builds-as choice (External wins over any stored kind). */
+export const buildsAs = (def: Pick<NodeDefinition, "external" | "kind">): BuildsAs =>
+  def.external ? "external" : def.kind === "file" ? "file" : "folder";
+
+/**
+ * The building facts to store for a Builds-as choice and language, only where
+ * they differ from the defaults. External keeps no kind or language — nothing
+ * is built, so neither applies.
+ */
+export function buildFacts(
+  choice: BuildsAs,
+  language: LanguageId | "" | undefined
+): Pick<NodeDefinition, "external" | "kind" | "language"> {
+  if (choice === "external") return { external: true };
+  return { ...(choice === "file" ? { kind: "file" as const } : {}), ...(language ? { language } : {}) };
+}
 
 /** Case-insensitive "is this name used by any definition?" check, excluding one id. */
 export function nameTaken(
