@@ -11,13 +11,26 @@ Built with Tauri v2 + React + TypeScript + Konva + Zustand.
 
 ## Running it
 
-Double-click the **Glyph Palette** desktop shortcut, or run
-[`launch.bat`](launch.bat) directly. It checks for Node.js and the Rust
-toolchain, installs npm dependencies on first run, and starts the app in dev
-mode (hot-reload). The first launch recompiles the Rust side and can take a
-few minutes; later launches are fast.
+There are two ways to run GP ([ADR 0012](docs/decisions/0012-installed-app-and-dev-copy.md)):
 
-Manually: `npm install`, then `npm run tauri dev`.
+- **Glyph Palette — the installed app**, for everyday use. Build the
+  installer with `npm run tauri build` (from `master`); it lands at
+  `src-tauri/target/release/bundle/nsis/Glyph Palette_<version>_x64-setup.exe`.
+  It's unsigned, so Windows asks to "Run anyway" the first time.
+- **GP Dev Mode — the work copy**, for building and testing new features:
+  [`launch-dev.bat`](launch-dev.bat) (or the **GP Dev Mode** desktop
+  shortcut) runs whichever copy it sits in, in dev mode with hot-reload, on
+  port 1440 — alongside the installed app, with its own settings. It shows
+  a DEV badge. [`launch.bat`](launch.bat) does the same for this copy on
+  port 1420 without the separate identity.
+
+Both launchers check for Node.js and the Rust toolchain and install npm
+dependencies on first run. A copy's first launch compiles the Rust side
+and can take a few minutes; later launches are fast.
+
+Manually: `npm install`, then `npm run tauri dev` (or
+`npm run tauri dev -- --config src-tauri/tauri.devmode.conf.json` for the
+dev identity).
 
 Tests: `npm test` (Vitest); `npm run build` type-checks and bundles.
 

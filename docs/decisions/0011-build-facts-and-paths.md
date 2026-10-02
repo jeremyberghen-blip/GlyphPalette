@@ -1,7 +1,7 @@
 # 0011: Build facts on definitions, and derived build paths
 
 Date: 2026-10-01
-Status: Accepted
+Status: Accepted; amended in v1.4 (below)
 
 ## Context
 
@@ -90,3 +90,12 @@ other placements of the same node.
   the standard node's facts on load, since those files predate them.
 - Full lint (unwired ports, unspecified languages across the project) is
   still on the Backlog; v1.3 only surfaces problems per node.
+
+## Amendment (v1.4, 2026-10-01)
+
+At the user's request the node dialog shows External and Kind as **one**
+"Builds as" choice — Folder, File, or External (not built) — because an
+external node is neither a folder nor a file. Choosing External greys out
+Language and stores neither a kind nor a language. The file format is
+unchanged (`external` and `kind`, so 1.3 files open as before); where an
+older file has both (External + File), External wins.

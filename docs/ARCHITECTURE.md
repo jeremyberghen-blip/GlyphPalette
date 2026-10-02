@@ -111,7 +111,9 @@ Tests: Vitest (`npm test`).
 | `src/lib/persist.ts` | Filesystem side of projects: dialogs, reading/writing `.glyph`, PNG export. |
 | `src/lib/fileActions.ts` | File operations as the UI runs them: pop-ups, Save / Don't save / Cancel. |
 | `src/lib/session.ts` | Save-state logic: dirty check (project name included), autosave timing, window title, suggested file name (pure). |
-| `src/lib/settings.ts` | Per-machine settings (autosave interval). |
+| `src/lib/settings.ts` | Per-machine settings (autosave interval, the project to reopen on startup). |
+| `src/lib/env.ts` | Where GP is running: Tauri or the browser; a dev build (GP Dev Mode) or the installed app. |
+| `src/lib/pips.ts` | Pips as the dialogs show them: sections by direction, a new pip's default side (pure). |
 | `src/lib/toast.ts` | Pop-up message store. |
 | `src/lib/icons.ts` | Lucide icon lookup + custom-uploaded-icon resolution. |
 | `src/components/CanvasStage.tsx` | The Konva stage: pan/zoom, marquee select, wire-drag, boundary drawing, placement ghost, drag-to-place drop target. |
@@ -120,8 +122,11 @@ Tests: Vitest (`npm test`).
 | `src/components/ContextMenu.tsx`, `nodeMenu.ts` | The right-click menu, and what a placed node's menu offers. |
 | `src/components/PathOverrideDialog.tsx` | Override path…: the automatic path, the typed one, and a preview. |
 | `src/components/ProjectTitle.tsx`, `ProjectNamePrompt.tsx` | The project name in the top bar (click to rename) and New's name prompt. |
-| `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, transport and style legends. |
-| `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, slug, builds-as facts, layers, icon, pips. Its open state is a small store so palette cards and canvas menus can open it. |
+| `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, right-click menus, the Legend icon. |
+| `src/components/PipFields.tsx` | One pip's fields (label, transport, style, direction, side), as a dialog row or a small form; inline custom transports/styles. |
+| `src/components/AddPipDialog.tsx` | Add pip… from a node's right-click menu. |
+| `src/components/LegendButton.tsx` | The Legend icon at the palette's foot and the legend it shows on hover. |
+| `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, slug, Builds as + language, layers, icon, pips grouped by direction. Its open state is a small store so palette cards and canvas menus can open it (including Permute-in-place for a node). |
 | `src/components/ImportDialog.tsx` | Choose definitions to import from another project. |
 | `src/components/NavTree.tsx`, `Breadcrumbs.tsx` | Canvas navigation — Explorer-style tree and the trail-of-crumbs + back button, both showing layers. |
 | `src/components/Toasts.tsx`, `UnsavedPrompt.tsx`, `SettingsDialog.tsx`, `BoundaryModal.tsx` | Pop-ups and dialogs. |
@@ -141,8 +146,10 @@ Tests: Vitest (`npm test`).
    can't read version 2 files. Files from before v1.3 have no `name`; they
    take it from the file name.
 2. **Settings** (`settings.ts`) — per machine:
-   `%APPDATA%\com.heroo.glyph-palette\glyph-palette\settings.json` in Tauri,
-   `localStorage` in the browser preview.
+   `%APPDATA%\com.heroo.glyph-palette\glyph-palette\settings.json` in Tauri
+   (GP Dev Mode: `com.heroo.glyph-palette.dev`), `localStorage` in the
+   browser preview. Holds the autosave interval and the path of the project
+   to reopen on startup.
 
 v1.0's per-machine default library (`glyph-palette\library.json` in the same
 folder) is no longer read; an existing one is left on disk unused.
@@ -150,6 +157,17 @@ folder) is no longer read; an existing one is left on disk unused.
 There is a third, not-yet-built export target — `architecture.json`, a
 layout-free graph for Project Hephaestus to consume — specified in
 `../HEPHAESTUS-INTEGRATION.md` and tracked in [ADR 0005](decisions/0005-defer-hephaestus-integration.md).
+
+## Builds and copies
+
+The installed app is a release build of `master` (`npm run tauri build` →
+NSIS `setup.exe`; `bundle.targets` is `["nsis"]`). The work copy runs in
+dev mode as GP Dev Mode: `launch-dev.bat` passes
+`src-tauri/tauri.devmode.conf.json`, which changes the port (1440), the app
+identifier (`com.heroo.glyph-palette.dev`), and the window title. `env.ts`'s
+`IS_DEV_BUILD` (Vite's dev flag) drives the DEV badge and title. Tailwind
+scans only `src/` (`App.css`), so editing anything else never reloads a
+running dev copy. See [ADR 0012](decisions/0012-installed-app-and-dev-copy.md).
 
 ## Testing
 

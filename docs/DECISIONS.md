@@ -17,39 +17,14 @@ too slight to matter.
 
 ## Open
 
-### Snip v1.3 update — pip UI notes (slated for v1.4)
+### How releases should work on GitHub (to discuss)
 
-Raised 2026-10-01 while the user updates `Snip.glyph` to v1.3 on their own.
-Slated for v1.4 on 2026-10-01; details may still change as the user
-explores.
-
-- **Legend on demand, not always on screen.** The transport and style
-  legends at the bottom of the palette become a small icon there; hovering
-  it pops the legend up, and it goes away when the mouse moves off. Purely
-  for reference — nothing in it is clickable.
-- **Pips grouped by direction in the node dialog.** Two sections, Inbound
-  and Outbound, for readability. Each pip keeps its direction dropdown;
-  changing it moves the pip to the matching section.
-  - Open: where Bidirectional and None pips go (a third section, or shown
-    in both?).
-- **Add pip… on the node right-click menu.** A small window with the
-  pip's fields (label, transport, style, direction, side) and OK / Cancel;
-  OK adds the pip to the node's definition without opening the full node
-  dialog.
-  On a standard node (read-only) it's greyed out, and the menu offers
-  **Permute…** instead: the permuted copy replaces that standard node on
-  the canvas (decided by the user 2026-10-01).
-- **External nodes: grey out Folder/File.** Something never built has no
-  interior to decide and no file, so the Builds-as toggle doesn't apply
-  once External is ticked (Language likely the same).
-- **GP resets to a blank project when Claude edits the repo.** Seen
-  2026-10-01: each of Claude's turns that touched `docs/` reloaded the
-  user's running GP into a fresh project (nothing lost — saved and
-  autosaved). Likely cause: Tailwind v4 scans every file in the repo for
-  class names, so a doc edit rebuilds the CSS and Vite reloads the page.
-  Fixes to consider: limit Tailwind's scan to `src/`, and reopen the last
-  project on startup so any reload is harmless. Meanwhile Claude keeps all
-  edits, docs included, in the work copy while GP runs.
+Raised 2026-10-01 by the user, who wants to talk it through before anything
+is published: what a GitHub Release for GP should contain and look like
+(installer attached, notes from the changelog, how versions are named,
+what a visitor sees), and who uploads it. Until then Claude builds the
+installer locally and hands it over; nothing is uploaded. Not slotted —
+recorded so it isn't forgotten.
 
 ### In-app AI chat window
 
@@ -119,39 +94,19 @@ to every placement (the dialog warns); collapsed groups get no path
 override or Edit (their pips come from the wires they fold); v1.0 forks of
 standard nodes take the standard node's facts on load.
 
-### Stable and dev copies side by side (v1.4)
+### Built in v1.4.0 (2026-10-01)
 
-Decided 2026-10-01, superseding the deferral below. The user runs an
-**installed** GP built from `master` day to day; Claude builds in the work
-copy (`C:\Projects\GlyphPalette-work`), which runs in dev mode as **GP Dev
-Mode** on port 1440 (`launch-dev.bat` + `src-tauri/tauri.devmode.conf.json`)
-alongside it. Edits to the work copy can't touch the installed app — this
-ends the "close GP first" rule and the reload-to-blank problem.
-- `master` stays stable: merge a finished version, tag it, build the
-  installer, publish a **GitHub Release** with the installer attached and
-  the changelog as notes. Installers never go in the repo itself.
-- Desktop shortcuts (made 2026-10-01): **Glyph Palette** (currently
-  `launch.bat` on master, dev mode — becomes the installed app) and **GP
-  Dev Mode** (`launch-dev.bat` in the work copy).
-- Open for the build: unsigned-installer SmartScreen warning; whether the
-  installed and dev copies share settings (same app identifier today);
-  making the dev window visibly different (title prefix); the dev copy's
-  first launch compiles Rust from scratch.
-
-### Installable release build — superseded 2026-10-01
-
-Originally deferred until after v2.0; pulled forward into v1.4 by the entry
-above. Notes kept for the build:
-
-Notes for when it comes up: GP currently only runs in dev mode
-(`launch.bat` → `npm run tauri dev`), where a Vite dev server on
-`localhost:1420` serves the UI to a debug Rust binary, so closing the
-console kills the app. `npm run tauri build` bundles the UI into the
-executable and emits Windows installers (NSIS `setup.exe` and MSI) under
-`src-tauri/target/release/bundle/`; `tauri.conf.json` is already
-configured for it. Open at that point: code signing (unsigned installers
-trigger a SmartScreen "unknown publisher" warning), Tauri's updater
-plugin, and dev and installed copies sharing one per-machine library.
+The stable/dev split (installed app from `master`, GP Dev Mode for the
+work copy, the release flow, unsigned installer) left this file when
+v1.4.0 shipped; its reasoning now lives in [ADR 0012](decisions/0012-installed-app-and-dev-copy.md),
+which also records the reload-to-blank cause (Tailwind scanning `docs/`)
+and both fixes. It superseded the "Installable release build — deferred
+until after v2.0" entry (2026-09-29). The user's pip UI notes from updating
+Snip — legend on demand, pips grouped by direction (Both ways / other as a
+third section), Add pip… and Permute… on the node menu, one Builds-as
+choice with External greying out Language — are in
+[`CHANGELOG.md`](CHANGELOG.md) § 1.4.0; the Builds-as merge is also noted
+in [ADR 0011](decisions/0011-build-facts-and-paths.md).
 
 ## Record
 

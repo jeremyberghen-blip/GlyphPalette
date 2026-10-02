@@ -4,6 +4,46 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.4.0] — 2026-10-01
+
+A stable app to work in, a dev copy to build in, and palette polish from
+updating Snip.
+
+### Added
+- **Installable app** ([ADR 0012](decisions/0012-installed-app-and-dev-copy.md)):
+  `npm run tauri build` makes `Glyph Palette_1.4.0_x64-setup.exe`, a
+  standard per-user installer (unsigned, so Windows asks "Run anyway"
+  the first time). The installed app never reloads while code changes.
+- **GP Dev Mode:** the work copy runs from its own launcher and desktop
+  shortcut on port 1440, alongside the installed app, with its own
+  settings. It says so: "GP Dev Mode" in the window title and a DEV badge
+  in the top bar.
+- **Reopen on startup:** GP opens the project you last opened or saved; if
+  that file moved or was deleted, it starts fresh and says so. New starts
+  the next launch fresh too.
+- **Legend on demand:** the palette's transport and style legends are now
+  a Legend icon at its foot; hover it to see the legend beside the
+  palette — with pip direction marks, broken and locked wires, and the
+  slate/stone node colors added.
+- **Add pip…** on a placed node's right-click menu: a small window with
+  the pip's label, transport, style, direction, and side (the side follows
+  the direction until you pick one).
+- **Permute…** on a standard node's right-click menu (where Edit and Add
+  pip are greyed out): makes your own copy and puts it on that node only,
+  wires kept. Like Permute in the palette, the copy starts with an empty
+  inside.
+
+### Changed
+- The node dialog lists pips in three sections — Inbound, Outbound, Both
+  ways / other — each with its own Add; changing a pip's direction moves
+  it to its section.
+- The node dialog's Folder/File toggle and External checkbox are one
+  "Builds as" choice: Folder, File, or External — not built. External
+  greys out Language.
+- Editing files outside `src/` (docs) no longer reloads a running dev copy
+  into a blank project.
+- `Cargo.toml` no longer shows as changed after every launch.
+
 ## [1.3.0] — 2026-10-01
 
 Hephaestus groundwork: what each node builds as, and where.
