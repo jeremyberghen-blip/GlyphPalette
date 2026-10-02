@@ -118,10 +118,29 @@ to every placement (the dialog warns); collapsed groups get no path
 override or Edit (their pips come from the wires they fold); v1.0 forks of
 standard nodes take the standard node's facts on load.
 
-### Installable release build — deferred until after v2.0
+### Stable and dev copies side by side (v1.4)
 
-Raised 2026-09-29; the user decided the same day not to pursue it before
-v2.0 — knowing it's possible and cheap is enough for now. On the Backlog.
+Decided 2026-10-01, superseding the deferral below. The user runs an
+**installed** GP built from `master` day to day; Claude builds in the work
+copy (`C:\Projects\GlyphPalette-work`), which runs in dev mode as **GP Dev
+Mode** on port 1440 (`launch-dev.bat` + `src-tauri/tauri.devmode.conf.json`)
+alongside it. Edits to the work copy can't touch the installed app — this
+ends the "close GP first" rule and the reload-to-blank problem.
+- `master` stays stable: merge a finished version, tag it, build the
+  installer, publish a **GitHub Release** with the installer attached and
+  the changelog as notes. Installers never go in the repo itself.
+- Desktop shortcuts (made 2026-10-01): **Glyph Palette** (currently
+  `launch.bat` on master, dev mode — becomes the installed app) and **GP
+  Dev Mode** (`launch-dev.bat` in the work copy).
+- Open for the build: unsigned-installer SmartScreen warning; whether the
+  installed and dev copies share settings (same app identifier today);
+  making the dev window visibly different (title prefix); the dev copy's
+  first launch compiles Rust from scratch.
+
+### Installable release build — superseded 2026-10-01
+
+Originally deferred until after v2.0; pulled forward into v1.4 by the entry
+above. Notes kept for the build:
 
 Notes for when it comes up: GP currently only runs in dev mode
 (`launch.bat` → `npm run tauri dev`), where a Vite dev server on

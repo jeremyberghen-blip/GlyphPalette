@@ -47,6 +47,12 @@ and the dev launcher.
 
 ## v1.4 — planned: Hephaestus Tier 2
 
+- **Stable and dev copies side by side** (slated 2026-10-01; see
+  [`DECISIONS.md`](DECISIONS.md)): an installable build of `master` for
+  everyday use, published on GitHub Releases with each tagged version; the
+  work copy runs in dev mode (GP Dev Mode, port 1440) so features can be
+  built and hot-reloaded while the installed app stays untouched. Pulls the
+  installer forward from after v2.0.
 - Edge `kind` (`transport | import | call`) on `PipType`, inherited by a
   relationship from its pip type.
 - Interface names (symbol labels) carried on `import`/`call` edges.
