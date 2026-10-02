@@ -15,7 +15,8 @@ export { isTauri } from "./env";
 
 /** Remembers a project file so the next startup reopens it (Tauri only: the browser has no paths). */
 const rememberProject = (path: string | null) => {
-  if (path) useSettings.getState().update({ lastProjectPath: path });
+  // Only when it changes: autosaves would otherwise rewrite settings every few minutes
+  if (path && path !== useSettings.getState().lastProjectPath) useSettings.getState().update({ lastProjectPath: path });
 };
 
 export function serializeProject(): string {

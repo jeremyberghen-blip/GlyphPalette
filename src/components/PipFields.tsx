@@ -103,9 +103,11 @@ interface Props {
   /** Row only: shown at the end of the line (the dialog's delete button). */
   trailing?: React.ReactNode;
   autoFocusLabel?: boolean;
+  /** Enter pressed in the label field (Add pip…: confirms the window). */
+  onLabelEnter?: () => void;
 }
 
-export default function PipFields({ pip, layers, onChange, layout = "row", trailing, autoFocusLabel }: Props) {
+export default function PipFields({ pip, layers, onChange, layout = "row", trailing, autoFocusLabel, onLabelEnter }: Props) {
   const transports = useApp((s) => s.transports);
   const styles = useApp((s) => s.styles);
   const activeLayer = useApp((s) => s.canvases[s.activeCanvasId]?.layer ?? "container");
@@ -121,6 +123,7 @@ export default function PipFields({ pip, layers, onChange, layout = "row", trail
       value={pip.label}
       autoFocus={autoFocusLabel}
       onChange={(e) => onChange({ label: e.target.value })}
+      onKeyDown={(e) => e.key === "Enter" && onLabelEnter?.()}
     />
   );
   const transport = (

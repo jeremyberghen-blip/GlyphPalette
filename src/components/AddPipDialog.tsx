@@ -43,10 +43,7 @@ function Dialog({ defId }: { defId: string }) {
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60"
-      onKeyDown={(e) => {
-        if (e.key === "Escape") close();
-        if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") add();
-      }}
+      onKeyDown={(e) => e.key === "Escape" && close()}
     >
       <div className="w-[360px] rounded-lg border border-[#3a3d52] bg-[#22242e] p-4 shadow-2xl">
         <div className="mb-3 text-sm font-semibold text-[#e2e4ee]">Add pip — {def.name}</div>
@@ -55,6 +52,7 @@ function Dialog({ defId }: { defId: string }) {
           layers={def.layers}
           layout="form"
           autoFocusLabel
+          onLabelEnter={add}
           onChange={(patch) => {
             if (patch.side) setSideChosen(true);
             setPip((p) => ({
