@@ -59,13 +59,18 @@ and the dev launcher.
 
 ## v1.5 — planned: Hephaestus Tier 2
 
-- Connection kinds (`transport | import | call`), worked out from each
-  wire's style; custom styles get a Kind choice.
-- **Richer Component-layer definitions** to replace the undrawn Code layer:
-  a free-text responsibility/notes field and key exported symbols as text.
-- The `architecture.json` export itself: flat node list + flat edge list,
-  `parent` pointers reconstructing the tree, per `HEPHAESTUS-INTEGRATION.md`.
-  Pockets are flattened away: their contents belong to the pocket's parent.
+Fully planned 2026-10-02; details in [`DECISIONS.md`](DECISIONS.md) §
+"Hephaestus Tier 2 (v1.5)". The goal it serves was restated the same day:
+decide shape and architecture yourself, leave finer detail to the AI
+(`HEPHAESTUS-INTEGRATION.md` § Why this exists).
+
+- **Connection kinds** (`transport` / `import` / `call`), worked out from
+  each wire's style; custom styles get a Kind choice.
+- **Description and constraints** on every definition: what it's for, and
+  the rules it must keep.
+- **Publish:** writes `architecture.json` — nodes per placement with paths,
+  kinds, languages, descriptions; wires as drawn with kinds and labels;
+  collapsed groups dissolved; a warnings list.
 
 ## v2.0 — future: first real slice
 
@@ -99,12 +104,10 @@ Real ideas, not currently slated to a version:
 - **Connection attributes** — facts about a wire that its transport and
   style don't imply: TLS, auth, ports/hosts. Only if the v2.0 export shows
   Hephaestus needs them.
-- **Installable release build** (`npm run tauri build` → Windows installers).
-  Already configured and cheap; deliberately not before v2.0.
 - Whether the Context-layer seeds (`System`, `Person`) should ship with
   generic pips — see [`DECISIONS.md`](DECISIONS.md) § Open.
-- Persistent user library promotion UI beyond the single "save to default
-  library" button (browsing/editing the library outside a project context).
+- Browsing and editing a library outside a project (today definitions live
+  in each project, with the read-only standard library and Import).
 - In-GP lint: buildable node with no path, import cycle, a buildable subtree
   reachable by two instance paths (see `HEPHAESTUS-INTEGRATION.md`'s edge
   cases), and unwired port pips once v1.2 lands.

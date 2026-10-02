@@ -61,6 +61,35 @@ export too.
 - Standard nodes stay without them — generic text tells Hephaestus
   nothing, and standard nodes get permuted before building anyway.
 
+**The export** (settled 2026-10-02): a **Publish** button in the top bar
+writes `architecture.json` (save dialog, that name suggested) — a
+layout-free description for Hephaestus, regenerated on every Publish and
+never read back by GP. Contents:
+- `project` (name, folder); `nodes` — one per placement (a definition
+  placed twice appears twice), each with id, name, parent, `kind`
+  (`folder` / `file` / `external`, GP's own words rather than the spec's
+  `dir`), folders' `contents` (`drawn` or `ai`), path, effective language,
+  layer, description, constraints;
+- `edges` — every wire **as drawn**, one per placement of its canvas, with
+  kind (transport / import / call), transport and style names, and both
+  pip labels (the user's own words for the connection, as context). Wires
+  to ports become edges to the parent node, with the pip on each end
+  identified so Hephaestus can follow a chain across levels; GP doesn't
+  resolve chains (easy to add if Hephaestus wants it);
+- `warnings` — missing languages, path clashes, skipped broken wires.
+  Problems never block Publish; they're listed in the file and in a summary
+  shown afterwards.
+- Collapsed groups dissolve (contents become the group's parent's
+  children; wires into a group follow its pip map to the inner node).
+  Ports, nodes inside External nodes, and Files' reference sketches are
+  never exported.
+- The user plans to lean on pip labels and custom transports/styles named
+  for what a connection carries ("DB Queries", "URL safety check
+  request") — no GP change needed; both reach the export.
+
+**Plan complete 2026-10-02** — three features (kinds, description and
+constraints, Publish) plus the v1.5 roadmap tidy.
+
 ### How releases should work on GitHub (to discuss)
 
 Raised 2026-10-01 by the user, who wants to talk it through before anything
