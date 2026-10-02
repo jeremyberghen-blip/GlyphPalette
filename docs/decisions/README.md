@@ -49,3 +49,4 @@ it in place with an updated `Status` line so history stays readable.
 | [0010](0010-port-nodes-and-broken-links.md) | Port nodes, and broken-but-kept links | Accepted |
 | [0011](0011-build-facts-and-paths.md) | Build facts on definitions, and derived build paths | Accepted; amended in v1.4 |
 | [0012](0012-installed-app-and-dev-copy.md) | An installed stable app beside a dev-mode work copy | Accepted |
+| [0013](0013-publish-architecture-json.md) | Publish — `architecture.json`, connection kinds, and purpose | Accepted |

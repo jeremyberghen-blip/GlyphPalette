@@ -23,6 +23,11 @@ Tests: Vitest (`npm test`).
   and `language` (inherited when absent); naming rules in
   [`src/lib/naming.ts`](../src/lib/naming.ts). See
   [ADR 0011](decisions/0011-build-facts-and-paths.md).
+- **Connection kind** — what a wire means for the export: `transport`,
+  `import`, or `call`, from its style (`edgeKind` in
+  [`src/lib/connections.ts`](../src/lib/connections.ts); styles may carry
+  `kind`). Definitions also carry an optional `description` and
+  `constraints` (ADR 0013).
 - **Build plan** — where each placed node builds, derived on demand by
   `buildPlan` in [`src/lib/paths.ts`](../src/lib/paths.ts) and never stored:
   one *placement* per route from the top canvas (a node inside a shared
@@ -113,6 +118,7 @@ Tests: Vitest (`npm test`).
 | `src/lib/session.ts` | Save-state logic: dirty check (project name included), autosave timing, window title, suggested file name (pure). |
 | `src/lib/settings.ts` | Per-machine settings (autosave interval, the project to reopen on startup). |
 | `src/lib/env.ts` | Where GP is running: Tauri or the browser; a dev build (GP Dev Mode) or the installed app. |
+| `src/lib/architecture.ts` | Publish: the project as `architecture.json` for Hephaestus — nodes per placement, wires as drawn, warnings (pure; ADR 0013). |
 | `src/lib/grid.ts` | The canvas grid: one tileable SVG image as a CSS background, sized and offset to the viewport (pure). |
 | `src/lib/pips.ts` | Pips as the dialogs show them: sections by direction, a new pip's default side (pure). |
 | `src/lib/toast.ts` | Pop-up message store. |
@@ -125,6 +131,7 @@ Tests: Vitest (`npm test`).
 | `src/components/ProjectTitle.tsx`, `ProjectNamePrompt.tsx` | The project name in the top bar (click to rename) and New's name prompt. |
 | `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, right-click menus, the Legend icon. |
 | `src/components/PipFields.tsx` | One pip's fields (label, transport, style, direction, side), as a dialog row or a small form; inline custom transports/styles. |
+| `src/components/PublishSummary.tsx` | After Publish: where the file went, counts, and warnings. |
 | `src/components/AddPipDialog.tsx` | Add pip… from a node's right-click menu. |
 | `src/components/LegendButton.tsx` | The legend (`LegendPanel`), shown on hovering the palette's foot and beside the node and Add pip dialogs. |
 | `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, slug, Builds as + language, layers, icon, pips grouped by direction. Its open state is a small store so palette cards and canvas menus can open it (including Permute-in-place for a node). |
@@ -155,9 +162,10 @@ Tests: Vitest (`npm test`).
 v1.0's per-machine default library (`glyph-palette\library.json` in the same
 folder) is no longer read; an existing one is left on disk unused.
 
-There is a third, not-yet-built export target — `architecture.json`, a
-layout-free graph for Project Hephaestus to consume — specified in
-`../HEPHAESTUS-INTEGRATION.md` and tracked in [ADR 0005](decisions/0005-defer-hephaestus-integration.md).
+A third file is written but never read: **`architecture.json`**, from the
+top bar's Publish — a layout-free graph for Project Hephaestus
+(`lib/architecture.ts`; format and reasoning in [ADR 0013](decisions/0013-publish-architecture-json.md),
+the goal in `../HEPHAESTUS-INTEGRATION.md`).
 
 ## Builds and copies
 

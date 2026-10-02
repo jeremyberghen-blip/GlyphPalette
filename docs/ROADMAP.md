@@ -1,6 +1,6 @@
 # Roadmap
 
-What v1.4.0 is, and where things go from here. Nothing below is a commitment
+What v1.5.0 is, and where things go from here. Nothing below is a commitment
 to build it, let alone on the version it's slated to — it's a place to put
 plans so they don't only live in conversation. Move items between versions,
 into Backlog, or out entirely as things change; that's the point of writing
@@ -12,7 +12,18 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.4 — current: 1.4.1 (2026-10-02)
+## v1.5 — current: 1.5.0 (2026-10-02)
+
+Hephaestus Tier 2 ([ADR 0013](decisions/0013-publish-architecture-json.md)):
+Publish writes `architecture.json` — parts per placement with paths,
+kinds, languages, descriptions and constraints; connections as drawn with
+derived kinds (transport / import / call) and pip labels; collapsed groups
+dissolved; a warnings list. The goal was restated as a balance the same
+day: decide shape and architecture yourself, leave finer detail —
+interface names included — to the AI. Full list in
+[`CHANGELOG.md`](CHANGELOG.md) § 1.5.0.
+
+## v1.4 — 1.4.1 (2026-10-02)
 
 A stable app to work in and a dev copy to build in ([ADR 0012](decisions/0012-installed-app-and-dev-copy.md)):
 an installable build of `master`, GP Dev Mode for the work copy, reopening
@@ -56,21 +67,6 @@ bend points inside collapsed boxes, and drag-to-place in the desktop app.
 v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
-
-## v1.5 — planned: Hephaestus Tier 2
-
-Fully planned 2026-10-02; details in [`DECISIONS.md`](DECISIONS.md) §
-"Hephaestus Tier 2 (v1.5)". The goal it serves was restated the same day:
-decide shape and architecture yourself, leave finer detail to the AI
-(`HEPHAESTUS-INTEGRATION.md` § Why this exists).
-
-- **Connection kinds** (`transport` / `import` / `call`), worked out from
-  each wire's style; custom styles get a Kind choice.
-- **Description and constraints** on every definition: what it's for, and
-  the rules it must keep.
-- **Publish:** writes `architecture.json` — nodes per placement with paths,
-  kinds, languages, descriptions; wires as drawn with kinds and labels;
-  collapsed groups dissolved; a warnings list.
 
 ## v2.0 — future: first real slice
 

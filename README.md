@@ -3,9 +3,9 @@
 A desktop tool for drawing a system's architecture as a C4-style recursive
 decomposition — Context → Container → Component — with typed,
 directional connections between nodes, a reusable definition library, and a
-project file you can version and share. Each node also records what it
-builds as (folder or file, language, or external) and where, as groundwork
-for handing a design to an AI code generator.
+project file you can version and share. Each node also records what it's
+for, what it builds as (folder or file, language, or external) and where;
+**Publish** hands the design to an AI code generator as `architecture.json`.
 
 Built with Tauri v2 + React + TypeScript + Konva + Zustand.
 
@@ -47,9 +47,9 @@ Tests: `npm test` (Vitest); `npm run build` type-checks and bundles.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — version history.
 - [`HEPHAESTUS-INTEGRATION.md`](HEPHAESTUS-INTEGRATION.md) — the design for
   exporting a Glyph Palette project to Project Hephaestus, an AI
-  code-generation pipeline. The groundwork shipped in v1.3
-  ([ADR 0011](docs/decisions/0011-build-facts-and-paths.md)); the export
-  itself is planned for v1.5 (see [ADR 0005](docs/decisions/0005-defer-hephaestus-integration.md)).
+  code-generation pipeline, and the goal behind it: you decide the shape and
+  architecture, the AI brings its judgement to the rest. Publish shipped in
+  v1.5 ([ADR 0013](docs/decisions/0013-publish-architecture-json.md)).
 
 ## Recommended IDE setup
 

@@ -4,6 +4,31 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.5.0] — 2026-10-02
+
+Hephaestus Tier 2: Publish a design for Hephaestus to build from.
+
+### Added
+- **Publish** ([ADR 0013](decisions/0013-publish-architecture-json.md)):
+  a top-bar button that writes `architecture.json` — every part (one per
+  placement) with its kind, path, language, layer, description and
+  constraints, and every connection as drawn, with its kind and your pip
+  labels. Collapsed groups dissolve into the canvas around them. A
+  summary afterwards shows what went in and anything worth fixing (missing
+  languages, path clashes, broken wires) — problems never block it.
+- **Description and constraints:** a Purpose section in the node dialog —
+  what a part is for, and rules it must keep, one per line. Shown in the
+  hover cards; copied by Duplicate, Permute, and Import.
+- **Connection kinds:** each wire is a runtime connection, an import, or a
+  call, worked out from its style (Import and Call styles, or anything
+  In-process). The "+ New style" form has a Kind choice, and the legend
+  lists Call and Import as code dependencies.
+
+### Changed
+- `HEPHAESTUS-INTEGRATION.md` states the goal as a balance: you decide
+  shape and architecture, the AI brings its judgement to the rest —
+  including naming interfaces, which GP no longer plans to record.
+
 ## [1.4.1] — 2026-10-02
 
 Fixes from hand-testing 1.4.0.

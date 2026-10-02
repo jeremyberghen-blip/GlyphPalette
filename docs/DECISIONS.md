@@ -17,79 +17,6 @@ too slight to matter.
 
 ## Open
 
-### Hephaestus Tier 2 (v1.5) — planning
-
-Planning started 2026-10-02, adapting `HEPHAESTUS-INTEGRATION.md` Tier 2
-to GP as it now is (two-part connections, v1.3 build facts). Planned as
-four features — connection kinds, interface names, description and
-constraints, the `architecture.json` export; interface names were dropped
-(below), leaving three.
-
-**Connection kinds** (settled 2026-10-02): every wire has a kind for the
-export — `transport` (separately running things talking), `import` (one
-file uses names defined in another), or `call` (direct use of code inside
-one program) — worked out from what's drawn, not set per wire:
-- the Import style → `import`; the Call style → `call`;
-- any other wire on the In-process transport → `call`;
-- everything else → `transport`.
-- Import and call stay **distinct** in the export, exactly as drawn — the
-  translation stays mechanical (the spec's `call` was meant for the
-  retired function level; merging would be GP deciding for the user).
-- Custom styles get a **Kind** choice in the "+ New style" form (Runtime
-  connection / Import / Call; default Runtime connection), stored on the
-  style. Older files need nothing.
-- Shown in the legend: Call and Import marked as code dependencies.
-
-**Interface names** — dropped 2026-10-02. Planned as a names list on
-receiving pips (`save, find_by_slug`, endpoints for network pips). The
-user decided Hephaestus should name interfaces: control too tightly and
-the benefit of using an LLM is lost. The goal was restated to match — a
-balance of deciding shape and architecture yourself while leveraging the
-AI's intelligence, with responsibility for the finished work resting on
-whoever presents it (`HEPHAESTUS-INTEGRATION.md` § Why this exists).
-
-**Description and constraints** (settled 2026-10-02): two optional fields
-on every definition — **Description** (a sentence or two of prose: what
-the part is for) and **Constraints** (short rules it must keep, one per
-line, e.g. "no direct database access"). The spec's terms, used in the
-export too.
-- Per definition, not per placement: a part placed twice is the same part.
-- Edited in a "Purpose" section of the node dialog, under Name; shown in
-  the hover cards (description under the name, constraints as a list);
-  exported with each node.
-- Copied by Duplicate, Permute, and Import.
-- Standard nodes stay without them — generic text tells Hephaestus
-  nothing, and standard nodes get permuted before building anyway.
-
-**The export** (settled 2026-10-02): a **Publish** button in the top bar
-writes `architecture.json` (save dialog, that name suggested) — a
-layout-free description for Hephaestus, regenerated on every Publish and
-never read back by GP. Contents:
-- `project` (name, folder); `nodes` — one per placement (a definition
-  placed twice appears twice), each with id, name, parent, `kind`
-  (`folder` / `file` / `external`, GP's own words rather than the spec's
-  `dir`), folders' `contents` (`drawn` or `ai`), path, effective language,
-  layer, description, constraints;
-- `edges` — every wire **as drawn**, one per placement of its canvas, with
-  kind (transport / import / call), transport and style names, and both
-  pip labels (the user's own words for the connection, as context). Wires
-  to ports become edges to the parent node, with the pip on each end
-  identified so Hephaestus can follow a chain across levels; GP doesn't
-  resolve chains (easy to add if Hephaestus wants it);
-- `warnings` — missing languages, path clashes, skipped broken wires.
-  Problems never block Publish; they're listed in the file and in a summary
-  shown afterwards.
-- Collapsed groups dissolve (contents become the group's parent's
-  children; wires into a group follow its pip map to the inner node).
-  Ports, nodes inside External nodes, and Files' reference sketches are
-  never exported.
-- The user plans to lean on pip labels and custom transports/styles named
-  for what a connection carries ("DB Queries", "URL safety check
-  request") — no GP change needed; both reach the export.
-
-**Plan complete 2026-10-02** — three features (kinds, description and
-constraints, Publish) plus the v1.5 roadmap tidy.
-
 ### How releases should work on GitHub (to discuss)
 
 Raised 2026-10-01 by the user, who wants to talk it through before anything
@@ -148,12 +75,6 @@ and [ADR 0010](decisions/0010-port-nodes-and-broken-links.md). The
 superseded HTTP ↔ REST/JSON compatibility idea is recorded in ADR 0009's
 Context.
 
-### Pockets — remaining piece (v1.5)
-
-Flattening pockets in the `architecture.json` export, so their contents
-belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
-shipped in v1.2, ADR 0010.)
-
 ### Built in v1.3.0 (2026-10-01)
 
 Hephaestus groundwork — slug, External, Kind, Language, build paths, the
@@ -180,6 +101,18 @@ third section), Add pip… and Permute… on the node menu, one Builds-as
 choice with External greying out Language — are in
 [`CHANGELOG.md`](CHANGELOG.md) § 1.4.0; the Builds-as merge is also noted
 in [ADR 0011](decisions/0011-build-facts-and-paths.md).
+
+### Built in v1.5.0 (2026-10-02)
+
+Hephaestus Tier 2 — connection kinds derived from styles, description and
+constraints on definitions, and Publish (`architecture.json`, format 1) —
+left this file when v1.5.0 shipped; the reasoning and the format now live
+in [ADR 0013](decisions/0013-publish-architecture-json.md). That includes
+the last pocket piece (collapsed groups dissolve in the export) and the
+dropped interface names: planned 2026-10-02 as a names list on receiving
+pips, dropped the same day when the user restated the goal as a balance —
+decide shape and architecture yourself, leave finer detail (interface
+names included) to the AI (`HEPHAESTUS-INTEGRATION.md` § Why this exists).
 
 ## Record
 

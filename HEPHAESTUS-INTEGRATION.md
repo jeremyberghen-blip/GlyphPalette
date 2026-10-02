@@ -83,44 +83,52 @@ graph with no layout — Hephaestus doesn't care where boxes sit (the picture is
 for you).
 
 ```jsonc
+// Format version 1, as GP v1.5 writes it (ADR 0013). Revised from the
+// original proposal: GP's own kind words, folders' contents, wire ends as
+// {node, pip, label}, port crossings marked, a warnings list, no interfaces.
 {
+  "format": "glyph-palette/architecture",
   "version": 1,
+  "project": { "name": "Gateway Demo", "folder": "gateway-demo" },
   "nodes": [
     {
-      "id": "n_auth",
-      "path": "src/gateway/auth.py",   // computed from the trail of slugs; user-overridable
-      "kind": "file",                  // "file" | "dir" | "external"
-      "language": "python",            // file nodes only
-      "parent": "n_gateway",           // containing node id — rebuilds the tree
+      "id": "n1/n2",                   // the placement's chain of node ids
+      "name": "auth",
+      "parent": "n1",                  // containing node — rebuilds the tree
+      "kind": "file",                  // "folder" | "file" | "external"
+      "path": "gateway-demo/auth.py",  // from the slugs; user-overridable
+      "language": "python",            // effective; null if unset (warned)
+      "layer": "component",
+      "definition": "def-…",           // shared by every copy of the same part
       "description": "Validates inbound JWTs; rejects expired or malformed.",
       "constraints": ["no DB access", "pure function of the token + a public key"]
     },
-    {
-      "id": "n_tokens", "path": "src/gateway/tokens.py",
-      "kind": "file", "language": "python", "parent": "n_gateway"
-    },
-    {
-      "id": "n_db", "kind": "external",
-      "description": "Postgres, owned by the platform team"
-      // no path, no language — not built
-    }
+    { "id": "n1", "name": "API Gateway", "parent": null, "kind": "folder",
+      "contents": "drawn",             // or "ai": the AI decides what goes inside
+      "path": "gateway-demo", "language": "python", "layer": "container", "definition": "def-…" },
+    { "id": "n9", "name": "Database", "parent": null, "kind": "external",
+      "layer": "container", "definition": "def-…",
+      "description": "Postgres, owned by the platform team" }   // no path, no language
   ],
   "edges": [
-    {
-      "from": "n_auth", "to": "n_tokens",
-      "kind": "import"                  // "transport" | "import" | "call"
-      // no interface names: the AI's design pass names what crosses (2026-10-02)
-    },
-    {
-      "from": "n_gateway", "to": "n_db",
-      "kind": "transport",
-      "protocol": "SQL"                 // for transport edges: the pip-type name
-    }
-  ]
+    { "from": { "node": "n1/n3", "pip": "pip-…", "label": "Verify" },
+      "to":   { "node": "n1/n2", "pip": "pip-…", "label": "Tokens" },
+      "kind": "import", "transport": "In-process", "style": "Import" },
+    { "from": { "node": "n1", "pip": "pip-db", "label": "DB" },
+      "to":   { "node": "n9", "pip": "pip-…", "label": "SQL" },
+      "kind": "transport", "transport": "TCP", "style": "SQL" },
+    // a wire drawn inside API Gateway to its Outbound port: an edge to the
+    // parent, port-marked, on the same pip id as the outer wire above
+    { "from": { "node": "n1/n4", "pip": "pip-…", "label": "Queries" },
+      "to":   { "node": "n1", "pip": "pip-db", "label": "DB", "port": true },
+      "kind": "transport", "transport": "TCP", "style": "SQL" }
+  ],
+  "warnings": []
 }
 ```
 
 Flat node list + flat edge list. `parent` pointers reconstruct the tree.
+One node per *placement*: a part placed twice is built twice.
 
 What Hephaestus derives from it (GP does **not** produce these — they are
 generated from the file above):
