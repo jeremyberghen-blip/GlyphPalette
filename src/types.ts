@@ -59,10 +59,19 @@ export interface Transport {
  * What a connection's bytes mean — REST/JSON, SQL, events. Drawn as a pip's
  * inner circle and a wire's core. `ANY_STYLE` means pass-through: no core.
  */
+/**
+ * What a wire means for the export (v1.5): separately running things
+ * talking (`transport`), one file using names defined in another
+ * (`import`), or direct use of code inside one program (`call`).
+ */
+export type EdgeKind = "transport" | "import" | "call";
+
 export interface ApiStyle {
   id: string;
   name: string;
   color: string;
+  /** A code-dependency style (Import / Call); absent: a runtime connection. See lib/connections.ts `edgeKind`. */
+  kind?: "import" | "call";
   /** Transports this style usually rides on — a hint for the node dialog. */
   transports?: string[];
 }
@@ -109,6 +118,10 @@ export interface NodeDefinition {
   kind?: "folder" | "file";
   /** Language, or absent to inherit the nearest ancestor's. */
   language?: LanguageId;
+  /** What the part is for — a sentence or two of prose (v1.5). Exported for Hephaestus. */
+  description?: string;
+  /** Rules it must keep, one per entry ("no direct database access"). Exported for Hephaestus. */
+  constraints?: string[];
   /**
    * True when this definition came from collapsing a boundary. Its canvas is
    * a *pocket*: a same-layer fold, not a deeper level (see lib/layers.ts).

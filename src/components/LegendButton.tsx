@@ -105,7 +105,12 @@ export function LegendPanel({ className = "" }: { className?: string }) {
       <ChipList title="Transports — the line, and a pip's ring" items={Object.values(transports)} />
       <ChipList
         title="Styles — the core (none: passes anything)"
-        items={Object.values(styles).filter((st) => !isAnyStyle(st.id))}
+        items={Object.values(styles).filter((st) => !isAnyStyle(st.id) && !st.kind)}
+        core
+      />
+      <ChipList
+        title="Code dependencies — exported as import / call"
+        items={Object.values(styles).filter((st) => st.kind)}
         core
       />
       <div className="space-y-1">

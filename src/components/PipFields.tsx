@@ -3,7 +3,7 @@
 // small form). Custom transports and styles can be created inline in both.
 
 import { useState } from "react";
-import { DRAWABLE_LAYERS, LAYER_LABELS, Layer, PipDef, PipDirection } from "../types";
+import { ApiStyle, DRAWABLE_LAYERS, LAYER_LABELS, Layer, PipDef, PipDirection } from "../types";
 import { useApp } from "../store";
 import { groupStyles, groupTransports, isAnyStyle, styleAfterTransportChange } from "../lib/connections";
 
@@ -32,11 +32,13 @@ function NewConnPartForm({
   kind: "transport" | "style";
   hintOptions: { id: string; label: string }[];
   initialHints: string[];
-  onCreate: (name: string, color: string, hints: string[]) => void;
+  onCreate: (name: string, color: string, hints: string[], styleKind?: ApiStyle["kind"]) => void;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(kind === "transport" ? "#4c9aff" : "#e2e4ee");
   const [hints, setHints] = useState<string[]>(initialHints);
+  // Styles only: whether this style means a code dependency (exported as import / call)
+  const [styleKind, setStyleKind] = useState<"" | "import" | "call">("");
   const toggle = (id: string) =>
     setHints((hs) => (hs.includes(id) ? hs.filter((x) => x !== id) : [...hs, id]));
   return (
@@ -54,10 +56,22 @@ function NewConnPartForm({
         onChange={(e) => setColor(e.target.value)}
         className="h-7 w-9 cursor-pointer rounded border border-[#3a3d52] bg-transparent"
       />
+      {kind === "style" && (
+        <select
+          className={inputCls + " text-xs"}
+          value={styleKind}
+          onChange={(e) => setStyleKind(e.target.value as "" | "import" | "call")}
+          title="What this style means: separately running things talking, or one part of the code using another"
+        >
+          <option value="">Kind: runtime connection</option>
+          <option value="import">Kind: import (code uses its names)</option>
+          <option value="call">Kind: call (code calls it directly)</option>
+        </select>
+      )}
       <button
         className="rounded bg-[#2b3a55] px-2 py-1 text-xs text-white hover:bg-[#33486b] disabled:opacity-40"
         disabled={!name.trim()}
-        onClick={() => onCreate(name.trim(), color, hints)}
+        onClick={() => onCreate(name.trim(), color, hints, styleKind || undefined)}
       >
         Add {kind}
       </button>
@@ -235,8 +249,8 @@ export default function PipFields({ pip, layers, onChange, layout = "row", trail
         kind="style"
         hintOptions={Object.values(transports).map((t) => ({ id: t.id, label: t.name }))}
         initialHints={[pip.transportId]}
-        onCreate={(n, c, hints) => {
-          const styleId = useApp.getState().addStyle(n, c, hints);
+        onCreate={(n, c, hints, styleKind) => {
+          const styleId = useApp.getState().addStyle(n, c, hints, styleKind);
           onChange({ styleId });
           setCreating(null);
         }}

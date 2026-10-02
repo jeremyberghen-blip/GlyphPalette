@@ -412,6 +412,15 @@ describe("duplicating", () => {
   });
 });
 
+describe("custom styles", () => {
+  it("can be marked as a code dependency, which their wires export as", () => {
+    const id = s().addStyle("Uses", "#ffffff", ["tr-inproc"], "import");
+    expect(s().styles[id].kind).toBe("import");
+    const plain = s().addStyle("DB Queries", "#ffffff", ["tr-tcp"]);
+    expect(s().styles[plain].kind).toBeUndefined();
+  });
+});
+
 describe("canvas menu: Add pip and Permute in place", () => {
   const node = (id: string) => root().nodes.find((n) => n.id === id)!;
   const pip = (id: string) => ({

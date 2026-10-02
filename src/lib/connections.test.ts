@@ -3,6 +3,7 @@ import {
   compatible,
   connLabel,
   defaultConnType,
+  edgeKind,
   groupStyles,
   groupTransports,
   styleAfterTransportChange,
@@ -76,5 +77,31 @@ describe("styleAfterTransportChange", () => {
 
   it("falls back to any when the new transport has no default", () => {
     expect(styleAfterTransportChange("s-rest", "tr-fs", transports, styles)).toBe("s-any");
+  });
+});
+
+describe("edgeKind", () => {
+  const { styles } = STANDARD;
+
+  it("reads Import and Call as code dependencies", () => {
+    expect(edgeKind(c("tr-inproc", "s-import"), styles)).toBe("import");
+    expect(edgeKind(c("tr-inproc", "s-call"), styles)).toBe("call");
+  });
+
+  it("treats anything else on In-process as a call", () => {
+    expect(edgeKind(c("tr-inproc", "s-any"), styles)).toBe("call");
+  });
+
+  it("treats every other wire as a runtime connection", () => {
+    expect(edgeKind(c("tr-http", "s-rest"), styles)).toBe("transport");
+    expect(edgeKind(c("tr-tcp", "s-sql"), styles)).toBe("transport");
+    expect(edgeKind(c("tr-queue", "s-event"), styles)).toBe("transport");
+  });
+
+  it("follows a custom style's own kind", () => {
+    const custom = { ...styles, "s-uses": { id: "s-uses", name: "Uses", color: "#fff", kind: "import" as const } };
+    expect(edgeKind(c("tr-inproc", "s-uses"), custom)).toBe("import");
+    const query = { ...styles, "s-q": { id: "s-q", name: "DB Queries", color: "#fff" } };
+    expect(edgeKind(c("tr-tcp", "s-q"), query)).toBe("transport");
   });
 });

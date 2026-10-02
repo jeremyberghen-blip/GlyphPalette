@@ -95,8 +95,17 @@ export function copyDefinition(def: NodeDefinition, id: string, name: string): N
     ...(def.external ? { external: true } : {}),
     ...(def.kind ? { kind: def.kind } : {}),
     ...(def.language ? { language: def.language } : {}),
+    ...(def.description ? { description: def.description } : {}),
+    ...(def.constraints?.length ? { constraints: [...def.constraints] } : {}),
   };
 }
+
+/** Constraints as typed in the node dialog (one per line) → the stored list: trimmed, blanks dropped. */
+export const constraintLines = (text: string): string[] =>
+  text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
 /** Pips a definition really has: not counting deleted ones kept only for their wires. */
 export const livePips = (d: NodeDefinition): number => d.pips.filter((p) => !p.removed).length;

@@ -67,6 +67,8 @@ export function planImport(
       ...(src.external ? { external: true } : {}),
       ...(src.kind ? { kind: src.kind } : {}),
       ...(src.language ? { language: src.language } : {}),
+      ...(src.description ? { description: src.description } : {}),
+      ...(src.constraints?.length ? { constraints: [...src.constraints] } : {}),
     };
     if (takenIds.has(def.id) || taken(def.name)) {
       def.id = newId();

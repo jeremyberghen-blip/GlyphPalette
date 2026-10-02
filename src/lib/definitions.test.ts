@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFacts, buildsAs, copyDefinition, incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
+import { buildFacts, buildsAs, constraintLines, copyDefinition, incrementName, nameTaken, sameDefinition, uniqueName } from "./definitions";
 import { NodeDefinition } from "../types";
 
 const takenFrom = (names: string[]) => (n: string) =>
@@ -123,5 +123,26 @@ describe("Builds as", () => {
 
   it("keeps no kind or language for External: nothing is built", () => {
     expect(buildFacts("external", "python")).toEqual({ external: true });
+  });
+});
+
+describe("description and constraints", () => {
+  it("are copied by Duplicate / Permute", () => {
+    const base: NodeDefinition = {
+      id: "d1", name: "Link Service", icon: "Box", layers: ["component"], pips: [], canvasId: null,
+      description: "Turns long URLs into slugs.", constraints: ["no direct database access"],
+    };
+    const copy = copyDefinition(base, "d2", "Link Service 2");
+    expect(copy.description).toBe("Turns long URLs into slugs.");
+    expect(copy.constraints).toEqual(["no direct database access"]);
+    expect(copy.constraints).not.toBe(base.constraints);
+  });
+
+  it("read constraints one per line, trimmed, blanks dropped", () => {
+    expect(constraintLines("  no DB access \n\n never log full URLs\r\n")).toEqual([
+      "no DB access",
+      "never log full URLs",
+    ]);
+    expect(constraintLines("   ")).toEqual([]);
   });
 });

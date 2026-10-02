@@ -259,7 +259,7 @@ interface AppState {
   /** Adds a custom transport, usual on `layers` (see lib/connections). Returns its id. */
   addTransport: (name: string, color: string, layers?: Layer[]) => string;
   /** Adds a custom API style, usual with `transports`. Returns its id. */
-  addStyle: (name: string, color: string, transports?: string[]) => string;
+  addStyle: (name: string, color: string, transports?: string[], kind?: ApiStyle["kind"]) => string;
   addCustomIcon: (dataUrl: string) => string;
   /**
    * Adds or replaces a project definition. Caller must have validated name
@@ -964,9 +964,9 @@ export const useApp = create<AppState>((set, get) => ({
     return id;
   },
 
-  addStyle: (name, color, transports) => {
+  addStyle: (name, color, transports, kind) => {
     const id = `s-${uid()}`;
-    const st: ApiStyle = { id, name, color, ...(transports?.length ? { transports } : {}) };
+    const st: ApiStyle = { id, name, color, ...(transports?.length ? { transports } : {}), ...(kind ? { kind } : {}) };
     set((s) => ({ undoStack: pushSnap(s), styles: { ...s.styles, [id]: st } }));
     return id;
   },

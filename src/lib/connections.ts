@@ -4,7 +4,10 @@
 // types". The style "any" stands for pass-through: a firewall or proxy that
 // carries a transport without caring what's inside.
 
-import { ANY_STYLE, ApiStyle, Layer, Transport } from "../types";
+import { ANY_STYLE, ApiStyle, EdgeKind, Layer, Transport } from "../types";
+
+/** The standard In-process transport: wires on it are direct uses of code. */
+export const IN_PROCESS = "tr-inproc";
 
 /** A pip's or wire's connection type. */
 export interface ConnType {
@@ -72,6 +75,17 @@ export function styleAfterTransportChange(
   if (styles[styleId] && styleUsualWith(styles[styleId], transportId)) return styleId;
   const fallback = transports[transportId]?.defaultStyle;
   return fallback && styles[fallback] ? fallback : ANY_STYLE;
+}
+
+/**
+ * A wire's kind for the export: its style's kind (Import, Call, or a custom
+ * style marked as one); otherwise `call` for anything on the In-process
+ * transport (direct use of code); otherwise `transport`.
+ */
+export function edgeKind(conn: ConnType, styles: Record<string, ApiStyle>): EdgeKind {
+  const kind = styles[conn.styleId]?.kind;
+  if (kind) return kind;
+  return conn.transportId === IN_PROCESS ? "call" : "transport";
 }
 
 /** Styles usual with a transport first ("any" leading), the rest after. */

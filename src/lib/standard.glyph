@@ -144,6 +144,7 @@
       "id": "s-call",
       "name": "Call",
       "color": "#cbd5e1",
+      "kind": "call",
       "transports": [
         "tr-inproc"
       ]
@@ -152,6 +153,7 @@
       "id": "s-import",
       "name": "Import",
       "color": "#67e8f9",
+      "kind": "import",
       "transports": [
         "tr-inproc"
       ]
