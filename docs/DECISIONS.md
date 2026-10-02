@@ -20,9 +20,10 @@ too slight to matter.
 ### Hephaestus Tier 2 (v1.5) — planning
 
 Planning started 2026-10-02, adapting `HEPHAESTUS-INTEGRATION.md` Tier 2
-to GP as it now is (two-part connections, v1.3 build facts). Four
-features, in order: connection kinds, interface names, description and
-constraints, the `architecture.json` export.
+to GP as it now is (two-part connections, v1.3 build facts). Planned as
+four features — connection kinds, interface names, description and
+constraints, the `architecture.json` export; interface names were dropped
+(below), leaving three.
 
 **Connection kinds** (settled 2026-10-02): every wire has a kind for the
 export — `transport` (separately running things talking), `import` (one
@@ -38,6 +39,14 @@ one program) — worked out from what's drawn, not set per wire:
   connection / Import / Call; default Runtime connection), stored on the
   style. Older files need nothing.
 - Shown in the legend: Call and Import marked as code dependencies.
+
+**Interface names** — dropped 2026-10-02. Planned as a names list on
+receiving pips (`save, find_by_slug`, endpoints for network pips). The
+user decided Hephaestus should name interfaces: control too tightly and
+the benefit of using an LLM is lost. The goal was restated to match — a
+balance of deciding shape and architecture yourself while leveraging the
+AI's intelligence, with responsibility for the finished work resting on
+whoever presents it (`HEPHAESTUS-INTEGRATION.md` § Why this exists).
 
 ### How releases should work on GitHub (to discuss)
 

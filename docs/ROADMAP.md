@@ -59,9 +59,8 @@ and the dev launcher.
 
 ## v1.5 — planned: Hephaestus Tier 2
 
-- Edge `kind` (`transport | import | call`) on `PipType`, inherited by a
-  relationship from its pip type.
-- Interface names (symbol labels) carried on `import`/`call` edges.
+- Connection kinds (`transport | import | call`), worked out from each
+  wire's style; custom styles get a Kind choice.
 - **Richer Component-layer definitions** to replace the undrawn Code layer:
   a free-text responsibility/notes field and key exported symbols as text.
 - The `architecture.json` export itself: flat node list + flat edge list,

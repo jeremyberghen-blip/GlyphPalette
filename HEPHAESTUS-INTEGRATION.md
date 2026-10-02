@@ -7,35 +7,47 @@
 
 ## Why this exists
 
-The point of the pipeline is *"I made this **with** AI"*, not *"I had AI make
-this for me."* The difference is direct human decision-making in the process —
-that is what grounds the claim to the output.
+**The goal is a balance:** decide the shape and architecture of the system
+yourself, and use the AI's intelligence for the rest. Control too tightly
+and there's no point using an LLM at all; control too loosely and the
+system isn't yours. GP is where you make the decisions you want to own —
+which parts exist, how they depend on each other, what each is for and
+what it must not do — and record them in a form an AI can build from.
+Hephaestus works inside that shape and brings its own judgement to
+everything finer: what crosses each seam, signatures, errors, tests,
+implementation.
 
-Metaphor: **GP's output is piping. The AI writing code is water flowing through
-it.** GP is where you architect the system and record it in a form an AI can
-build from. You own the pipe layout and the direction of flow. The AI owns what
-flows through — the implementation detail.
+**Authorship aside, responsibility is yours.** Whoever presents the
+finished work answers for it, for better or ill — a client can't hold the
+model's maker to account for what you hand over. So the aim isn't to
+minimise the AI's part; it's to stay in charge of the decisions you'll
+answer for, and to review what comes back.
 
-Consequence for the data model: **the fidelity of the GP → contract translation
-is the agency mechanism.** If GP exports something lossy, the AI's design pass
-fills the gap with *its own* architecture reasoning and the structure stops
-being yours. If GP exports something faithful, the AI only fills interface
-detail *inside the shape you drew*. So the translation should be as mechanical
-as possible.
+Metaphor: **GP's output is piping. The AI writing code is water flowing
+through it.** You own the pipe layout and the direction of flow. The AI owns
+what flows through — and the fittings where pipes meet.
 
-The line to hold: a pipe has a **labelled flange** ("the auth seam is here,
-it's called `verify_token`"), not a **specified flow rate** (parameter lists,
-error types, test cases). Naming the seam is architecture. Specifying the
-signature is the AI's job — put it in GP and GP becomes a slow IDE.
+Consequence for the data model: the GP → contract translation should be
+**faithful for what you decide** — decomposition, dependency direction,
+connection kinds, purpose and constraints — and as mechanical as possible
+there. If it's lossy on those, the AI's design pass fills the gap with its
+own architecture and the structure stops being yours. Below that line,
+leave room: the AI is there to think, not to transcribe.
 
-Ownership split (from the Hephaestus design doc §4.1):
+The line to hold: you mark **where the seams are and which way they run**;
+naming and specifying them (interface names, parameter lists, error types,
+test cases) is the AI's job. *(Revised 2026-10-02: earlier drafts had you
+naming each seam's "flange" — the symbols crossing it. The user moved that
+to the AI: control too tight loses the benefit of using an LLM.)*
+
+Ownership split (adapted from the Hephaestus design doc §4.1):
 
 | You own | The AI's design pass owns |
 |---|---|
-| decomposition (which files exist) | exact signatures |
-| dependency direction | error types |
-| the seams and what crosses them (interface *names*) | test cases |
-| purpose and constraints, in prose | implementation |
+| decomposition (which folders and files exist) | interface names — what crosses each seam |
+| dependency direction, and each connection's kind | exact signatures |
+| where the seams are | error types |
+| purpose and constraints, in prose | test cases, implementation |
 
 ## The mental model
 
@@ -96,8 +108,8 @@ for you).
   "edges": [
     {
       "from": "n_auth", "to": "n_tokens",
-      "kind": "import",                 // "transport" | "import" | "call"
-      "interface": ["decode", "PublicKey"]   // symbol names crossing the seam
+      "kind": "import"                  // "transport" | "import" | "call"
+      // no interface names: the AI's design pass names what crosses (2026-10-02)
     },
     {
       "from": "n_gateway", "to": "n_db",
@@ -117,7 +129,7 @@ generated from the file above):
 |---|---|
 | build order | topological sort of `kind:"file"` nodes over `import`/`call` edges, leaves first |
 | neighbour context for a contract | edges touching a node |
-| node brief for the AI design pass | node + its in/out edges + `interface`s + `description` + `constraints` |
+| node brief for the AI design pass | node + its in/out edges (and their kinds) + `description` + `constraints` |
 | drift detection | `import` edges (drawn) vs the real `ast` import graph, matched by `path` |
 
 ## Changes to GP
@@ -145,13 +157,10 @@ generated from the file above):
    purpose + a short "do not" list. Prose, written by you. Feeds the node brief.
    This is architecture, not a slow IDE — the moment it's parameter lists,
    you've crossed the line.
-6. **Edge kind + interface names.** Cleanest implementation: add
-   `kind: "transport" | "import" | "call"` to `PipType` (default `"transport"`).
-   A relationship inherits its kind from its `typeId`. For `import`/`call` edges
-   the pip **label** carries the symbol name (`verify_token`); add one seed pip
-   type `"symbol"` so `canConnect` still type-matches. You only draw the pips
-   that cross a boundary — not every function. GP could validate that the
-   from-pip label (exporting side) matches the to-pip label (importing side).
+6. **Edge kind.** `kind: "transport" | "import" | "call"`, worked out from
+   each wire's style (v1.5; see `docs/DECISIONS.md`). *Interface names were
+   dropped from GP on 2026-10-02 — the AI's design pass names what crosses
+   each seam.*
 
 ### Tier 3 — defer until a file-level slice runs end to end
 
@@ -171,9 +180,8 @@ Walk from `canvas-root`. For each `NodeInstance`, resolve its `NodeDefinition`:
   `<ext>` comes from `language` (`python`→`.py`, `typescript`→`.ts`).
 
 Edges: a `Relationship` inside a canvas connects two `NodeInstance`s in that
-canvas → one export edge, `kind` from the relationship's pip type,
-`interface` = the two pip labels (dedup), `protocol` = pip-type name for
-transport. When a container was collapsed, its `pipMap` traces an inherited
+canvas → one export edge, `kind` from the wire's style, and the transport /
+style names for transport edges. When a container was collapsed, its `pipMap` traces an inherited
 (subsystem-level) pip back to the specific inner node — keep that so a
 subsystem edge can later be resolved to the file it actually terminates at.
 
@@ -185,7 +193,7 @@ Draw exactly this, export it, hand `architecture.json` back to Hephaestus:
   - `auth` — `file`, python, `description` + `constraints`
   - `tokens` — `file`, python
   - `router` — `file`, python
-  - `import` edges: `router → auth`, `auth → tokens` (interface labels on each)
+  - `import` edges: `router → auth`, `auth → tokens`
 - `Database` — `external` node at the subsystem level
 - one `transport` edge `API Gateway → Database`, protocol `SQL`
 
