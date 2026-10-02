@@ -1,6 +1,7 @@
-// The palette's Legend: an icon at its foot that shows, while the mouse is
-// over it, what the colors and marks on pips, wires, and nodes mean. Purely
-// for reference — nothing in it is clickable.
+// The palette's Legend: the strip at its foot shows, while the mouse is over
+// it, what the colors and marks on pips, wires, and nodes mean. The node and
+// Add pip dialogs show the same legend beside them while they're open.
+// Purely for reference — nothing in it is clickable.
 
 import { useState } from "react";
 import { Info } from "lucide-react";
@@ -90,15 +91,16 @@ function MarkRow({ icon, children }: { icon: React.ReactNode; children: React.Re
   );
 }
 
-function LegendPopup({ left, bottom }: { left: number; bottom: number }) {
+/** The legend itself, unpositioned: the palette's hover pop-up and the dialogs both use it. */
+export function LegendPanel({ className = "" }: { className?: string }) {
   const transports = useApp((s) => s.transports);
   const styles = useApp((s) => s.styles);
   const http = transports["tr-http"]?.color ?? "#4c9aff";
   const rest = styles["s-rest"]?.color;
   return (
     <div
-      className="pointer-events-none fixed z-[60] space-y-3 rounded-lg border border-[#3a3d52] bg-[#22242e] p-3 shadow-2xl"
-      style={{ left, bottom, width: POPUP_WIDTH }}
+      className={`pointer-events-none shrink-0 space-y-3 rounded-lg border border-[#3a3d52] bg-[#22242e] p-3 shadow-2xl ${className}`}
+      style={{ width: POPUP_WIDTH }}
     >
       <ChipList title="Transports — the line, and a pip's ring" items={Object.values(transports)} />
       <ChipList
@@ -132,23 +134,31 @@ function LegendPopup({ left, bottom }: { left: number; bottom: number }) {
   );
 }
 
-/** The foot of the palette: hover the Legend icon to see the legend beside the palette. */
+/**
+ * The foot of the palette: hovering anywhere on this strip shows the legend
+ * beside the palette, until the mouse leaves it.
+ */
 export default function LegendButton() {
   const [at, setAt] = useState<{ left: number; bottom: number } | null>(null);
   return (
-    <div className="border-t border-[#2e3040] px-2.5 py-1.5">
-      <span
-        className="inline-flex cursor-default items-center gap-1.5 rounded px-1.5 py-1 text-xs text-[#8a8ea6] hover:bg-[#262835] hover:text-[#e2e4ee]"
-        onMouseEnter={(e) => {
-          const trigger = e.currentTarget.getBoundingClientRect();
-          const palette = e.currentTarget.closest("aside")?.getBoundingClientRect() ?? trigger;
-          setAt({ left: palette.right + 8, bottom: Math.max(8, window.innerHeight - trigger.bottom) });
-        }}
-        onMouseLeave={() => setAt(null)}
-      >
-        <Info size={14} /> Legend
-      </span>
-      {at && <LegendPopup {...at} />}
+    <div
+      className={`flex cursor-default items-center gap-1.5 border-t border-[#2e3040] px-4 py-2.5 text-xs ${
+        at ? "bg-[#262835] text-[#e2e4ee]" : "text-[#8a8ea6]"
+      }`}
+      onMouseEnter={(e) => {
+        const strip = e.currentTarget.getBoundingClientRect();
+        const palette = e.currentTarget.closest("aside")?.getBoundingClientRect() ?? strip;
+        setAt({ left: palette.right + 8, bottom: Math.max(8, window.innerHeight - strip.bottom) });
+      }}
+      onMouseLeave={() => setAt(null)}
+    >
+      <Info size={14} /> Legend
+      {at && (
+        // Ignores the mouse, so moving off the strip (even onto the legend) closes it
+        <div className="pointer-events-none fixed z-[60]" style={{ left: at.left, bottom: at.bottom }}>
+          <LegendPanel />
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { LANGUAGES, LANGUAGE_IDS, LanguageId, slugify } from "../lib/naming";
 import { BuildsAs, buildFacts, buildsAs } from "../lib/definitions";
 import { defaultSide, groupPipsByDirection } from "../lib/pips";
 import PipFields, { inputCls } from "./PipFields";
+import { LegendPanel } from "./LegendButton";
 import { create } from "zustand";
 
 interface WizardState {
@@ -162,7 +163,9 @@ export default function DefinitionWizard({ editing, base = null, replaceNodeId =
     !icon.startsWith("custom:") && icons[icon as keyof typeof icons];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center gap-3 bg-black/60">
+      {/* The legend stays in view while picking transports and styles */}
+      <LegendPanel className="max-[1100px]:hidden" />
       <div className="flex max-h-[85vh] w-[740px] flex-col rounded-lg border border-[#3a3d52] bg-[#22242e] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#2e3040] px-4 py-3">
           <span className="text-sm font-semibold text-[#e2e4ee]">
