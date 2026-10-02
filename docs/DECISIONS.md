@@ -17,6 +17,28 @@ too slight to matter.
 
 ## Open
 
+### Hephaestus Tier 2 (v1.5) — planning
+
+Planning started 2026-10-02, adapting `HEPHAESTUS-INTEGRATION.md` Tier 2
+to GP as it now is (two-part connections, v1.3 build facts). Four
+features, in order: connection kinds, interface names, description and
+constraints, the `architecture.json` export.
+
+**Connection kinds** (settled 2026-10-02): every wire has a kind for the
+export — `transport` (separately running things talking), `import` (one
+file uses names defined in another), or `call` (direct use of code inside
+one program) — worked out from what's drawn, not set per wire:
+- the Import style → `import`; the Call style → `call`;
+- any other wire on the In-process transport → `call`;
+- everything else → `transport`.
+- Import and call stay **distinct** in the export, exactly as drawn — the
+  translation stays mechanical (the spec's `call` was meant for the
+  retired function level; merging would be GP deciding for the user).
+- Custom styles get a **Kind** choice in the "+ New style" form (Runtime
+  connection / Import / Call; default Runtime connection), stored on the
+  style. Older files need nothing.
+- Shown in the legend: Call and Import marked as code dependencies.
+
 ### How releases should work on GitHub (to discuss)
 
 Raised 2026-10-01 by the user, who wants to talk it through before anything
