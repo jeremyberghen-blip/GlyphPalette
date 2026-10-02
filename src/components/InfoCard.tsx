@@ -131,6 +131,7 @@ function PaletteFacts({ defId }: { defId: string }) {
   return (
     <>
       <Header def={def} />
+      <Purpose def={def} />
       <Section>
         <Kind status={status} note={sketch ? "its drawn interior is a reference sketch" : undefined} />
         {status !== "external" && (
@@ -233,6 +234,7 @@ function PlacedFacts({ nodeId, def }: { nodeId: string; def: NodeDefinition }) {
     return (
       <>
         <Header def={def} />
+        <Purpose def={def} />
         <Section>
           <Muted>Not reachable from the top canvas, so it has no path.</Muted>
         </Section>
@@ -249,6 +251,7 @@ function PlacedFacts({ nodeId, def }: { nodeId: string; def: NodeDefinition }) {
   return (
     <>
       <Header def={def} />
+      <Purpose def={def} />
       <Section>
         <Kind status={here.status} note={sketch ? "its drawn interior is a reference sketch" : undefined} />
         {built && (
@@ -325,6 +328,26 @@ function Header({ def }: { def: NodeDefinition }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** A definition's description and constraints (v1.5), when it has any. */
+function Purpose({ def }: { def: NodeDefinition }) {
+  if (!def.description && !def.constraints?.length) return null;
+  return (
+    <Section>
+      {def.description && <div className="text-xs leading-snug text-[#e2e4ee]">{def.description}</div>}
+      {!!def.constraints?.length && (
+        <ul className="space-y-0.5">
+          {def.constraints.map((c, i) => (
+            <li key={i} className="flex gap-1.5 text-[11px] text-[#c9cbd8]">
+              <span className="text-[#7a7d92]">—</span>
+              {c}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
 

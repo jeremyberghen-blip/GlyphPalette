@@ -13,7 +13,7 @@ import {
 import { useApp, uid, nameTaken } from "../store";
 import { defaultConnType } from "../lib/connections";
 import { LANGUAGES, LANGUAGE_IDS, LanguageId, slugify } from "../lib/naming";
-import { BuildsAs, buildFacts, buildsAs } from "../lib/definitions";
+import { BuildsAs, buildFacts, buildsAs, constraintLines } from "../lib/definitions";
 import { defaultSide, groupPipsByDirection } from "../lib/pips";
 import PipFields, { inputCls } from "./PipFields";
 import { LegendPanel } from "./LegendButton";
@@ -85,6 +85,9 @@ export default function DefinitionWizard({ editing, base = null, replaceNodeId =
   const [icon, setIcon] = useState(source?.icon ?? "Box");
   // A typed slug is kept only when editing (a Permute's slug follows its new name)
   const [slug, setSlug] = useState(editing?.slug ?? "");
+  // Purpose (v1.5): what the part is for, and the rules it must keep
+  const [description, setDescription] = useState(source?.description ?? "");
+  const [constraintsText, setConstraintsText] = useState((source?.constraints ?? []).join("\n"));
   const [builds, setBuilds] = useState<BuildsAs>(source ? buildsAs(source) : "folder");
   const [language, setLanguage] = useState<LanguageId | "">(source?.language ?? "");
   const [layers, setLayers] = useState<Layer[]>(
@@ -140,6 +143,8 @@ export default function DefinitionWizard({ editing, base = null, replaceNodeId =
       layers,
       pips: pips.filter((p) => p.label.trim() && p.transportId && p.styleId),
       canvasId: editing?.canvasId ?? null,
+      ...(description.trim() ? { description: description.trim() } : {}),
+      ...(constraintLines(constraintsText).length ? { constraints: constraintLines(constraintsText) } : {}),
       // Facts for building: stored only when they differ from the defaults
       ...(slug.trim() ? { slug: slugify(slug) } : {}),
       ...buildFacts(builds, language),
@@ -203,6 +208,25 @@ export default function DefinitionWizard({ editing, base = null, replaceNodeId =
                 A definition named "{trimmed}" already exists.
               </div>
             )}
+          </div>
+
+          {/* Purpose: prose for Hephaestus — what it's for, and what it must not do */}
+          <div>
+            <label className="mb-1 block text-xs text-[#7a7d92]">Purpose</label>
+            <textarea
+              className={inputCls + " w-full resize-y"}
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description — what is this part for? A sentence or two of prose, not a spec."
+            />
+            <textarea
+              className={inputCls + " mt-1.5 w-full resize-y"}
+              rows={2}
+              value={constraintsText}
+              onChange={(e) => setConstraintsText(e.target.value)}
+              placeholder={"Constraints — rules it must keep, one per line\ne.g. no direct database access"}
+            />
           </div>
 
           {/* Slug: the file-safe name, derived from the name unless typed */}
