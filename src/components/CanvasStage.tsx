@@ -1,4 +1,4 @@
-import { Stage, Layer, Rect, Circle, Group } from "react-konva";
+import { Stage, Layer, Rect, Group } from "react-konva";
 import Konva from "konva";
 import { useMemo, useRef, useState } from "react";
 import { useApp, useActiveCanvas, getPip, setPointerWorld, useNodeDef, isLockedPort } from "../store";
@@ -13,10 +13,10 @@ import WaypointHandles from "./WaypointHandles";
 import { DEF_DRAG_TYPE } from "./LibraryPanel";
 import { Shape } from "react-konva";
 import { canConnect, pipWorldPos, wireGeometry } from "../lib/graph";
+import { gridBackground } from "../lib/grid";
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 4;
-const GRID_SPACING = 40;
 
 interface Marquee {
   x0: number;
@@ -72,38 +72,6 @@ function WirePreview() {
   );
 }
 
-/** Dot grid covering the visible world-space region. */
-function GridDots({ width, height }: { width: number; height: number }) {
-  const viewport = useApp((s) => s.viewport);
-  const dots = useMemo(() => {
-    const { x, y, scale } = viewport;
-    // Visible world bounds
-    const wx0 = -x / scale;
-    const wy0 = -y / scale;
-    const wx1 = (width - x) / scale;
-    const wy1 = (height - y) / scale;
-    const startX = Math.floor(wx0 / GRID_SPACING) * GRID_SPACING;
-    const startY = Math.floor(wy0 / GRID_SPACING) * GRID_SPACING;
-    const pts: { x: number; y: number }[] = [];
-    // Cap the dot count so extreme zoom-out stays fast
-    if ((wx1 - wx0) / GRID_SPACING > 200) return pts;
-    for (let gx = startX; gx <= wx1; gx += GRID_SPACING) {
-      for (let gy = startY; gy <= wy1; gy += GRID_SPACING) {
-        pts.push({ x: gx, y: gy });
-      }
-    }
-    return pts;
-  }, [viewport, width, height]);
-
-  return (
-    <>
-      {dots.map((d, i) => (
-        <Circle key={i} x={d.x} y={d.y} radius={1.2} fill="#33364a" listening={false} perfectDrawEnabled={false} />
-      ))}
-    </>
-  );
-}
-
 export default function CanvasStage({ width, height }: { width: number; height: number }) {
   const canvas = useActiveCanvas();
   const viewport = useApp((s) => s.viewport);
@@ -130,6 +98,8 @@ export default function CanvasStage({ width, height }: { width: number; height: 
   const wireDrag = useApp((s) => s.wireDrag);
   const boundaryDrawing = useApp((s) => s.boundaryDrawing);
   const [boundaryDraft, setBoundaryDraft] = useState<Marquee | null>(null);
+  // The grid is a repeating background image behind the (transparent) canvas
+  const grid = useMemo(() => gridBackground(viewport), [viewport]);
 
   /** Nearest compatible pip within snap range of a world point, or null. */
   const findSnap = (world: { x: number; y: number }) => {
@@ -317,6 +287,7 @@ export default function CanvasStage({ width, height }: { width: number; height: 
   return (
     <div
       className="h-full w-full"
+      style={grid}
       onDragOver={(e) => {
         if (!isDefDrag(e)) return;
         e.preventDefault();
@@ -353,10 +324,7 @@ export default function CanvasStage({ width, height }: { width: number; height: 
       onMouseLeave={() => setPointerWorld(null)}
       onContextMenu={(e) => e.evt.preventDefault()}
     >
-      <Layer>
-        <GridDots width={width} height={height} />
-      </Layer>
-      <Layer>
+      <Layer name="content">
         {canvas.boundaries.map((c) => (
           <BoundaryShape key={c.id} box={c} />
         ))}

@@ -174,7 +174,8 @@ export default function App() {
     const stage = Konva.stages[0];
     if (!stage) return;
     // Bounds of actual content (nodes/wires/boundaries layer), in screen coords
-    const layer = stage.getLayers()[1];
+    const layer = stage.getLayers().find((l) => l.name() === "content");
+    if (!layer) return;
     const rect = layer.getClientRect({ skipTransform: false });
     if (rect.width === 0 || rect.height === 0) return;
     const pad = 24;
