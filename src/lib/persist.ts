@@ -139,6 +139,35 @@ export async function openProjectAt(path: string): Promise<void> {
   useApp.getState().markSaved(path);
 }
 
+/**
+ * Publish: writes `architecture.json` where the user picks — suggested
+ * beside the project file — or downloads it in the browser preview.
+ * Resolves where it went, or null if the dialog was dismissed.
+ */
+export async function writeArchitecture(json: string): Promise<string | null> {
+  if (isTauri()) {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+    const project = useApp.getState().filePath;
+    const sep = project ? Math.max(project.lastIndexOf("/"), project.lastIndexOf("\\")) : -1;
+    const path = await save({
+      title: "Publish for Hephaestus",
+      defaultPath: (sep >= 0 ? project!.slice(0, sep + 1) : "") + "architecture.json",
+      filters: [{ name: "Architecture (JSON)", extensions: ["json"] }],
+    });
+    if (!path) return null;
+    await writeTextFile(path, json);
+    return path;
+  }
+  const blob = new Blob([json], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "architecture.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return "architecture.json (downloaded)";
+}
+
 export async function exportPng(dataUrl: string): Promise<boolean> {
   if (isTauri()) {
     const { save } = await import("@tauri-apps/plugin-dialog");

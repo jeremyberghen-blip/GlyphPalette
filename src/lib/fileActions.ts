@@ -4,7 +4,8 @@
 
 import { create } from "zustand";
 import { useApp } from "../store";
-import { exportPng, isTauri, openProject, openProjectAt, saveProject } from "./persist";
+import { exportPng, isTauri, openProject, openProjectAt, saveProject, writeArchitecture } from "./persist";
+import { architectureSummary, buildArchitecture } from "./architecture";
 import { useSettings } from "./settings";
 import { isDirty, projectLabel } from "./session";
 import { toast } from "./toast";
@@ -142,6 +143,30 @@ export async function closeWindowFlow(destroy: () => Promise<void>): Promise<voi
   } catch (e) {
     console.error("Closing the window failed", e);
     toast(`Couldn't close the window: ${errorText(e)}`, "error");
+  }
+}
+
+/** What the last Publish wrote, for its summary dialog (PublishSummary); null when closed. */
+export const usePublishSummary = create<{
+  result: { path: string; summary: string; warnings: string[] } | null;
+}>(() => ({ result: null }));
+
+/** Publish: builds `architecture.json` from the project and writes it; problems are listed, never blocking. */
+export async function publishFlow(): Promise<void> {
+  const s = useApp.getState();
+  const arch = buildArchitecture({
+    projectName: s.projectName,
+    canvases: s.canvases,
+    definitions: s.definitions,
+    transports: s.transports,
+    styles: s.styles,
+  });
+  try {
+    const path = await writeArchitecture(JSON.stringify(arch, null, 2));
+    if (!path) return;
+    usePublishSummary.setState({ result: { path, summary: architectureSummary(arch), warnings: arch.warnings } });
+  } catch (e) {
+    toast(`Couldn't publish: ${errorText(e)}`, "error");
   }
 }
 

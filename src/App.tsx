@@ -13,13 +13,15 @@ import InfoCardHost from "./components/InfoCard";
 import ContextMenu from "./components/ContextMenu";
 import PathOverrideDialog from "./components/PathOverrideDialog";
 import AddPipDialog from "./components/AddPipDialog";
-import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings } from "lucide-react";
+import PublishSummary from "./components/PublishSummary";
+import { SquareDashed, FilePlus2, FolderOpen, Save, ImageDown, Settings, Send } from "lucide-react";
 import { APP_NAME, IS_DEV_BUILD, isTauri } from "./lib/env";
 import {
   closeWindowFlow,
   exportPngFlow,
   newProjectFlow,
   openProjectFlow,
+  publishFlow,
   reopenLastProject,
   saveNow,
 } from "./lib/fileActions";
@@ -233,6 +235,13 @@ export default function App() {
         >
           <ImageDown size={13} /> PNG
         </button>
+        <button
+          onClick={() => void publishFlow()}
+          className="flex items-center gap-1.5 rounded border border-[#3a3d52] bg-[#262835] px-2.5 py-1 text-xs hover:border-[#4c9aff] hover:text-white"
+          title="Publish architecture.json for Hephaestus: what exists, how it connects, and what each part is for"
+        >
+          <Send size={13} /> Publish
+        </button>
         <div className="mx-1 h-5 w-px bg-[#2e3040]" />
         <button
           onClick={() => useApp.getState().setBoundaryDrawing(!boundaryDrawing)}
@@ -277,6 +286,7 @@ export default function App() {
       <InfoCardHost canvasHost={canvasHost} />
       <PathOverrideDialog />
       <AddPipDialog />
+      <PublishSummary />
       <ContextMenu />
       <Toasts />
     </div>

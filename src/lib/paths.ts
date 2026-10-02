@@ -42,10 +42,29 @@ export interface Placement {
   projectRoot: boolean;
 }
 
+/**
+ * One walk of a canvas. A shared interior is walked once per placement of
+ * its owner, so its wires apply once per placement (the export uses this).
+ */
+export interface CanvasVisit {
+  canvasId: string;
+  /** Node ids from the top canvas to the node whose interior or fold this is (empty: the top canvas). */
+  chain: string[];
+  /** A collapsed group's contents: a fold of the canvas around it, with no ports of its own. */
+  pocket: boolean;
+  /** Inside something external, or inside a File (a sketch): nothing here is built. */
+  unbuilt: boolean;
+}
+
 export interface BuildPlan {
   projectFolder: string;
   placements: Placement[];
+  /** Every canvas walk, top canvas first. */
+  visits: CanvasVisit[];
 }
+
+/** A placement's key: its chain of node ids, joined — unique per placement. */
+export const placementKey = (chain: string[]): string => chain.join("/");
 
 /** The project's folder name: its name, as a kebab-case slug ("Snip App" → "snip-app"). */
 export const projectFolderName = (projectName: string): string => convert(slugify(projectName), "kebab");
@@ -98,6 +117,8 @@ interface WalkCtx {
   route: string[];
   /** On the top canvas (or in a pocket folded there). */
   top: boolean;
+  /** This walk is a collapsed group's contents. */
+  pocket: boolean;
   /** Canvases already entered on this branch (guards against cycles). */
   seen: Set<string>;
 }
@@ -110,6 +131,7 @@ export function buildPlan(
 ): BuildPlan {
   const projectFolder = projectFolderName(projectName);
   const placements: Placement[] = [];
+  const visits: CanvasVisit[] = [];
 
   // One top-level buildable folder adds no level: the project folder plays its role
   const top = unfolded(canvases, defs, rootId).filter(({ def }) => !def.external);
@@ -119,6 +141,7 @@ export function buildPlan(
     const canvas = canvases[canvasId];
     if (!canvas || ctx.seen.has(canvasId)) return;
     const seen = new Set(ctx.seen).add(canvasId);
+    visits.push({ canvasId, chain: ctx.chain, pocket: ctx.pocket, unbuilt: ctx.external || ctx.sketch });
 
     for (const node of canvas.nodes) {
       if (isPortDefId(node.definitionId)) continue;
@@ -128,7 +151,7 @@ export function buildPlan(
 
       // A pocket is a fold: its contents belong to this canvas
       if (def.expandable) {
-        if (def.canvasId) walk(def.canvasId, { ...ctx, chain, route: [...ctx.route, def.canvasId], seen });
+        if (def.canvasId) walk(def.canvasId, { ...ctx, chain, route: [...ctx.route, def.canvasId], pocket: true, seen });
         continue;
       }
 
@@ -184,14 +207,15 @@ export function buildPlan(
           chain,
           route: [...ctx.route, def.canvasId],
           top: false,
+          pocket: false,
           seen,
         });
       }
     }
   };
 
-  walk(rootId, { parentPath: [projectFolder], external: false, sketch: false, chain: [], route: [rootId], top: true, seen: new Set() });
-  return { projectFolder, placements };
+  walk(rootId, { parentPath: [projectFolder], external: false, sketch: false, chain: [], route: [rootId], top: true, pocket: false, seen: new Set() });
+  return { projectFolder, placements, visits };
 }
 
 /** The kind line for each status, as the hover cards show it. */
