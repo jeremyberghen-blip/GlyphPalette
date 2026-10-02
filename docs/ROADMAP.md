@@ -45,7 +45,10 @@ v1.0.0 (2026-09-01) was the first versioned release: the node / boundary /
 relationship model, C4 layers, the per-machine default library, persistence,
 and the dev launcher.
 
-## v1.4 — planned: Hephaestus Tier 2
+## v1.4 — planned: stable and dev copies, palette polish
+
+Re-planned 2026-10-01: the old v1.4 (Hephaestus Tier 2) moved to v1.5 so
+the installed app and the user's UI notes land first.
 
 - **Stable and dev copies side by side** (slated 2026-10-01; see
   [`DECISIONS.md`](DECISIONS.md)): an installable build of `master` for
@@ -53,6 +56,21 @@ and the dev launcher.
   work copy runs in dev mode (GP Dev Mode, port 1440) so features can be
   built and hot-reloaded while the installed app stays untouched. Pulls the
   installer forward from after v2.0.
+- **Reload safety:** limit Tailwind's file scan to `src/`, and reopen the
+  last project on startup.
+- **Pip legend on demand:** an icon at the bottom of the palette shows the
+  transport/style legend on hover.
+- **Pips grouped by direction** (Inbound / Outbound) in the node dialog.
+- **Node right-click menu:** Add pip… (small window, OK / Cancel); on
+  standard nodes Add pip is greyed out and Permute… replaces the node with
+  a permuted copy.
+- **External nodes** grey out Folder/File (and likely Language).
+
+Details for the last four in [`DECISIONS.md`](DECISIONS.md) § "Snip v1.3
+update — pip UI notes".
+
+## v1.5 — planned: Hephaestus Tier 2
+
 - Edge `kind` (`transport | import | call`) on `PipType`, inherited by a
   relationship from its pip type.
 - Interface names (symbol labels) carried on `import`/`call` edges.

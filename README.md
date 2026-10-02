@@ -36,7 +36,7 @@ Tests: `npm test` (Vitest); `npm run build` type-checks and bundles.
   exporting a Glyph Palette project to Project Hephaestus, an AI
   code-generation pipeline. The groundwork shipped in v1.3
   ([ADR 0011](docs/decisions/0011-build-facts-and-paths.md)); the export
-  itself is planned for v1.4 (see [ADR 0005](docs/decisions/0005-defer-hephaestus-integration.md)).
+  itself is planned for v1.5 (see [ADR 0005](docs/decisions/0005-defer-hephaestus-integration.md)).
 
 ## Recommended IDE setup
 

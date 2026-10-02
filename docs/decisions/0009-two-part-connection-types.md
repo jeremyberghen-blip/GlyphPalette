@@ -41,7 +41,7 @@ pass-through infrastructure.
 ## Consequences
 
 - The export to Hephaestus gets both what to wire up and what to generate.
-  v1.4's planned edge `kind` (network vs. in-process) can likely be derived
+  v1.5's planned edge `kind` (network vs. in-process) can likely be derived
   from the transport instead of stored.
 - Files saved by v1.2 are version 2; v1.1 can't read them correctly. Upgrading
   is one-way.

@@ -41,13 +41,13 @@ breadcrumbs, and navigator.
 ## Consequences
 
 - The C4 zoom now stops at Component. Anything finer is described to
-  Hephaestus through Component-level detail (planned for v1.4: notes and key
+  Hephaestus through Component-level detail (planned for v1.5: notes and key
   exported symbols) and the interfaces on edges.
 - Old Code canvases are kept but unsupported: no new Code work, no fixes
   aimed at it.
 - Pockets need their own port rules when port nodes land (v1.2): a pocket's
   ports derive bottom-up from wires that crossed the boundary, not top-down
-  from a parent definition. The `architecture.json` export (v1.4) flattens
+  from a parent definition. The `architecture.json` export (v1.5) flattens
   pockets away.
 - A pocket is detected by looking up its owning definition, so every
   "is this a pocket?" check is a scan of definitions — fine at current sizes.

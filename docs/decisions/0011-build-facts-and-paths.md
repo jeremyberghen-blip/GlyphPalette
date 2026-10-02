@@ -6,7 +6,7 @@ Status: Accepted
 ## Context
 
 Project Hephaestus will turn a GP diagram into code (the `architecture.json`
-export is v1.4; see [ADR 0005](0005-defer-hephaestus-integration.md)). For
+export is v1.5; see [ADR 0005](0005-defer-hephaestus-integration.md)). For
 that, every node needs to say what it builds as and where: a folder or a
 file, in which language, under which name — and some nodes (Person, a
 third-party API, a hosted queue) aren't built at all. None of this was in
@@ -78,7 +78,7 @@ other placements of the same node.
 
 ## Consequences
 
-- The export (v1.4) gets slugs, kinds, languages, and paths from one tested
+- The export (v1.5) gets slugs, kinds, languages, and paths from one tested
   function rather than re-deriving them.
 - An override on a node inside a shared interior applies to every placement
   of it — they all land on one path and clash. The override dialog warns

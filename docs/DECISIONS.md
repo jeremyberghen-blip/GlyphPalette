@@ -17,10 +17,11 @@ too slight to matter.
 
 ## Open
 
-### Snip v1.3 update — pip UI notes (in progress)
+### Snip v1.3 update — pip UI notes (slated for v1.4)
 
 Raised 2026-10-01 while the user updates `Snip.glyph` to v1.3 on their own.
-Notes only — nothing gets built until they've finished exploring.
+Slated for v1.4 on 2026-10-01; details may still change as the user
+explores.
 
 - **Legend on demand, not always on screen.** The transport and style
   legends at the bottom of the palette become a small icon there; hovering
@@ -99,7 +100,7 @@ and [ADR 0010](decisions/0010-port-nodes-and-broken-links.md). The
 superseded HTTP ↔ REST/JSON compatibility idea is recorded in ADR 0009's
 Context.
 
-### Pockets — remaining piece (v1.4)
+### Pockets — remaining piece (v1.5)
 
 Flattening pockets in the `architecture.json` export, so their contents
 belong to the pocket's parent. (The v1.1 slice is ADR 0007; pocket ports
