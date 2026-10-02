@@ -113,10 +113,11 @@ Tests: Vitest (`npm test`).
 | `src/lib/session.ts` | Save-state logic: dirty check (project name included), autosave timing, window title, suggested file name (pure). |
 | `src/lib/settings.ts` | Per-machine settings (autosave interval, the project to reopen on startup). |
 | `src/lib/env.ts` | Where GP is running: Tauri or the browser; a dev build (GP Dev Mode) or the installed app. |
+| `src/lib/grid.ts` | The canvas grid: one tileable SVG image as a CSS background, sized and offset to the viewport (pure). |
 | `src/lib/pips.ts` | Pips as the dialogs show them: sections by direction, a new pip's default side (pure). |
 | `src/lib/toast.ts` | Pop-up message store. |
 | `src/lib/icons.ts` | Lucide icon lookup + custom-uploaded-icon resolution. |
-| `src/components/CanvasStage.tsx` | The Konva stage: pan/zoom, marquee select, wire-drag, boundary drawing, placement ghost, drag-to-place drop target. |
+| `src/components/CanvasStage.tsx` | The Konva stage (one layer, "content", over the CSS grid background): pan/zoom, marquee select, wire-drag, boundary drawing, placement ghost, drag-to-place drop target. |
 | `src/components/NodeShape.tsx`, `BoundaryShape.tsx`, `PipShape.tsx`, `RelationshipShape.tsx`, `WaypointHandles.tsx` | Konva render + drag/click handlers for each primitive. |
 | `src/components/InfoCard.tsx` | The hover cards on palette cards and placed nodes (HTML over the canvas). |
 | `src/components/ContextMenu.tsx`, `nodeMenu.ts` | The right-click menu, and what a placed node's menu offers. |
@@ -125,7 +126,7 @@ Tests: Vitest (`npm test`).
 | `src/components/LibraryPanel.tsx` | Left sidebar: the palette (this project's nodes, then standard ones, filtered to the active layer), Ports section, Duplicate/Permute/import, right-click menus, the Legend icon. |
 | `src/components/PipFields.tsx` | One pip's fields (label, transport, style, direction, side), as a dialog row or a small form; inline custom transports/styles. |
 | `src/components/AddPipDialog.tsx` | Add pip… from a node's right-click menu. |
-| `src/components/LegendButton.tsx` | The Legend icon at the palette's foot and the legend it shows on hover. |
+| `src/components/LegendButton.tsx` | The legend (`LegendPanel`), shown on hovering the palette's foot and beside the node and Add pip dialogs. |
 | `src/components/DefinitionWizard.tsx` | Create / edit / permute a definition: name, slug, Builds as + language, layers, icon, pips grouped by direction. Its open state is a small store so palette cards and canvas menus can open it (including Permute-in-place for a node). |
 | `src/components/ImportDialog.tsx` | Choose definitions to import from another project. |
 | `src/components/NavTree.tsx`, `Breadcrumbs.tsx` | Canvas navigation — Explorer-style tree and the trail-of-crumbs + back button, both showing layers. |

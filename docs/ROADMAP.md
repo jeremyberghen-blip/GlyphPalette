@@ -12,14 +12,17 @@ it (see [ADR 0006](decisions/0006-versioning-and-git.md)). Sequence
 re-planned 2026-09-29 after the Snip test run; the reasoning and design
 detail for each item is in [`DECISIONS.md`](DECISIONS.md) under **Decided**.
 
-## v1.4 — current: 1.4.0 (2026-10-01)
+## v1.4 — current: 1.4.1 (2026-10-02)
 
 A stable app to work in and a dev copy to build in ([ADR 0012](decisions/0012-installed-app-and-dev-copy.md)):
 an installable build of `master`, GP Dev Mode for the work copy, reopening
 the last project on startup, and Tailwind scoped to `src/`. Plus palette
 polish from updating Snip: the legend on demand, pips grouped by
 direction, Add pip… and Permute… on the node menu, and one Builds-as
-choice. Full list in [`CHANGELOG.md`](CHANGELOG.md) § 1.4.0.
+choice. Full list in [`CHANGELOG.md`](CHANGELOG.md) § 1.4.0. 1.4.1 replaced
+the canvas's dot grid (thousands of objects zoomed out, which bogged GP
+down) with one repeating grid image, and keeps the legend beside the node
+and Add pip dialogs.
 
 ## v1.3 — 1.3.0 (2026-10-01)
 

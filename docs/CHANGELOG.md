@@ -4,6 +4,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions before 1.0.0 predate git and are reconstructed from session memory
 rather than diffs — see [ADR 0006](decisions/0006-versioning-and-git.md).
 
+## [1.4.1] — 2026-10-02
+
+Fixes from hand-testing 1.4.0.
+
+### Fixed
+- Zooming far out bogged GP down. The canvas's dot grid drew every dot as
+  its own object — over 33,000 near the zoom-out limit, each redrawn and
+  moved on every zoom step. The grid is now a minimal line grid: one small
+  image the browser repeats behind the canvas, which costs the same at
+  every zoom. Zoomed out, its lines spread out (never closer than 16px).
+
+### Changed
+- The node dialog and the Add pip window show the legend beside them while
+  they're open (when the window is wide enough for both).
+- Hovering anywhere on the strip at the foot of the palette shows the
+  legend, not just its icon.
+- PNG exports no longer include the background grid.
+
 ## [1.4.0] — 2026-10-01
 
 A stable app to work in, a dev copy to build in, and palette polish from
