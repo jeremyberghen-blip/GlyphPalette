@@ -17,6 +17,27 @@ too slight to matter.
 
 ## Open
 
+### Ports and connections — rethinking (back to fundamentals)
+
+Raised 2026-10-03. Version planning and building are paused while the
+user goes back to fundamentals and revisits assumptions. First idea on the
+table: at the outer levels, a container has a single marked transport
+connection (HTTP, TCP) to each container it talks to — the outer level
+only guarantees there's a wire wherever traffic needs to go, and where
+there's no wire, no traffic flows (the diagram doubles as an allow-list).
+The style (calls, REST/JSON) is decided inside: the port's single inbound
+HTTP pip feeds a router that sends requests to the right component.
+Points from the discussion: one door in but one wire *out per
+destination*; a container may still need more than one door; messaging
+goes through the broker; and with transport-only outer wires, nothing
+checks that the two sides' insides agree on the contract (an optional
+contract label on the outer wire is one answer). GP can already draw it
+with style "any" on outer pips; whether GP should *encourage* it is open.
+
+**Export schema ownership** (2026-10-03): Hephaestus is behind, so Glyph
+Palette decides the `architecture.json` schema — paused along with the
+rest of version planning.
+
 ### How releases should work on GitHub (to discuss)
 
 Raised 2026-10-01 by the user, who wants to talk it through before anything

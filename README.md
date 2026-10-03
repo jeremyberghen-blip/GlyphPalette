@@ -38,6 +38,9 @@ Tests: `npm test` (Vitest); `npm run build` type-checks and bundles.
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the data model, module
   map, and persistence design.
+- [`docs/GLYPH-FORMAT.md`](docs/GLYPH-FORMAT.md) — how to write a `.glyph`
+  project file by hand or from a script (standard library ids, rules, a
+  validator, a Python builder) without reading the app.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned and unscheduled future work.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — ideas under discussion
   (Open), approved but not yet built (Decided), and concluded notes

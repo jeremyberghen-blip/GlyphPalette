@@ -147,6 +147,7 @@ Tests: Vitest (`npm test`).
    own definitions, transports, and styles, custom icons, and
    `standardInteriors` (interiors drawn inside standard nodes).
    Standard-library content is never written; it's merged back in on load.
+   To write one by hand or from a script, see [`GLYPH-FORMAT.md`](GLYPH-FORMAT.md).
    Loading also upgrades older files: the `containers`→`boundaries` rename,
    missing `layer`/`layers`, pocket layers, v1.0's copied seeds (folded
    back into the standard nodes, or re-id'd if edited), and version 1's flat
